@@ -1,0 +1,20 @@
+game TicTacToe {
+    board {
+        size: 3x3
+        playable_cells: all
+    }
+
+    piece X {
+        owner: Player1
+        move: place on empty cell
+    }
+
+    piece O {
+        owner: Player2
+        move: place on empty cell
+    }
+
+    win_condition {
+        three_in_a_row: any_direction -> win
+    }
+}

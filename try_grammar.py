@@ -1,10 +1,17 @@
-from pathlib import Path
+from parser.ast_transformer import GameAstTransformer
 from parser.game_parser import GameParser
 
-from lark import Lark
 
 parser = GameParser()
-tree = parser.parse_file("games/tictactoe.game")
+parse_tree = parser.parse_file("games/tictactoe.game")
 
-print("Parsing completed successfully!")
-print(tree.pretty())
+transformer = GameAstTransformer()
+game = transformer.transform(parse_tree)
+
+print(game)
+print()
+print(f"Game: {game.name}")
+print(f"Board: {game.board.rows}x{game.board.columns}")
+print(f"Players: {[player.name for player in game.players]}")
+print(f"Pieces: {[piece.name for piece in game.pieces]}")
+print(f"Win conditions: {len(game.win_conditions)}")

@@ -21,7 +21,9 @@ board_block: "board" "{" board_property+ "}"
 size_property: "size" ":" INT "x" INT
 // playable cells property
 playable_cells_property: "playable_cells" ":" playable_cells
-playable_cells: "all" | "dark" | "light"
+playable_cells: "all" -> all_cells
+              | "dark" -> dark_cells
+              | "light" -> light_cells
 
 // players block
 players_block: "players" "{" player_declaration+ turn_order "}"
@@ -47,7 +49,11 @@ win_condition_block: "win_condition" "{" win_condition+ "}"
 
 // align condition
 align_condition: "align" ":" INT alignment_direction "->" "win"
-alignment_direction: "same_row" | "same_col" | "diagonal"
+alignment_direction: "same_row" -> same_row
+                   | "same_col" -> same_col
+                   | "diagonal" -> diagonal
+
+// board full condition
 board_full_condition: "board_full" ":" "no_winner" "->" "draw"
 
 name_list: NAME ("," NAME)*

@@ -1,6 +1,8 @@
 from pathlib import Path
 
 from lark import Lark, Tree
+from parser.ast_nodes import GameDefinition
+from parser.ast_transformer import GameAstTransformer
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -35,3 +37,16 @@ class GameParser:
 
         source = path.read_text(encoding="utf-8")
         return self.parse(source)
+
+    def parse_game(self, source: str) -> GameDefinition:
+        """Parse source text and transform it into a game definition."""
+        parse_tree = self.parse(source)
+        return GameAstTransformer().transform(parse_tree)
+
+    def parse_game_file(
+        self,
+        game_path: Path | str,
+    ) -> GameDefinition:
+        """Parse a .game file and transform it into a game definition."""
+        parse_tree = self.parse_file(game_path)
+        return GameAstTransformer().transform(parse_tree)

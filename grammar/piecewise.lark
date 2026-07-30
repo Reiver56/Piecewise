@@ -1,0 +1,59 @@
+// this lark grammar defines the syntax for a game definition in the Piecewise language
+// the grammar is structured to parse the components of a game, including the board, players, pieces, and win conditions
+// the start rule is the entry point for parsing a game definition
+// the game definition consists of a name, a board block, a players block, one or more piece blocks, and a win condition block
+// the board block defines the properties of the game board, including its size and which cells are playable
+// the players block defines the players in the game and their turn order
+// the piece block defines the properties of a game piece, including its owner and placement rules
+// the win condition block defines the conditions under which a player can win the game or if the
+
+// start definition of game
+start: game_definition
+
+// game definition
+game_definition: "game" NAME "{" board_block players_block piece_block+ win_condition_block "}"
+// board block
+board_block: "board" "{" board_property+ "}"
+// board properties
+?board_property: size_property
+               | playable_cells_property
+// size property
+size_property: "size" ":" INT "x" INT
+// playable cells property
+playable_cells_property: "playable_cells" ":" playable_cells
+playable_cells: "all" | "dark" | "light"
+
+// players block
+players_block: "players" "{" player_declaration+ turn_order "}"
+player_declaration: "player" NAME
+turn_order: "turn_order" ":" name_list
+
+// piece block
+piece_block: "piece" NAME "{" piece_property+ "}"
+// piece properties
+?piece_property: owner_property
+               | place_property
+// owner property
+owner_property: "owner" ":" name_list
+// place property
+place_property: "place" ":" "any_empty_cell"
+
+// win condition block
+win_condition_block: "win_condition" "{" win_condition+ "}"
+
+// win conditions
+?win_condition: align_condition
+              | board_full_condition
+
+// align condition
+align_condition: "align" ":" INT alignment_direction "->" "win"
+alignment_direction: "same_row" | "same_col" | "diagonal"
+board_full_condition: "board_full" ":" "no_winner" "->" "draw"
+
+name_list: NAME ("," NAME)*
+
+
+%import common.CNAME -> NAME
+%import common.INT
+%import common.WS
+%ignore WS

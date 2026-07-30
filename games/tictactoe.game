@@ -1,20 +1,25 @@
 game TicTacToe {
+
     board {
         size: 3x3
         playable_cells: all
     }
 
-    piece X {
-        owner: Player1
-        move: place on empty cell
+    players {
+        player X
+        player O
+        turn_order: X, O
     }
 
-    piece O {
-        owner: Player2
-        move: place on empty cell
+    piece Mark {
+        owner: X, O
+        place: any_empty_cell
     }
 
     win_condition {
-        three_in_a_row: any_direction -> win
+        align: 3 same_row -> win
+        align: 3 same_col -> win
+        align: 3 diagonal -> win
+        board_full: no_winner -> draw
     }
 }

@@ -5,6 +5,18 @@ game Checkers {
         playable_cells: dark
     }
 
+    players {
+        player White {
+            forward: up
+        }
+
+        player Black {
+            forward: down
+        }
+
+        turn_order: White, Black
+    }
+
     piece Man {
         owner: White, Black
         move: diagonal forward 1 if empty
@@ -12,7 +24,19 @@ game Checkers {
         promote: back_rank -> King
     }
 
+    piece King {
+        owner: White, Black
+        move: diagonal any 1 if empty
+        capture: diagonal any 2 if enemy
+    }
+
+    setup {
+        place: Man owned_by White on rows 6..8 playable_cells
+        place: Man owned_by Black on rows 1..3 playable_cells
+    }
+
     win_condition {
         no_pieces_left: opponent -> win
+        no_moves_left: opponent -> win
     }
 }

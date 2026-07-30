@@ -1,0 +1,26 @@
+game ConnectFour {
+
+    board {
+        size: 6x7
+        playable_cells: all
+        gravity: down
+    }
+
+    players {
+        player Red
+        player Yellow
+        turn_order: Red, Yellow
+    }
+
+    piece Disc {
+        owner: Red, Yellow
+        place: any_non_full_column
+    }
+
+    win_condition {
+        align: 4 same_row -> win
+        align: 4 same_col -> win
+        align: 4 diagonal -> win
+        board_full: no_winner -> draw
+    }
+}

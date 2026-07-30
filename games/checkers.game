@@ -1,0 +1,18 @@
+game Checkers {
+
+    board {
+        size: 8x8
+        playable_cells: dark
+    }
+
+    piece Man {
+        owner: White, Black
+        move: diagonal forward 1 if empty
+        capture: diagonal forward 2 if enemy
+        promote: back_rank -> King
+    }
+
+    win_condition {
+        no_pieces_left: opponent -> win
+    }
+}

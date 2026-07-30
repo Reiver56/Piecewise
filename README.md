@@ -2,7 +2,7 @@
 
 # Piecewise
 <p align="center">
-  <img src="assets/demo.gif" alt="demo" width="600"/>
+  <img src="giphy.gif" alt="demo" width="600"/>
 </p>
 A Domain-Specific Language (DSL) for defining turn-based board games.
 

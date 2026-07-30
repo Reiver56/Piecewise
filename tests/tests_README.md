@@ -1,10 +1,7 @@
 # Piecewise Tests
 
-This directory contains the automated test suite for Piecewise.
-
-The project uses [pytest](https://docs.pytest.org/) to verify each component in
-isolation and to check that the parsing pipeline works correctly from `.game`
-source files to parse trees.
+Piecewise uses pytest for automated unit and integration testing. The same suite
+runs locally and in GitHub Actions for pull requests targeting `main`.
 
 ## Files
 
@@ -12,25 +9,16 @@ source files to parse trees.
 tests/
 ├── __init__.py
 ├── test_parser.py
+├── test_ast_transformer.py
 └── README.md
 ```
 
-Additional test modules will be added as the project grows:
+## Run the tests
 
-```text
-tests/
-├── test_parser.py
-├── test_ast_transformer.py
-├── test_semantic_validator.py
-└── test_engine.py
-```
-
-## Running the tests
-
-Install the test dependencies from the project root:
+Install dependencies:
 
 ```bash
-python -m pip install lark pytest
+python -m pip install -r requirements.txt
 ```
 
 Run the complete suite:
@@ -39,73 +27,89 @@ Run the complete suite:
 python -m pytest -v
 ```
 
-Run a single test module:
+Run one module:
 
 ```bash
 python -m pytest tests/test_parser.py -v
 ```
 
-Run a single test:
+Run one test:
 
 ```bash
-python -m pytest tests/test_parser.py::test_parse_valid_tictactoe -v
+python -m pytest tests/test_ast_transformer.py::test_ast_is_immutable -v
 ```
 
-The commands must be executed from the project root so imports and project paths
-are resolved consistently.
+Commands should be executed from the project root.
 
-## Current parser tests
+## Current coverage
 
-The initial parser suite contains three tests.
+The suite currently contains six tests.
 
-### Valid Tic-Tac-Toe definition
+### Parser tests
 
-`test_parse_valid_tictactoe` parses `games/tictactoe.game` and verifies that:
+`test_parse_valid_tictactoe`
 
-- parsing completes without an exception;
-- the returned root node is `start`;
-- the parse tree contains child nodes.
+- parses `games/tictactoe.game`;
+- verifies that the root node is `start`;
+- verifies that the parse tree is not empty.
 
-This is a positive integration test between the example game, Lark grammar, and
-`GameParser`.
+`test_reject_incomplete_game`
 
-### Incomplete game definition
+- supplies an incomplete definition;
+- expects a Lark `UnexpectedInput` exception.
 
-`test_reject_incomplete_game` passes an incomplete game definition directly to
-the parser and expects a Lark `UnexpectedInput` exception.
+`test_reject_wrong_file_extension`
 
-This is a negative syntax test: invalid input must be rejected instead of
-producing a partial parse tree.
+- creates a temporary `.txt` file;
+- verifies that `GameParser.parse_file` raises `ValueError`.
 
-### Invalid file extension
+### AST tests
 
-`test_reject_wrong_file_extension` creates a temporary `.txt` file and verifies
-that `GameParser.parse_file` raises `ValueError`.
+`test_transform_tictactoe_definition`
 
-The test uses pytest's `tmp_path` fixture, so it does not create permanent files
-inside the repository.
+- exercises the complete file-to-AST pipeline;
+- verifies the game, board, players, turn order, and piece;
+- checks typed enum values.
 
-## Test structure
+`test_transform_win_conditions`
 
-Tests follow the Arrange-Act-Assert pattern:
+- verifies the three alignment conditions;
+- verifies the full-board draw condition;
+- checks the complete immutable tuple of typed conditions.
 
-1. **Arrange:** prepare the parser and input;
-2. **Act:** execute the operation being tested;
-3. **Assert:** verify the returned result or expected exception.
+`test_ast_is_immutable`
 
-Example:
+- attempts to modify a parsed `GameDefinition`;
+- verifies that the frozen dataclass raises `FrozenInstanceError`.
 
-```python
-def test_parse_valid_tictactoe(game_parser: GameParser) -> None:
-    tree = game_parser.parse_file(TICTACTOE_PATH)
+## Test levels
 
-    assert tree.data == "start"
-    assert tree.children
+### Unit tests
+
+Unit tests exercise one component or behaviour in isolation, such as a
+transformation rule or semantic constraint.
+
+### Integration tests
+
+Integration tests verify collaboration across boundaries:
+
+```text
+.game file -> parser -> parse tree -> AST transformer -> GameDefinition
 ```
+
+### Negative tests
+
+Negative tests confirm that invalid syntax, definitions, and future game actions
+are rejected with the correct error category.
+
+### End-to-end tests
+
+Future scenarios will execute complete deterministic games from setup to a win
+or draw.
 
 ## Fixtures
 
-The parser tests use a module-scoped fixture:
+Module-scoped fixtures reuse expensive setup such as grammar loading:
 
 ```python
 @pytest.fixture(scope="module")
@@ -113,107 +117,54 @@ def game_parser() -> GameParser:
     return GameParser()
 ```
 
-The `GameParser` instance is created once and shared by all tests in the module.
-This avoids repeatedly loading and compiling the same Lark grammar.
+`tmp_path` is used for temporary filesystem inputs, preventing tests from
+modifying repository fixtures.
 
-Fixtures should contain reusable setup, not test assertions or domain logic.
+## Conventions
 
-## Test categories
+- Test modules follow `test_*.py`.
+- Test functions have descriptive `test_*` names.
+- Each test verifies one coherent behaviour.
+- Positive and negative cases remain separate.
+- Tests do not depend on execution order.
+- Tests do not modify files inside `games/`.
+- Tests avoid network access and external state.
+- Shared setup belongs in fixtures.
 
-The Piecewise suite will contain the following categories.
+Tests should assert public behaviour and stable domain contracts rather than
+irrelevant internal implementation details.
 
-### Unit tests
+## Continuous integration
 
-Unit tests exercise one component in isolation, such as:
-
-- parsing a source string;
-- transforming one parse-tree node;
-- validating one semantic constraint;
-- checking one movement rule.
-
-### Integration tests
-
-Integration tests verify collaboration between components, such as:
-
-```text
-.game file -> parser -> parse tree -> AST
-```
-
-The valid Tic-Tac-Toe parser test is the first integration test.
-
-### Negative tests
-
-Negative tests verify that invalid definitions and illegal game actions are
-rejected with the correct error type.
-
-Examples include:
-
-- malformed syntax;
-- references to undeclared players;
-- invalid board dimensions;
-- illegal moves;
-- actions performed by the wrong player.
-
-### End-to-end tests
-
-Later increments will run complete deterministic game scenarios from initial
-setup to a win or draw.
-
-## Naming conventions
-
-- Test modules use the `test_*.py` naming pattern.
-- Test functions use descriptive `test_*` names.
-- Each test verifies one clearly identifiable behavior.
-- Positive and negative cases are tested separately.
-- Shared setup is implemented with pytest fixtures.
-- Temporary filesystem content uses `tmp_path`.
-
-Avoid coupling tests to irrelevant parse-tree details. A test should fail when
-observable behavior changes incorrectly, not when an internal implementation is
-refactored without changing its contract.
-
-## Test independence
-
-Tests must:
-
-- run successfully in any order;
-- avoid depending on state left by another test;
-- avoid modifying files inside `games/`;
-- avoid network access;
-- produce the same result on repeated executions.
-
-This keeps the suite deterministic and suitable for future continuous
-integration.
-
-## Coverage roadmap
-
-Testing will be expanded incrementally:
-
-1. parser tests for Tic-Tac-Toe;
-2. AST transformation tests;
-3. semantic-validation tests;
-4. parser tests for Checkers;
-5. parser tests for Connect Four;
-6. engine unit tests;
-7. complete game-scenario tests.
-
-Every newly supported DSL construct should add:
-
-- at least one valid example;
-- at least one invalid example;
-- an assertion about the produced model or error.
-
-## Reporting failures
-
-Run pytest without hiding the traceback:
+`.github/workflows/tests.yml` runs:
 
 ```bash
 python -m pytest -v
 ```
 
+on pushes to `main` and pull requests targeting `main`. The repository ruleset
+can require the `pytest` status check before merge.
+
+## Coverage roadmap
+
+1. parser and AST tests for Tic-Tac-Toe;
+2. semantic-validation tests;
+3. parser and AST tests for Checkers;
+4. parser and AST tests for Connect Four;
+5. engine unit tests;
+6. complete game-scenario tests.
+
+Every new DSL construct should include:
+
+- at least one valid case;
+- at least one invalid case;
+- assertions about the produced model or diagnostic.
+
+## Reporting failures
+
 When reporting a failure, include:
 
 - the failing test name;
-- the complete exception and traceback;
+- the complete traceback;
 - the relevant `.game` input;
-- the Python and dependency versions when environment differences may matter.
+- Python and dependency versions when environment differences may matter.

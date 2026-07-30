@@ -1,44 +1,50 @@
-# Piecewise Parser
+# Piecewise Parser and AST
 
-This directory contains the syntactic parser for Piecewise `.game` files.
+This directory implements the parsing boundary of Piecewise. It converts
+`.game` source text into an immutable, typed `GameDefinition`.
 
-The parser loads the formal grammar from `grammar/piecewise.lark`, delegates
-syntax analysis to Lark, and returns a parse tree. It does not create game
-objects or validate domain constraints.
+## Pipeline
 
-## Responsibilities
+```text
+Source text
+    -> GameParser
+    -> Lark parse tree
+    -> GameAstTransformer
+    -> GameDefinition
+```
 
-The parser is responsible for:
-
-- loading the Piecewise grammar;
-- parsing game definitions from strings;
-- parsing `.game` files;
-- rejecting syntactically invalid input;
-- preserving source positions for later error reporting.
-
-The parser is not responsible for:
-
-- checking whether referenced players or pieces exist;
-- validating board dimensions or game rules;
-- transforming the parse tree into the Piecewise AST;
-- executing a game;
-- managing turns or board state.
-
-These responsibilities belong to later semantic-validation, transformation, and
-engine components.
+The parser layer does not perform semantic validation and does not execute the
+game.
 
 ## Files
 
 ```text
 parser/
 ├── __init__.py
+├── ast_nodes.py
+├── ast_transformer.py
 ├── game_parser.py
 └── README.md
 ```
 
-## Public API
+## Responsibilities
 
-The parser is exposed through the `GameParser` class:
+This package is responsible for:
+
+- loading `grammar/piecewise.lark`;
+- parsing source strings and `.game` files;
+- preserving source positions in Lark trees;
+- converting supported syntax into typed AST nodes;
+- exposing low-level and high-level parsing APIs.
+
+It is not responsible for:
+
+- checking cross-references or domain constraints;
+- evaluating win conditions;
+- creating runtime board state;
+- managing moves or turns.
+
+## Public API
 
 ```python
 from parser.game_parser import GameParser
@@ -46,167 +52,148 @@ from parser.game_parser import GameParser
 parser = GameParser()
 ```
 
-By default, the class loads:
+By default, `GameParser` resolves the grammar relative to the project root. A
+different grammar path may be supplied to the constructor.
 
-```text
-grammar/piecewise.lark
-```
-
-A different grammar can be supplied for testing or experimentation:
+### Low-level parsing
 
 ```python
-parser = GameParser("path/to/alternative.lark")
-```
-
-### Parsing a string
-
-Use `parse` when the game definition is already available as text:
-
-```python
-source = """
-game Example {
-    ...
-}
-"""
-
-tree = parser.parse(source)
-```
-
-### Parsing a file
-
-Use `parse_file` to read and parse a `.game` file:
-
-```python
+tree = parser.parse(source_text)
 tree = parser.parse_file("games/tictactoe.game")
 ```
 
-The method accepts either a string path or a `pathlib.Path`.
+These methods return a Lark `Tree` and are useful for diagnostics, grammar
+development, and tests.
 
-Files without the `.game` extension are rejected with `ValueError`.
-
-## Returned value
-
-Both parsing methods return a Lark `Tree`:
+### High-level AST parsing
 
 ```python
-tree = parser.parse_file("games/tictactoe.game")
-print(tree.pretty())
+game = parser.parse_game(source_text)
+game = parser.parse_game_file("games/tictactoe.game")
 ```
 
-Example output:
+These methods apply `GameAstTransformer` and return `GameDefinition`. Downstream
+components should normally use this high-level API.
+
+Files passed to `parse_file` or `parse_game_file` must use the `.game`
+extension.
+
+## AST domain model
+
+`ast_nodes.py` defines immutable dataclasses and enums for the currently
+supported domain:
+
+- `GameDefinition`;
+- `BoardDefinition`;
+- `PlayerDefinition`;
+- `PieceDefinition`;
+- `AlignCondition`;
+- `BoardFullCondition`;
+- `PlayableCells`;
+- `PlacementType`;
+- `AlignmentDirection`;
+- `Outcome`.
+
+The dataclasses use `frozen=True` and `slots=True`. Collections are represented
+with tuples, making the parsed game definition effectively immutable.
+
+The AST deliberately contains no Lark types. This keeps the domain model
+independent from the parsing technology.
+
+## AST transformation
+
+`GameAstTransformer` maps grammar nodes to domain objects:
 
 ```text
-start
-  game_definition
-    TicTacToe
-    board_block
-    players_block
-    piece_block
-    win_condition_block
+size_property          -> BoardDefinition data
+player_declaration     -> PlayerDefinition
+piece_block            -> PieceDefinition
+align_condition        -> AlignCondition
+board_full_condition   -> BoardFullCondition
+game_definition        -> GameDefinition
 ```
 
-This tree still represents the concrete syntax of the source file. A separate
-transformer will later convert it into Piecewise domain objects.
+The private `_PlayersBlock` object groups players and turn order while the
+transformer assembles the final game.
 
 ## Error handling
 
-The parser deliberately preserves Lark syntax exceptions instead of replacing
-them with generic errors.
+Syntax errors are intentionally preserved as Lark exceptions, including:
 
-Typical exceptions include:
+- `UnexpectedCharacters`;
+- `UnexpectedToken`;
+- other `UnexpectedInput` subclasses.
 
-- `UnexpectedCharacters`: the source contains a character that is not valid at
-  the current position;
-- `UnexpectedToken`: a valid token occurs where the grammar does not allow it;
-- `UnexpectedEOF`: the file ends before a grammar rule is complete.
+Because `propagate_positions=True` is enabled, parse-tree nodes retain line and
+column information for future user-facing diagnostics.
 
-Because the Lark parser is created with `propagate_positions=True`, parse-tree
-nodes retain line and column information. This metadata can later be used to
-produce user-friendly Piecewise diagnostics.
+Invalid file extensions raise `ValueError`. Missing files continue to raise
+standard filesystem exceptions.
 
-Filesystem errors such as a missing grammar or game file are also allowed to
-propagate to the caller.
+Semantic errors will be represented separately by the future validator.
 
 ## Design decisions
 
-### LALR parser
+### LALR parsing
 
-The implementation uses:
+The deterministic Piecewise grammar uses Lark's LALR parser for efficient
+analysis and useful syntax errors.
+
+### Reusable parser
+
+The grammar is loaded and compiled when `GameParser` is created. The internal
+Lark parser is reused for subsequent calls.
+
+### Separate transformation
+
+`GameParser` coordinates the pipeline, while `GameAstTransformer` owns the
+mapping logic. This separates source analysis from domain-object construction
+and allows the low-level parse tree to remain accessible.
+
+### Separate semantic validation
+
+The AST transformer converts syntax into domain data but does not check whether
+references and values are meaningful. These checks belong to the next
+architectural stage.
+
+## Example
 
 ```python
-Lark(grammar_text, parser="lalr", start="start")
+from parser.game_parser import GameParser
+
+game = GameParser().parse_game_file("games/tictactoe.game")
+
+print(game.name)                   # TicTacToe
+print(game.board.rows)             # 3
+print(game.turn_order)             # ("X", "O")
+print(game.win_conditions)         # Typed condition objects
 ```
 
-LALR is suitable for the deterministic structure of the Piecewise DSL and
-provides efficient parsing with useful syntax errors.
-
-### Parser instance reuse
-
-The grammar is loaded when `GameParser` is created. The resulting Lark parser is
-then reused by every call to `parse` or `parse_file`, avoiding repeated grammar
-construction.
-
-### Path resolution
-
-The default grammar path is calculated relative to `game_parser.py`, rather than
-relative to the current terminal directory. This allows the parser to locate the
-grammar consistently when Piecewise is launched from different locations.
-
-### Separation of concerns
-
-Syntactic parsing and semantic validation are intentionally separate.
-
-For example, this property can be syntactically valid:
-
-```text
-owner: UnknownPlayer
-```
-
-The grammar can confirm that `UnknownPlayer` is a valid identifier, but only the
-semantic validator can determine whether that player was declared.
-
-## Running the tests
-
-Install the development dependencies:
-
-```bash
-python -m pip install lark pytest
-```
-
-From the project root, run:
+## Testing
 
 ```bash
 python -m pytest -v
 ```
 
-The initial parser tests verify that:
+The current suite verifies:
 
-- a valid Tic-Tac-Toe definition is parsed;
-- an incomplete definition is rejected;
-- a file with the wrong extension is rejected.
+- valid Tic-Tac-Toe parsing;
+- invalid and incomplete syntax;
+- invalid file extensions;
+- complete AST transformation;
+- typed win conditions;
+- AST immutability.
 
 ## Current limitations
 
-The parser currently depends on the first grammar increment, which supports
-Tic-Tac-Toe syntax only.
-
-The following features are not parsed yet:
-
-- player movement directions;
-- piece movement and capture;
-- promotion;
-- initial setup;
-- gravity;
-- placement by column;
-- Checkers and Connect Four definitions.
+Only the Tic-Tac-Toe subset is transformed. Checkers and Connect Four require
+new grammar rules, AST nodes, transformer mappings, and tests.
 
 ## Next steps
 
-The next parser-related increments are:
-
-1. transform the parse tree into an AST;
-2. add semantic validation;
-3. improve user-facing error messages;
-4. extend the grammar and parser tests for Checkers;
-5. extend the grammar and parser tests for Connect Four.
+1. implement semantic validation;
+2. improve user-facing diagnostics;
+3. extend the language for Checkers;
+4. extend the language for Connect Four;
+5. pass validated definitions to the game engine.
 

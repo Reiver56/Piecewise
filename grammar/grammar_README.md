@@ -1,142 +1,119 @@
 # Piecewise Grammar
 
-This directory contains the formal grammar used to parse Piecewise `.game`
-files.
+This directory contains the formal Lark grammar used to parse Piecewise
+`.game` files.
 
-The grammar is written for [Lark](https://github.com/lark-parser/lark), a Python
-parsing library based on EBNF-style grammar definitions.
-
-## Parsing pipeline
+## Current pipeline
 
 ```text
-.game file -> Lark grammar -> Parse tree -> AST transformer -> Game engine
+.game file -> Lark grammar -> Parse tree -> GameAstTransformer -> GameDefinition
 ```
 
-At the current stage, Lark validates the syntax of a game definition and
-produces a parse tree. Transformation into domain objects and semantic
-validation will be implemented separately.
+The grammar performs syntactic analysis. The transformer is implemented and
+converts the resulting tree into typed AST objects. Semantic validation and
+execution remain separate future stages.
 
 ## Files
 
 ```text
 grammar/
-├── piecewise.lark  # Formal grammar
-└── README.md       # Grammar documentation
+├── piecewise.lark
+└── README.md
 ```
 
 ## Entry point
-
-Parsing starts from the `start` rule:
 
 ```lark
 start: game_definition
 ```
 
-`game_definition` describes the required top-level structure of a Piecewise
-game:
+The top-level rule requires:
 
 ```lark
 game_definition: "game" NAME "{" board_block players_block piece_block+ win_condition_block "}"
 ```
 
-A game therefore contains, in order:
+Therefore, the current grammar expects blocks in this order:
 
 1. one board block;
 2. one players block;
 3. one or more piece blocks;
 4. one win-condition block.
 
-## Main rules
+## Supported grammar
 
 ### Board
-
-`board_block` defines the board and contains one or more board properties:
 
 ```lark
 board_block: "board" "{" board_property+ "}"
 ```
 
-The initial grammar supports:
+Supported properties:
 
-- board dimensions through `size`;
-- playable-cell selection through `playable_cells`.
-
-Example:
-
-```text
-board {
-    size: 3x3
-    playable_cells: all
-}
-```
+- `size: ROWSxCOLUMNS`;
+- `playable_cells: all|dark|light`.
 
 ### Players
 
-`players_block` contains one or more player declarations followed by the turn
-order:
-
-```text
-players {
-    player X
-    player O
-    turn_order: X, O
-}
+```lark
+players_block: "players" "{" player_declaration+ turn_order "}"
 ```
 
-The grammar validates the structure of this block. It does not yet verify that
-every player in `turn_order` was previously declared; that is a semantic
-validation responsibility.
+The block contains player declarations followed by `turn_order`.
 
 ### Pieces
 
-Each `piece_block` defines a named piece type and one or more properties:
-
-```text
-piece Mark {
-    owner: X, O
-    place: any_empty_cell
-}
+```lark
+piece_block: "piece" NAME "{" piece_property+ "}"
 ```
 
-The initial grammar supports:
+The current piece properties are:
 
-- one or more owners;
-- placement on any empty cell.
+- `owner`;
+- `place: any_empty_cell`.
 
-Movement, capture, promotion, setup, and gravity are not supported by the first
-grammar increment.
+### End conditions
 
-### Win conditions
+The grammar supports:
 
-The `win_condition_block` contains one or more end-game conditions:
+- `align` with `same_row`, `same_col`, or `diagonal`;
+- `board_full: no_winner -> draw`.
 
-```text
-win_condition {
-    align: 3 same_row -> win
-    align: 3 same_col -> win
-    align: 3 diagonal -> win
-    board_full: no_winner -> draw
-}
+## Transformer-oriented aliases
+
+Literal alternatives use Lark aliases:
+
+```lark
+playable_cells: "all"   -> all_cells
+              | "dark"  -> dark_cells
+              | "light" -> light_cells
 ```
 
-The initial grammar supports horizontal, vertical, and diagonal alignments, plus
-a draw caused by a full board.
+and:
 
-## Lark notation used
+```lark
+alignment_direction: "same_row" -> same_row
+                   | "same_col" -> same_col
+                   | "diagonal" -> diagonal
+```
+
+These aliases preserve which literal was selected in the parse tree, allowing
+`GameAstTransformer` to map each value to the correct enum.
+
+## Lark notation
 
 | Notation | Meaning |
 | --- | --- |
 | `"text"` | Literal text required in the input |
-| `rule` | Reference to another grammar rule |
+| `rule` | Reference to another rule |
 | `A \| B` | Either `A` or `B` |
 | `rule+` | One or more occurrences |
 | `rule*` | Zero or more occurrences |
 | `rule?` | Zero or one occurrence |
-| `?rule:` | Inline the rule when possible to simplify the parse tree |
+| `?rule:` | Inline the rule when possible |
+| `-> alias` | Rename the produced parse-tree node |
 
-## Tokens
-
-The grammar imports common tokens provided by Lark:
+## Tokens and whitespace
 
 ```lark
 %import common.CNAME -> NAME
@@ -145,81 +122,55 @@ The grammar imports common tokens provided by Lark:
 %ignore WS
 ```
 
-- `NAME` represents identifiers such as `TicTacToe`, `Mark`, or `X`;
-- `INT` represents integer values such as board dimensions or alignment lengths;
-- `WS` represents whitespace;
-- `%ignore WS` makes spaces, tabs, and line breaks insignificant.
+- `NAME` represents identifiers such as `TicTacToe`, `Mark`, and `X`;
+- `INT` represents dimensions and alignment lengths;
+- whitespace and indentation have no syntactic meaning.
 
-Because whitespace is ignored, indentation improves readability but has no
-syntactic meaning.
-
-## Running a manual test
-
-Install Lark:
-
-```bash
-python -m pip install lark
-```
-
-From the project root, load the grammar and parse a game:
+## Inspect the parse tree
 
 ```python
-from pathlib import Path
+from parser.game_parser import GameParser
 
-from lark import Lark
-
-grammar_text = Path("grammar/piecewise.lark").read_text(encoding="utf-8")
-game_text = Path("games/tictactoe.game").read_text(encoding="utf-8")
-
-parser = Lark(grammar_text, parser="lalr", start="start")
-tree = parser.parse(game_text)
-
+tree = GameParser().parse_file("games/tictactoe.game")
 print(tree.pretty())
 ```
 
-A valid file produces a parse tree. Invalid syntax causes Lark to raise an
-`UnexpectedCharacters` or `UnexpectedToken` exception.
+A valid source produces a tree. Invalid syntax raises a Lark
+`UnexpectedInput` subclass such as `UnexpectedCharacters` or
+`UnexpectedToken`.
 
-## Syntax and semantic validation
+## Syntax versus semantics
 
-The grammar is responsible only for syntax. For example, it can verify that an
-`owner` property contains a list of names, but it cannot determine whether those
-names refer to declared players.
+The grammar verifies form, not domain correctness. For example:
 
-Semantic validation will be performed after parsing. It will check constraints
-such as:
+```text
+owner: UnknownPlayer
+```
 
-- referenced players and pieces exist;
-- player and piece names are unique;
-- the turn order contains the declared players;
-- board dimensions and alignment lengths are valid;
-- required properties occur exactly once;
-- a game defines at least one reachable end condition.
+is syntactically valid because `UnknownPlayer` is a valid `NAME`. Determining
+whether that player was declared belongs to semantic validation.
 
 ## Current limitations
 
-The first grammar increment parses Tic-Tac-Toe only. The following documented
-DSL features will be added incrementally:
+The current grammar parses the Tic-Tac-Toe subset only. It does not support:
 
 - directional players;
-- piece movement and capture;
-- piece promotion;
+- piece movement or capture;
+- promotion;
 - initial setup;
-- board gravity;
+- gravity;
 - placement by column;
-- Checkers and Connect Four definitions.
-
-Keeping these features out of the first increment makes the parser easier to
-test and allows each extension to be introduced with its own automated tests.
+- Checkers or Connect Four definitions.
 
 ## Extension workflow
 
-When extending the grammar:
+Every grammar extension should:
 
-1. add or update a `.game` example;
-2. add a parser test for valid syntax;
-3. add at least one test for invalid syntax;
-4. update `piecewise.lark`;
-5. inspect the resulting parse tree;
-6. update this document if the grammar structure or supported syntax changes.
+1. begin with a representative `.game` example;
+2. add a valid parser test;
+3. add at least one invalid test;
+4. update the grammar;
+5. update AST nodes and transformation when necessary;
+6. inspect the resulting parse tree;
+7. update this document.
 

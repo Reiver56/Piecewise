@@ -157,10 +157,10 @@ targeting `main` run the same command automatically.
 
 ## Documentation
 
-- [`games/README.md`](games/README.md): user-facing DSL guide and examples;
-- [`grammar/README.md`](grammar/README.md): grammar structure and Lark notation;
-- [`parser/README.md`](parser/README.md): parsing API, AST, and transformation;
-- [`tests/README.md`](tests/README.md): test strategy and conventions.
+- [`games/README.md`](games/games_README.md): user-facing DSL guide and examples;
+- [`grammar/README.md`](grammar/grammar_README.md): grammar structure and Lark notation;
+- [`parser/README.md`](parser/parser_README.md): parsing API, AST, and transformation;
+- [`tests/README.md`](tests/tests_README.md): test strategy and conventions.
 
 ## Development workflow
 

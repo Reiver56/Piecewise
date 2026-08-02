@@ -75,3 +75,132 @@ def test_game_state_is_immutable() -> None:
 
     with pytest.raises(FrozenInstanceError):
         state.turn_number = 2  # type: ignore[misc]
+
+@pytest.mark.parametrize(
+    ("rows", "columns"),
+    [
+        (0, 3),
+        (-1, 3),
+        (3, 0),
+        (3, -1),
+    ],
+)
+def test_game_state_rejects_invalid_board_dimensions(
+    rows: int,
+    columns: int,
+) -> None:
+    with pytest.raises(ValueError):
+        GameState(
+            rows=rows,
+            columns=columns,
+            pieces=(),
+            current_player="X",
+            turn_number=1,
+        )
+
+
+def test_game_state_rejects_invalid_turn_number() -> None:
+    with pytest.raises(ValueError, match="Turn number"):
+        GameState(
+            rows=3,
+            columns=3,
+            pieces=(),
+            current_player="X",
+            turn_number=0,
+        )
+
+
+def test_game_state_rejects_empty_current_player() -> None:
+    with pytest.raises(ValueError, match="Current player"):
+        GameState(
+            rows=3,
+            columns=3,
+            pieces=(),
+            current_player="",
+            turn_number=1,
+        )
+
+
+def test_won_game_requires_winner() -> None:
+    with pytest.raises(ValueError, match="must have a winner"):
+        GameState(
+            rows=3,
+            columns=3,
+            pieces=(),
+            current_player="X",
+            turn_number=5,
+            status=GameStatus.WON,
+        )
+
+
+@pytest.mark.parametrize(
+    "status",
+    [
+        GameStatus.ONGOING,
+        GameStatus.DRAWN,
+    ],
+)
+def test_non_won_game_rejects_winner(
+    status: GameStatus,
+) -> None:
+    with pytest.raises(ValueError, match="Only a won game"):
+        GameState(
+            rows=3,
+            columns=3,
+            pieces=(),
+            current_player="X",
+            turn_number=5,
+            status=status,
+            winner="X",
+        )
+
+
+@pytest.mark.parametrize(
+    "coordinate",
+    [
+        Coordinate(row=3, column=0),
+        Coordinate(row=0, column=3),
+    ],
+)
+def test_game_state_rejects_piece_outside_board(
+    coordinate: Coordinate,
+) -> None:
+    piece = PlacedPiece(
+        piece_name="Mark",
+        owner="X",
+        coordinate=coordinate,
+    )
+
+    with pytest.raises(ValueError, match="outside"):
+        GameState(
+            rows=3,
+            columns=3,
+            pieces=(piece,),
+            current_player="O",
+            turn_number=2,
+        )
+
+
+def test_game_state_rejects_overlapping_pieces() -> None:
+    coordinate = Coordinate(row=1, column=1)
+    pieces = (
+        PlacedPiece(
+            piece_name="Mark",
+            owner="X",
+            coordinate=coordinate,
+        ),
+        PlacedPiece(
+            piece_name="Mark",
+            owner="O",
+            coordinate=coordinate,
+        ),
+    )
+
+    with pytest.raises(ValueError, match="Multiple pieces occupy"):
+        GameState(
+            rows=3,
+            columns=3,
+            pieces=pieces,
+            current_player="X",
+            turn_number=3,
+        )

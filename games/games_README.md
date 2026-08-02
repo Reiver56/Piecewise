@@ -9,10 +9,11 @@ Piecewise games are described using declarative `.game` files.
 ## Processing pipeline
 
 ```text
-.game file -> Lark parser -> Parse tree -> AST transformer -> GameDefinition
+.game file -> Lark parser -> Parse tree -> AST transformer -> GameDefinition -> SemanticValidator
 ```
 
-Semantic validation and game execution will be added in later increments.
+Semantic validation is available as a separate processing stage. Game execution
+will be added in a future increment.
 
 ## Create a game file
 
@@ -87,8 +88,8 @@ players {
 ```
 
 At least one `player` declaration is required syntactically. Whether the turn
-order contains exactly the declared players will be checked by the future
-semantic validator.
+order contains exactly the declared players is checked by the semantic
+validator.
 
 ### Pieces
 
@@ -186,16 +187,16 @@ game = GameParser().parse_game_file("games/tictactoe.game")
 These constructs are not part of `grammar/piecewise.lark` yet. They must be
 introduced together with AST changes and automated tests.
 
-## Planned semantic rules
+## Semantic rules
 
-The semantic validator will eventually reject definitions when:
+The current semantic validator rejects definitions when:
 
 - board dimensions are not positive;
 - player or piece names are duplicated;
 - `turn_order` references undeclared players;
 - a piece references an undeclared owner;
 - an alignment length cannot fit on the board;
-- required declarations are missing or inconsistent.
+- declared players are missing from the turn order.
 
 ## Extension checklist
 

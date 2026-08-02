@@ -130,7 +130,8 @@ column information for future user-facing diagnostics.
 Invalid file extensions raise `ValueError`. Missing files continue to raise
 standard filesystem exceptions.
 
-Semantic errors will be represented separately by the future validator.
+Semantic errors are represented separately by `ValidationIssue` and
+`SemanticValidationError` in the `validation` package.
 
 ## Design decisions
 
@@ -153,8 +154,8 @@ and allows the low-level parse tree to remain accessible.
 ### Separate semantic validation
 
 The AST transformer converts syntax into domain data but does not check whether
-references and values are meaningful. These checks belong to the next
-architectural stage.
+references and values are meaningful. These checks belong to the separate
+`SemanticValidator`, which consumes the resulting `GameDefinition`.
 
 ## Example
 
@@ -184,6 +185,9 @@ The current suite verifies:
 - typed win conditions;
 - AST immutability.
 
+Semantic-validation behaviour is covered independently in
+`tests/test_semantic_validator.py`.
+
 ## Current limitations
 
 Only the Tic-Tac-Toe subset is transformed. Checkers and Connect Four require
@@ -191,9 +195,8 @@ new grammar rules, AST nodes, transformer mappings, and tests.
 
 ## Next steps
 
-1. implement semantic validation;
-2. improve user-facing diagnostics;
-3. extend the language for Checkers;
-4. extend the language for Connect Four;
-5. pass validated definitions to the game engine.
+1. improve user-facing diagnostics;
+2. extend the language for Checkers;
+3. extend the language for Connect Four;
+4. pass validated definitions to the game engine.
 

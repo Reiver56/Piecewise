@@ -44,7 +44,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains six tests.
+The suite currently contains ten tests.
 
 ### Parser tests
 
@@ -83,6 +83,27 @@ The suite currently contains six tests.
 - attempts to modify a parsed `GameDefinition`;
 - verifies that the frozen dataclass raises `FrozenInstanceError`.
 
+### Semantic-validation tests
+
+`test_valid_tictactoe_has_no_semantic_issues`
+
+- validates the parsed Tic-Tac-Toe definition;
+- verifies that no issues are returned.
+
+`test_validate_or_raise_accepts_valid_game`
+
+- verifies that a valid definition is accepted without an exception.
+
+`test_collects_multiple_semantic_issues`
+
+- builds an invalid AST from the valid fixture;
+- verifies cumulative diagnostics and stable issue codes.
+
+`test_validate_or_raise_contains_all_issues`
+
+- verifies that `SemanticValidationError` exposes every collected issue;
+- checks the formatted error message.
+
 ## Test levels
 
 ### Unit tests
@@ -95,7 +116,7 @@ transformation rule or semantic constraint.
 Integration tests verify collaboration across boundaries:
 
 ```text
-.game file -> parser -> parse tree -> AST transformer -> GameDefinition
+.game file -> parser -> parse tree -> AST transformer -> GameDefinition -> SemanticValidator
 ```
 
 ### Negative tests
@@ -148,12 +169,11 @@ can require the `pytest` status check before merge.
 
 ## Coverage roadmap
 
-1. parser and AST tests for Tic-Tac-Toe;
-2. semantic-validation tests;
-3. parser and AST tests for Checkers;
-4. parser and AST tests for Connect Four;
-5. engine unit tests;
-6. complete game-scenario tests.
+1. parser, AST, and semantic-validation tests for Tic-Tac-Toe;
+2. parser, AST, and semantic-validation tests for Checkers;
+3. parser, AST, and semantic-validation tests for Connect Four;
+4. engine unit tests;
+5. complete game-scenario tests.
 
 Every new DSL construct should include:
 

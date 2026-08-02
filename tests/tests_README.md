@@ -10,6 +10,7 @@ tests/
 ├── __init__.py
 ├── test_parser.py
 ├── test_ast_transformer.py
+├── test_semantic_validator.py
 └── README.md
 ```
 

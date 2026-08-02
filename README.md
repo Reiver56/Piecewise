@@ -33,12 +33,12 @@ The current increment supports:
 - syntax parsing with Lark;
 - generation of a Lark parse tree;
 - transformation into an immutable, typed AST;
-- parser and AST tests with pytest;
+- semantic validation with cumulative, structured diagnostics;
+- parser, AST, and semantic-validation tests with pytest;
 - automatic test execution on pull requests through GitHub Actions.
 
 The following features are designed but not implemented yet:
 
-- semantic validation;
 - a runtime game engine;
 - Checkers movement, capture, promotion, and setup;
 - Connect Four gravity and column placement;
@@ -55,7 +55,7 @@ increments. The current grammar parses Tic-Tac-Toe only.
     -> Parse tree
     -> AST transformer
     -> GameDefinition
-    -> Semantic validator    (next increment)
+    -> Semantic validator
     -> Game engine           (future)
 ```
 
@@ -87,7 +87,12 @@ Piecewise/
 ├── tests/
 │   ├── README.md                # Testing strategy
 │   ├── test_parser.py
-│   └── test_ast_transformer.py
+│   ├── test_ast_transformer.py
+│   └── test_semantic_validator.py
+├── validation/
+│   ├── README.md                # Semantic-validation guide
+│   ├── errors.py                # Structured validation diagnostics
+│   └── semantic_validator.py    # Domain-consistency checks
 ├── requirements.txt
 └── README.md
 ```
@@ -146,14 +151,30 @@ tree = parser.parse_file("games/tictactoe.game")
 print(tree.pretty())
 ```
 
+## Validate a game
+
+Semantic validation is an explicit stage after AST construction:
+
+```python
+from parser.game_parser import GameParser
+from validation import SemanticValidator
+
+game = GameParser().parse_game_file("games/tictactoe.game")
+SemanticValidator().validate_or_raise(game)
+```
+
+Use `validate()` instead to receive every issue as an immutable tuple without
+raising an exception.
+
 ## Run the tests
 
 ```bash
 python -m pytest -v
 ```
 
-The current suite contains parser and AST-transformation tests. Pull requests
-targeting `main` run the same command automatically.
+The current suite contains ten parser, AST-transformation, and semantic-
+validation tests. Pull requests targeting `main` run the same command
+automatically.
 
 ## Documentation
 
@@ -161,6 +182,7 @@ targeting `main` run the same command automatically.
 - [`grammar/README.md`](grammar/grammar_README.md): grammar structure and Lark notation;
 - [`parser/README.md`](parser/parser_README.md): parsing API, AST, and transformation;
 - [`tests/README.md`](tests/tests_README.md): test strategy and conventions.
+- [`validation/README.md`](validation/README.md): semantic rules and diagnostics.
 
 ## Development workflow
 

@@ -34,12 +34,14 @@ The current increment supports:
 - generation of a Lark parse tree;
 - transformation into an immutable, typed AST;
 - semantic validation with cumulative, structured diagnostics;
-- parser, AST, and semantic-validation tests with pytest;
+- an immutable runtime game-state model with enforced invariants;
+- initialization of runtime state from a semantically valid definition;
+- parser, AST, semantic-validation, and engine tests with pytest;
 - automatic test execution on pull requests through GitHub Actions.
 
 The following features are designed but not implemented yet:
 
-- a runtime game engine;
+- move execution and end-condition evaluation;
 - Checkers movement, capture, promotion, and setup;
 - Connect Four gravity and column placement;
 - command-line or graphical interaction.
@@ -56,7 +58,8 @@ increments. The current grammar parses Tic-Tac-Toe only.
     -> AST transformer
     -> GameDefinition
     -> Semantic validator
-    -> Game engine           (future)
+    -> Initial GameState
+    -> Move execution       (future)
 ```
 
 Parsing, transformation, validation, and execution are intentionally separated.
@@ -70,7 +73,11 @@ Piecewise/
 ├── .github/
 │   └── workflows/
 │       └── tests.yml            # Pull-request test workflow
-├── engine/                      # Future runtime engine
+├── engine/
+│   ├── README.md                # Runtime-model and initialization guide
+│   ├── errors.py                # Engine-specific exceptions
+│   ├── game_initializer.py      # Validated AST to initial runtime state
+│   └── game_state.py            # Immutable runtime domain model
 ├── games/
 │   ├── README.md                # Guide to Piecewise game definitions
 │   ├── tictactoe.game           # Currently supported example
@@ -85,10 +92,12 @@ Piecewise/
 │   ├── ast_transformer.py       # Parse-tree to AST transformation
 │   └── game_parser.py           # Public parsing API
 ├── tests/
-│   ├── README.md                # Testing strategy
+│   ├── tests_README.md          # Testing strategy
 │   ├── test_parser.py
 │   ├── test_ast_transformer.py
-│   └── test_semantic_validator.py
+│   ├── test_semantic_validator.py
+│   ├── test_game_initializer.py
+│   └── test_game_state.py
 ├── validation/
 │   ├── README.md                # Semantic-validation guide
 │   ├── errors.py                # Structured validation diagnostics
@@ -166,14 +175,33 @@ SemanticValidator().validate_or_raise(game)
 Use `validate()` instead to receive every issue as an immutable tuple without
 raising an exception.
 
+## Initialize a game
+
+`GameInitializer` validates the definition at the engine boundary and creates
+the initial immutable `GameState`:
+
+```python
+from engine import GameInitializer
+from parser.game_parser import GameParser
+
+game = GameParser().parse_game_file("games/tictactoe.game")
+state = GameInitializer().initialize(game)
+
+print(state.current_player)
+print(state.turn_number)
+```
+
+The initial state contains no placed pieces, starts at turn one, and uses the
+first player declared in `turn_order`.
+
 ## Run the tests
 
 ```bash
 python -m pytest -v
 ```
 
-The current suite contains ten parser, AST-transformation, and semantic-
-validation tests. Pull requests targeting `main` run the same command
+The current suite contains 32 parser, AST-transformation, semantic-validation,
+and engine tests. Pull requests targeting `main` run the same command
 automatically.
 
 ## Documentation
@@ -181,7 +209,8 @@ automatically.
 - [`games/README.md`](games/games_README.md): user-facing DSL guide and examples;
 - [`grammar/README.md`](grammar/grammar_README.md): grammar structure and Lark notation;
 - [`parser/README.md`](parser/parser_README.md): parsing API, AST, and transformation;
-- [`tests/README.md`](tests/tests_README.md): test strategy and conventions.
+- [`engine/README.md`](engine/README.md): runtime model and game initialization;
+- [`tests/README.md`](tests/tests_README.md): test strategy and conventions;
 - [`validation/README.md`](validation/README.md): semantic rules and diagnostics.
 
 ## Development workflow

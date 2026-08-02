@@ -11,7 +11,9 @@ tests/
 ├── test_parser.py
 ├── test_ast_transformer.py
 ├── test_semantic_validator.py
-└── README.md
+├── test_game_initializer.py
+├── test_game_state.py
+└── tests_README.md
 ```
 
 ## Run the tests
@@ -44,7 +46,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains ten tests.
+The suite currently contains 32 tests.
 
 ### Parser tests
 
@@ -104,6 +106,26 @@ The suite currently contains ten tests.
 - verifies that `SemanticValidationError` exposes every collected issue;
 - checks the formatted error message.
 
+### Game-initializer tests
+
+The four tests in `test_game_initializer.py` verify that:
+
+- initialization creates an empty, ongoing state;
+- the first player in `turn_order` becomes the current player;
+- semantically invalid definitions are rejected;
+- `GameInitializationError` includes validation details.
+
+### Game-state tests
+
+The 18 cases in `test_game_state.py` verify:
+
+- zero-based coordinates and rejection of negative indices;
+- immutable runtime state and placed-piece representation;
+- positive board dimensions and turn numbers starting at one;
+- the winner and game status relationship;
+- board-boundary checks for placed pieces;
+- rejection of overlapping pieces.
+
 ## Test levels
 
 ### Unit tests
@@ -116,13 +138,20 @@ transformation rule or semantic constraint.
 Integration tests verify collaboration across boundaries:
 
 ```text
-.game file -> parser -> parse tree -> AST transformer -> GameDefinition -> SemanticValidator
+.game file
+    -> parser
+    -> parse tree
+    -> AST transformer
+    -> GameDefinition
+    -> SemanticValidator
+    -> GameInitializer
+    -> GameState
 ```
 
 ### Negative tests
 
-Negative tests confirm that invalid syntax, definitions, and future game actions
-are rejected with the correct error category.
+Negative tests confirm that invalid syntax, definitions, coordinates, and
+runtime states are rejected with the correct error category.
 
 ### End-to-end tests
 
@@ -169,11 +198,15 @@ can require the `pytest` status check before merge.
 
 ## Coverage roadmap
 
-1. parser, AST, and semantic-validation tests for Tic-Tac-Toe;
-2. parser, AST, and semantic-validation tests for Checkers;
-3. parser, AST, and semantic-validation tests for Connect Four;
-4. engine unit tests;
-5. complete game-scenario tests.
+Completed coverage includes parser, AST, semantic-validation, runtime-state,
+and game-initialization tests for Tic-Tac-Toe.
+
+Future coverage will add:
+
+1. parser, AST, and semantic-validation tests for Checkers;
+2. parser, AST, and semantic-validation tests for Connect Four;
+3. move-execution and turn-rotation tests;
+4. complete game-scenario tests.
 
 Every new DSL construct should include:
 

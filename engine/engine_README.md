@@ -3,15 +3,15 @@
 The `engine` package contains the runtime model used to create and represent a
 running Piecewise game after parsing and semantic validation.
 
-The current increment provides game-state modelling, initialization, and basic
-placement-move execution. End-condition evaluation will be introduced in a
-later increment.
+The current increment provides game-state modelling, initialization, validated
+placement-move execution, and automatic evaluation of win and draw conditions.
 
 ## Files
 
 ```text
 engine/
 ├── __init__.py             # Public engine API
+├── condition_evaluator.py  # Win and draw condition evaluation
 ├── errors.py               # Engine-specific exceptions
 ├── game_initializer.py     # Validated AST to initial runtime state
 ├── game_state.py           # Immutable runtime domain model
@@ -107,12 +107,44 @@ The executor validates that:
 - the piece type exists and belongs to the requesting player;
 - the destination cell is empty.
 
-A successful move appends a `PlacedPiece`, advances the turn number, and rotates
-to the next player declared in `turn_order`. The previous state is unchanged.
-Rejected requests raise `InvalidMoveError`.
+A successful move appends a `PlacedPiece`, advances the turn number, rotates to
+the next player declared in `turn_order`, and evaluates the declared end
+conditions. The previous state is unchanged. Rejected requests raise
+`InvalidMoveError`.
 
 This increment supports the DSL's current `ANY_EMPTY_CELL` placement model. It
-does not yet evaluate win or draw conditions.
+does not yet implement movement, capture, promotion, gravity, or initial piece
+setup.
+
+## Evaluate end conditions
+
+`ConditionEvaluator` evaluates the state produced by a placement move using the
+conditions declared in the game's immutable AST:
+
+```python
+from engine import ConditionEvaluator
+
+evaluated_state = ConditionEvaluator(game).evaluate(
+    next_state,
+    move,
+)
+```
+
+For normal gameplay, callers do not need to invoke the evaluator directly:
+`MoveExecutor.apply()` performs this step automatically after placement.
+
+The evaluator supports:
+
+- consecutive same-owner alignments in a row;
+- consecutive same-owner alignments in a column;
+- consecutive same-owner alignments across both diagonal directions;
+- full-board draws based only on the board's playable cells.
+
+Alignment checks start from the last placed piece, because a new win can only
+be created by the latest move. When a move both creates a winning alignment and
+fills the board, victory takes precedence over the draw condition. A win sets
+`GameStatus.WON` and the winner; a draw sets `GameStatus.DRAWN`. If no terminal
+condition matches, the existing ongoing state is returned unchanged.
 
 ## Architectural boundary
 
@@ -121,17 +153,17 @@ relationships and constraints. The engine accepts the resulting definition and
 creates runtime state.
 
 The engine does not depend on Lark or concrete syntax. It consumes the typed
-`GameDefinition`, creates immutable runtime snapshots, and applies placement
-moves. Win and draw evaluation remains outside the current increment.
+`GameDefinition`, creates immutable runtime snapshots, applies placement moves,
+and evaluates the AST's typed end conditions.
 
 ## Testing
 
 Run the engine tests from the project root:
 
 ```bash
-python -m pytest tests/test_game_state.py tests/test_game_initializer.py tests/test_move.py tests/test_move_executor.py -v
+python -m pytest tests/test_game_state.py tests/test_game_initializer.py tests/test_move.py tests/test_condition_evaluator.py tests/test_move_executor.py -v
 ```
 
-These modules contain 37 engine-focused test cases. Run `python -m pytest -v`
-from the project root for the complete 47-test suite.
+These modules contain 49 engine-focused test cases. Run `python -m pytest -v`
+from the project root for the complete 59-test suite.
 

@@ -3,6 +3,7 @@ from parser.ast_nodes import GameDefinition, PlayableCells
 from engine.errors import InvalidMoveError
 from engine.game_state import GameState, GameStatus, PlacedPiece
 from engine.move import Move
+from engine.condition_evaluator import ConditionEvaluator
 
 
 class MoveExecutor:
@@ -26,12 +27,17 @@ class MoveExecutor:
             coordinate=move.coordinate,
         )
 
-        return GameState(
+        updated_state = GameState(
             rows=state.rows,
             columns=state.columns,
             pieces=(*state.pieces, placed_piece),
             current_player=self._next_player(move.player),
             turn_number=state.turn_number + 1,
+        )
+
+        return ConditionEvaluator(self._game).evaluate(
+            updated_state,
+            move,
         )
 
     def _validate_game_is_ongoing(self, state: GameState) -> None:

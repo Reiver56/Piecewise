@@ -3,6 +3,7 @@ from engine.errors import (
     GameInitializationError,
     InvalidMoveError,
 )
+
 from engine.game_initializer import GameInitializer
 from engine.game_state import (
     Coordinate,
@@ -10,8 +11,11 @@ from engine.game_state import (
     GameStatus,
     PlacedPiece,
 )
+
 from engine.move import Move
 from engine.move_executor import MoveExecutor
+
+from engine.condition_evaluator import ConditionEvaluator
 
 __all__ = [
     "Coordinate",
@@ -24,4 +28,5 @@ __all__ = [
     "Move",
     "MoveExecutor",
     "PlacedPiece",
+    "ConditionEvaluator",
 ]

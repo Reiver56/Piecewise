@@ -11,6 +11,7 @@ tests/
 ├── test_parser.py
 ├── test_ast_transformer.py
 ├── test_semantic_validator.py
+├── test_condition_evaluator.py
 ├── test_game_initializer.py
 ├── test_game_state.py
 ├── test_move.py
@@ -48,7 +49,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 47 tests.
+The suite currently contains 59 tests.
 
 ### Parser tests
 
@@ -138,7 +139,7 @@ The four cases in `test_move.py` verify:
 
 ### Move-executor tests
 
-The 11 cases in `test_move_executor.py` verify:
+The 13 cases in `test_move_executor.py` verify:
 
 - piece placement, turn-number advancement, and player rotation;
 - creation of a new state without modifying the previous snapshot;
@@ -146,7 +147,21 @@ The 11 cases in `test_move_executor.py` verify:
 - enforcement of the current player's turn;
 - board-boundary and playable-cell checks;
 - rejection of unknown or unowned piece types;
-- rejection of occupied destination cells.
+- rejection of occupied destination cells;
+- automatic transition to a won state after a winning placement;
+- automatic transition to a drawn state after a board-filling placement.
+
+### Condition-evaluator tests
+
+The 10 cases in `test_condition_evaluator.py` verify:
+
+- row and column victories;
+- victories across both diagonal directions;
+- rejection of mixed-owner and non-consecutive alignments;
+- full-board draw detection;
+- victory precedence when the last move also fills the board;
+- board-full evaluation using only playable cells;
+- continued play when no board-full draw condition is declared.
 
 ## Test levels
 
@@ -170,6 +185,8 @@ Integration tests verify collaboration across boundaries:
     -> GameState
     -> MoveExecutor
     -> Next GameState
+    -> ConditionEvaluator
+    -> Ongoing or terminal GameState
 ```
 
 ### Negative tests
@@ -179,8 +196,9 @@ runtime states are rejected with the correct error category.
 
 ### End-to-end tests
 
-Future scenarios will execute complete deterministic games from setup to a win
-or draw.
+The move-executor suite verifies the integrated transition from a valid
+placement to a won or drawn runtime state. Future scenarios will execute
+complete deterministic games from setup to a terminal result.
 
 ## Fixtures
 
@@ -223,14 +241,14 @@ can require the `pytest` status check before merge.
 ## Coverage roadmap
 
 Completed coverage includes parser, AST, semantic-validation, runtime-state,
-game-initialization, placement-move, and turn-rotation tests for Tic-Tac-Toe.
+game-initialization, placement-move, turn-rotation, and end-condition tests for
+Tic-Tac-Toe.
 
 Future coverage will add:
 
 1. parser, AST, and semantic-validation tests for Checkers;
 2. parser, AST, and semantic-validation tests for Connect Four;
-3. end-condition evaluation tests;
-4. complete game-scenario tests.
+3. complete game-scenario tests.
 
 Every new DSL construct should include:
 

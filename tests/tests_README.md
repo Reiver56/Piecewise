@@ -13,6 +13,7 @@ tests/
 ├── test_semantic_validator.py
 ├── test_condition_evaluator.py
 ├── test_game_initializer.py
+├── test_game_session.py
 ├── test_game_state.py
 ├── test_move.py
 ├── test_move_executor.py
@@ -49,7 +50,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 59 tests.
+The suite currently contains 66 tests.
 
 ### Parser tests
 
@@ -129,6 +130,18 @@ The 18 cases in `test_game_state.py` verify:
 - board-boundary checks for placed pieces;
 - rejection of overlapping pieces.
 
+### Game-session tests
+
+The seven cases in `test_game_session.py` verify:
+
+- automatic initialization of the current game state;
+- state updates and return values after successful moves;
+- preservation of previous immutable snapshots;
+- sequential application of multiple moves;
+- transition to a winning state during a complete session;
+- preservation of the current state after an invalid move;
+- rejection of further moves after the game has ended.
+
 ### Move tests
 
 The four cases in `test_move.py` verify:
@@ -187,6 +200,7 @@ Integration tests verify collaboration across boundaries:
     -> Next GameState
     -> ConditionEvaluator
     -> Ongoing or terminal GameState
+    -> GameSession current state
 ```
 
 ### Negative tests
@@ -197,8 +211,9 @@ runtime states are rejected with the correct error category.
 ### End-to-end tests
 
 The move-executor suite verifies the integrated transition from a valid
-placement to a won or drawn runtime state. Future scenarios will execute
-complete deterministic games from setup to a terminal result.
+placement to a won or drawn runtime state. The game-session suite exercises a
+complete deterministic game from initialization through sequential moves to a
+terminal result.
 
 ## Fixtures
 
@@ -242,13 +257,13 @@ can require the `pytest` status check before merge.
 
 Completed coverage includes parser, AST, semantic-validation, runtime-state,
 game-initialization, placement-move, turn-rotation, and end-condition tests for
-Tic-Tac-Toe.
+Tic-Tac-Toe, including complete game-session orchestration.
 
 Future coverage will add:
 
 1. parser, AST, and semantic-validation tests for Checkers;
 2. parser, AST, and semantic-validation tests for Connect Four;
-3. complete game-scenario tests.
+3. complete game-scenario tests for additional supported games.
 
 Every new DSL construct should include:
 

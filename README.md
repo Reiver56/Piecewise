@@ -40,6 +40,7 @@ The current increment supports:
 - validated placement execution with turn rotation;
 - automatic evaluation of row, column, and diagonal win conditions;
 - full-board draw detection with victory taking precedence;
+- complete game-session management with sequential state updates;
 - parser, AST, semantic-validation, and engine tests with pytest;
 - automatic test execution on pull requests through GitHub Actions.
 
@@ -66,6 +67,7 @@ increments. The current grammar parses Tic-Tac-Toe only.
     -> Next GameState
     -> Win/draw evaluation
     -> Ongoing or terminal GameState
+    -> GameSession current state
 ```
 
 Parsing, transformation, validation, and execution are intentionally separated.
@@ -84,6 +86,7 @@ Piecewise/
 │   ├── condition_evaluator.py   # Win and draw condition evaluation
 │   ├── errors.py                # Engine-specific exceptions
 │   ├── game_initializer.py      # Validated AST to initial runtime state
+│   ├── game_session.py          # Complete game-session orchestration
 │   ├── game_state.py            # Immutable runtime domain model
 │   ├── move.py                  # Immutable placement-move request
 │   └── move_executor.py         # Placement validation and execution
@@ -107,6 +110,7 @@ Piecewise/
 │   ├── test_semantic_validator.py
 │   ├── test_condition_evaluator.py
 │   ├── test_game_initializer.py
+│   ├── test_game_session.py
 │   ├── test_game_state.py
 │   ├── test_move.py
 │   └── test_move_executor.py
@@ -242,13 +246,43 @@ alignment takes precedence when the final move also fills the board. The
 returned state is marked `GameStatus.WON` with its winner or
 `GameStatus.DRAWN`; further moves are then rejected.
 
+## Manage a complete game session
+
+`GameSession` is the high-level engine API for running a game from its initial
+state through a sequence of moves:
+
+```python
+from engine import Coordinate, GameSession, Move
+from parser.game_parser import GameParser
+
+game = GameParser().parse_game_file("games/tictactoe.game")
+session = GameSession(game)
+
+session.play(
+    Move(
+        player="X",
+        piece_name="Mark",
+        coordinate=Coordinate(row=0, column=0),
+    )
+)
+
+print(session.state.current_player)  # O
+print(session.state.turn_number)     # 2
+```
+
+The session initializes the game automatically, exposes its current immutable
+state through `state`, and replaces that snapshot after every successful
+`play()` call. If a move is invalid, the exception is propagated and the
+session keeps its previous state. Terminal-state protection remains delegated
+to `MoveExecutor`, so moves after a win or draw are rejected consistently.
+
 ## Run the tests
 
 ```bash
 python -m pytest -v
 ```
 
-The current suite contains 59 parser, AST-transformation, semantic-validation,
+The current suite contains 66 parser, AST-transformation, semantic-validation,
 and engine tests. Pull requests targeting `main` run the same command
 automatically.
 

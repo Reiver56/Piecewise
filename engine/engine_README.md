@@ -4,7 +4,8 @@ The `engine` package contains the runtime model used to create and represent a
 running Piecewise game after parsing and semantic validation.
 
 The current increment provides game-state modelling, initialization, validated
-placement-move execution, and automatic evaluation of win and draw conditions.
+placement-move execution, automatic evaluation of win and draw conditions, and
+complete game-session management.
 
 ## Files
 
@@ -14,6 +15,7 @@ engine/
 ├── condition_evaluator.py  # Win and draw condition evaluation
 ├── errors.py               # Engine-specific exceptions
 ├── game_initializer.py     # Validated AST to initial runtime state
+├── game_session.py         # Complete game-session orchestration
 ├── game_state.py           # Immutable runtime domain model
 ├── move.py                 # Immutable placement-move request
 ├── move_executor.py        # Placement validation and execution
@@ -146,6 +148,40 @@ fills the board, victory takes precedence over the draw condition. A win sets
 `GameStatus.WON` and the winner; a draw sets `GameStatus.DRAWN`. If no terminal
 condition matches, the existing ongoing state is returned unchanged.
 
+## Manage a game session
+
+`GameSession` connects initialization and move execution behind a small
+high-level API:
+
+```python
+from engine import Coordinate, GameSession, Move
+from parser.game_parser import GameParser
+
+game = GameParser().parse_game_file("games/tictactoe.game")
+session = GameSession(game)
+
+result = session.play(
+    Move(
+        player="X",
+        piece_name="Mark",
+        coordinate=Coordinate(row=0, column=0),
+    )
+)
+
+assert result is session.state
+```
+
+Construction validates the definition and creates the initial state through
+`GameInitializer`. The `state` property exposes the current immutable snapshot,
+while `play()` passes a move to `MoveExecutor`, stores the returned snapshot,
+and returns it to the caller.
+
+The session itself is intentionally stateful, but the snapshots it manages are
+not. References to previous `GameState` instances therefore remain unchanged
+as the game progresses. If move execution raises `InvalidMoveError`, assignment
+never occurs and the session retains its previous state. The executor also
+prevents additional moves once the session reaches a won or drawn state.
+
 ## Architectural boundary
 
 The parser constructs the immutable AST. The semantic validator checks domain
@@ -154,16 +190,17 @@ creates runtime state.
 
 The engine does not depend on Lark or concrete syntax. It consumes the typed
 `GameDefinition`, creates immutable runtime snapshots, applies placement moves,
-and evaluates the AST's typed end conditions.
+evaluates the AST's typed end conditions, and manages the current snapshot for
+a complete game session.
 
 ## Testing
 
 Run the engine tests from the project root:
 
 ```bash
-python -m pytest tests/test_game_state.py tests/test_game_initializer.py tests/test_move.py tests/test_condition_evaluator.py tests/test_move_executor.py -v
+python -m pytest tests/test_game_state.py tests/test_game_initializer.py tests/test_game_session.py tests/test_move.py tests/test_condition_evaluator.py tests/test_move_executor.py -v
 ```
 
-These modules contain 49 engine-focused test cases. Run `python -m pytest -v`
-from the project root for the complete 59-test suite.
+These modules contain 56 engine-focused test cases. Run `python -m pytest -v`
+from the project root for the complete 66-test suite.
 

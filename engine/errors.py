@@ -3,3 +3,6 @@ class GameEngineError(Exception):
 
 class GameInitializationError(GameEngineError):
     """Raised when the initial runtime state cannot be created"""
+
+class InvalidMoveError(GameEngineError):
+    """Raised when a move cannot be applied to the current game state."""

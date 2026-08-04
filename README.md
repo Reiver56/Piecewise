@@ -36,12 +36,14 @@ The current increment supports:
 - semantic validation with cumulative, structured diagnostics;
 - an immutable runtime game-state model with enforced invariants;
 - initialization of runtime state from a semantically valid definition;
+- immutable placement-move requests;
+- validated placement execution with turn rotation;
 - parser, AST, semantic-validation, and engine tests with pytest;
 - automatic test execution on pull requests through GitHub Actions.
 
 The following features are designed but not implemented yet:
 
-- move execution and end-condition evaluation;
+- end-condition evaluation;
 - Checkers movement, capture, promotion, and setup;
 - Connect Four gravity and column placement;
 - command-line or graphical interaction.
@@ -59,7 +61,8 @@ increments. The current grammar parses Tic-Tac-Toe only.
     -> GameDefinition
     -> Semantic validator
     -> Initial GameState
-    -> Move execution       (future)
+    -> Move validation
+    -> Next GameState
 ```
 
 Parsing, transformation, validation, and execution are intentionally separated.
@@ -77,7 +80,9 @@ Piecewise/
 │   ├── README.md                # Runtime-model and initialization guide
 │   ├── errors.py                # Engine-specific exceptions
 │   ├── game_initializer.py      # Validated AST to initial runtime state
-│   └── game_state.py            # Immutable runtime domain model
+│   ├── game_state.py            # Immutable runtime domain model
+│   ├── move.py                  # Immutable placement-move request
+│   └── move_executor.py         # Placement validation and execution
 ├── games/
 │   ├── README.md                # Guide to Piecewise game definitions
 │   ├── tictactoe.game           # Currently supported example
@@ -97,7 +102,9 @@ Piecewise/
 │   ├── test_ast_transformer.py
 │   ├── test_semantic_validator.py
 │   ├── test_game_initializer.py
-│   └── test_game_state.py
+│   ├── test_game_state.py
+│   ├── test_move.py
+│   └── test_move_executor.py
 ├── validation/
 │   ├── README.md                # Semantic-validation guide
 │   ├── errors.py                # Structured validation diagnostics
@@ -194,13 +201,41 @@ print(state.turn_number)
 The initial state contains no placed pieces, starts at turn one, and uses the
 first player declared in `turn_order`.
 
+## Execute a placement move
+
+`MoveExecutor` validates a placement request and returns a new immutable
+`GameState` without modifying the previous snapshot:
+
+```python
+from engine import Coordinate, GameInitializer, Move, MoveExecutor
+from parser.game_parser import GameParser
+
+game = GameParser().parse_game_file("games/tictactoe.game")
+state = GameInitializer().initialize(game)
+
+move = Move(
+    player="X",
+    piece_name="Mark",
+    coordinate=Coordinate(row=1, column=1),
+)
+next_state = MoveExecutor(game).apply(state, move)
+
+print(next_state.current_player)  # O
+print(next_state.turn_number)     # 2
+```
+
+The executor rejects moves after the game has ended, moves by the wrong player,
+coordinates outside the board, non-playable or occupied cells, unknown piece
+types, and pieces not owned by the requesting player. Invalid requests raise
+`InvalidMoveError`.
+
 ## Run the tests
 
 ```bash
 python -m pytest -v
 ```
 
-The current suite contains 32 parser, AST-transformation, semantic-validation,
+The current suite contains 47 parser, AST-transformation, semantic-validation,
 and engine tests. Pull requests targeting `main` run the same command
 automatically.
 
@@ -209,7 +244,7 @@ automatically.
 - [`games/README.md`](games/games_README.md): user-facing DSL guide and examples;
 - [`grammar/README.md`](grammar/grammar_README.md): grammar structure and Lark notation;
 - [`parser/README.md`](parser/parser_README.md): parsing API, AST, and transformation;
-- [`engine/README.md`](engine/README.md): runtime model and game initialization;
+- [`engine/README.md`](engine/README.md): runtime model, initialization, and move execution;
 - [`tests/README.md`](tests/tests_README.md): test strategy and conventions;
 - [`validation/README.md`](validation/README.md): semantic rules and diagnostics.
 

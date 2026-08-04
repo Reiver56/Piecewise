@@ -13,6 +13,8 @@ tests/
 ├── test_semantic_validator.py
 ├── test_game_initializer.py
 ├── test_game_state.py
+├── test_move.py
+├── test_move_executor.py
 └── tests_README.md
 ```
 
@@ -46,7 +48,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 32 tests.
+The suite currently contains 47 tests.
 
 ### Parser tests
 
@@ -126,6 +128,26 @@ The 18 cases in `test_game_state.py` verify:
 - board-boundary checks for placed pieces;
 - rejection of overlapping pieces.
 
+### Move tests
+
+The four cases in `test_move.py` verify:
+
+- storage of the player, piece name, and destination coordinate;
+- rejection of an empty player or piece name;
+- immutability of placement requests.
+
+### Move-executor tests
+
+The 11 cases in `test_move_executor.py` verify:
+
+- piece placement, turn-number advancement, and player rotation;
+- creation of a new state without modifying the previous snapshot;
+- rejection of moves after a game has ended;
+- enforcement of the current player's turn;
+- board-boundary and playable-cell checks;
+- rejection of unknown or unowned piece types;
+- rejection of occupied destination cells.
+
 ## Test levels
 
 ### Unit tests
@@ -146,6 +168,8 @@ Integration tests verify collaboration across boundaries:
     -> SemanticValidator
     -> GameInitializer
     -> GameState
+    -> MoveExecutor
+    -> Next GameState
 ```
 
 ### Negative tests
@@ -199,13 +223,13 @@ can require the `pytest` status check before merge.
 ## Coverage roadmap
 
 Completed coverage includes parser, AST, semantic-validation, runtime-state,
-and game-initialization tests for Tic-Tac-Toe.
+game-initialization, placement-move, and turn-rotation tests for Tic-Tac-Toe.
 
 Future coverage will add:
 
 1. parser, AST, and semantic-validation tests for Checkers;
 2. parser, AST, and semantic-validation tests for Connect Four;
-3. move-execution and turn-rotation tests;
+3. end-condition evaluation tests;
 4. complete game-scenario tests.
 
 Every new DSL construct should include:

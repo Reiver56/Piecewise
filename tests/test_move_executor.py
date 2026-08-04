@@ -217,3 +217,110 @@ def test_apply_rejects_non_playable_cell() -> None:
 
     with pytest.raises(InvalidMoveError, match="not a playable dark cell"):
         MoveExecutor(dark_cells_game).apply(state, move)
+
+def test_apply_marks_state_as_won_after_winning_move() -> None:
+    game = load_tictactoe()
+    state = GameState(
+        rows=3,
+        columns=3,
+        pieces=(
+            PlacedPiece(
+                piece_name="Mark",
+                owner="X",
+                coordinate=Coordinate(row=0, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Mark",
+                owner="O",
+                coordinate=Coordinate(row=1, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Mark",
+                owner="X",
+                coordinate=Coordinate(row=0, column=1),
+            ),
+            PlacedPiece(
+                piece_name="Mark",
+                owner="O",
+                coordinate=Coordinate(row=1, column=1),
+            ),
+        ),
+        current_player="X",
+        turn_number=5,
+    )
+    move = Move(
+        player="X",
+        piece_name="Mark",
+        coordinate=Coordinate(row=0, column=2),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert result.status is GameStatus.WON
+    assert result.winner == "X"
+    assert result.turn_number == 6
+    assert result.current_player == "O"
+
+
+def test_apply_marks_state_as_drawn_after_board_filling_move() -> None:
+    game = load_tictactoe()
+    state = GameState(
+        rows=3,
+        columns=3,
+        pieces=(
+            PlacedPiece(
+                piece_name="Mark",
+                owner="X",
+                coordinate=Coordinate(row=0, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Mark",
+                owner="O",
+                coordinate=Coordinate(row=0, column=1),
+            ),
+            PlacedPiece(
+                piece_name="Mark",
+                owner="X",
+                coordinate=Coordinate(row=0, column=2),
+            ),
+            PlacedPiece(
+                piece_name="Mark",
+                owner="X",
+                coordinate=Coordinate(row=1, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Mark",
+                owner="O",
+                coordinate=Coordinate(row=1, column=1),
+            ),
+            PlacedPiece(
+                piece_name="Mark",
+                owner="O",
+                coordinate=Coordinate(row=1, column=2),
+            ),
+            PlacedPiece(
+                piece_name="Mark",
+                owner="O",
+                coordinate=Coordinate(row=2, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Mark",
+                owner="X",
+                coordinate=Coordinate(row=2, column=1),
+            ),
+        ),
+        current_player="X",
+        turn_number=9,
+    )
+    move = Move(
+        player="X",
+        piece_name="Mark",
+        coordinate=Coordinate(row=2, column=2),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert result.status is GameStatus.DRAWN
+    assert result.winner is None
+    assert result.turn_number == 10
+    assert result.current_player == "O"

@@ -38,12 +38,13 @@ The current increment supports:
 - initialization of runtime state from a semantically valid definition;
 - immutable placement-move requests;
 - validated placement execution with turn rotation;
+- automatic evaluation of row, column, and diagonal win conditions;
+- full-board draw detection with victory taking precedence;
 - parser, AST, semantic-validation, and engine tests with pytest;
 - automatic test execution on pull requests through GitHub Actions.
 
 The following features are designed but not implemented yet:
 
-- end-condition evaluation;
 - Checkers movement, capture, promotion, and setup;
 - Connect Four gravity and column placement;
 - command-line or graphical interaction.
@@ -63,6 +64,8 @@ increments. The current grammar parses Tic-Tac-Toe only.
     -> Initial GameState
     -> Move validation
     -> Next GameState
+    -> Win/draw evaluation
+    -> Ongoing or terminal GameState
 ```
 
 Parsing, transformation, validation, and execution are intentionally separated.
@@ -78,6 +81,7 @@ Piecewise/
 │       └── tests.yml            # Pull-request test workflow
 ├── engine/
 │   ├── README.md                # Runtime-model and initialization guide
+│   ├── condition_evaluator.py   # Win and draw condition evaluation
 │   ├── errors.py                # Engine-specific exceptions
 │   ├── game_initializer.py      # Validated AST to initial runtime state
 │   ├── game_state.py            # Immutable runtime domain model
@@ -101,6 +105,7 @@ Piecewise/
 │   ├── test_parser.py
 │   ├── test_ast_transformer.py
 │   ├── test_semantic_validator.py
+│   ├── test_condition_evaluator.py
 │   ├── test_game_initializer.py
 │   ├── test_game_state.py
 │   ├── test_move.py
@@ -222,6 +227,7 @@ next_state = MoveExecutor(game).apply(state, move)
 
 print(next_state.current_player)  # O
 print(next_state.turn_number)     # 2
+print(next_state.status)          # GameStatus.ONGOING
 ```
 
 The executor rejects moves after the game has ended, moves by the wrong player,
@@ -229,13 +235,20 @@ coordinates outside the board, non-playable or occupied cells, unknown piece
 types, and pieces not owned by the requesting player. Invalid requests raise
 `InvalidMoveError`.
 
+After placing a piece, the executor evaluates the declared end conditions. It
+detects consecutive same-owner alignments across rows, columns, and both
+diagonals, and detects a draw when every playable cell is occupied. A winning
+alignment takes precedence when the final move also fills the board. The
+returned state is marked `GameStatus.WON` with its winner or
+`GameStatus.DRAWN`; further moves are then rejected.
+
 ## Run the tests
 
 ```bash
 python -m pytest -v
 ```
 
-The current suite contains 47 parser, AST-transformation, semantic-validation,
+The current suite contains 59 parser, AST-transformation, semantic-validation,
 and engine tests. Pull requests targeting `main` run the same command
 automatically.
 
@@ -263,4 +276,3 @@ increment should:
 The initial scope covers deterministic, turn-based games on rectangular grids.
 Card games, hidden information, random events, and real-time mechanics are
 outside the current project scope.
-

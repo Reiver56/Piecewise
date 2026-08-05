@@ -16,6 +16,7 @@ from engine.move import Move
 from engine.move_executor import MoveExecutor
 
 from engine.condition_evaluator import ConditionEvaluator
+from engine.game_session import GameSession
 
 __all__ = [
     "Coordinate",
@@ -29,4 +30,5 @@ __all__ = [
     "MoveExecutor",
     "PlacedPiece",
     "ConditionEvaluator",
+    "GameSession",
 ]

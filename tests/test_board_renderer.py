@@ -139,3 +139,66 @@ def test_render_marks_non_playable_light_board_cells() -> None:
         "1   # | . | #\n"
         "2   . | # | ."
     )
+
+def test_render_supports_single_cell_board() -> None:
+    game = load_tictactoe()
+    single_cell_game = replace(
+        game,
+        board=replace(
+            game.board,
+            rows=1,
+            columns=1,
+        ),
+    )
+    renderer = BoardRenderer(single_cell_game)
+    state = create_state(
+        placed_piece("X", 0, 0),
+        rows=1,
+        columns=1,
+    )
+
+    result = renderer.render(state)
+
+    assert result == (
+        "    0\n"
+        "0   X"
+    )
+
+
+def test_piece_is_rendered_before_cell_playability_marker() -> None:
+    game = load_tictactoe()
+    dark_cells_game = replace(
+        game,
+        board=replace(
+            game.board,
+            playable_cells=PlayableCells.DARK,
+        ),
+    )
+    renderer = BoardRenderer(dark_cells_game)
+    state = create_state(
+        placed_piece("X", 0, 0),
+    )
+
+    result = renderer.render(state)
+
+    assert result == (
+        "    0   1   2\n"
+        "0   X | . | #\n"
+        "1   . | # | .\n"
+        "2   # | . | #"
+    )
+
+
+def test_render_does_not_modify_game_state() -> None:
+    renderer = BoardRenderer(load_tictactoe())
+    state = create_state(
+        placed_piece("X", 0, 0),
+        placed_piece("O", 1, 1),
+    )
+    pieces_before_render = state.pieces
+
+    renderer.render(state)
+
+    assert state.pieces is pieces_before_render
+    assert state.turn_number == 3
+    assert state.current_player == "X"

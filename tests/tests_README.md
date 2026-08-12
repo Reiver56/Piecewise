@@ -10,6 +10,8 @@ tests/
 ├── __init__.py
 ├── test_parser.py
 ├── test_ast_transformer.py
+├── test_board_renderer.py
+├── test_game_cli.py
 ├── test_semantic_validator.py
 ├── test_condition_evaluator.py
 ├── test_game_initializer.py
@@ -50,7 +52,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 66 tests.
+The suite currently contains 81 tests.
 
 ### Parser tests
 
@@ -176,6 +178,26 @@ The 10 cases in `test_condition_evaluator.py` verify:
 - board-full evaluation using only playable cells;
 - continued play when no board-full draw condition is declared.
 
+### Board-renderer tests
+
+The eight cases in `test_board_renderer.py` verify:
+
+- rendering of an empty board and placed pieces;
+- support for different dimensions and a single-cell board;
+- `#` markers for non-playable light or dark cells;
+- piece precedence over a non-playable-cell marker;
+- preservation of the immutable state during rendering.
+
+### Interactive-CLI tests
+
+The seven cases in `test_game_cli.py` verify:
+
+- normal and case-insensitive `quit` handling;
+- recovery from malformed and non-integer coordinates;
+- recovery from a move rejected by the engine;
+- a complete winning game with its final board and message;
+- a complete drawn game with its final board and message.
+
 ## Test levels
 
 ### Unit tests
@@ -201,6 +223,8 @@ Integration tests verify collaboration across boundaries:
     -> ConditionEvaluator
     -> Ongoing or terminal GameState
     -> GameSession current state
+    -> BoardRenderer output
+    -> GameCLI interaction
 ```
 
 ### Negative tests
@@ -213,7 +237,8 @@ runtime states are rejected with the correct error category.
 The move-executor suite verifies the integrated transition from a valid
 placement to a won or drawn runtime state. The game-session suite exercises a
 complete deterministic game from initialization through sequential moves to a
-terminal result.
+terminal result. The CLI suite covers the full path from simulated user input
+to moves, state transitions, final board rendering, and the result message.
 
 ## Fixtures
 
@@ -256,8 +281,8 @@ can require the `pytest` status check before merge.
 ## Coverage roadmap
 
 Completed coverage includes parser, AST, semantic-validation, runtime-state,
-game-initialization, placement-move, turn-rotation, and end-condition tests for
-Tic-Tac-Toe, including complete game-session orchestration.
+game-initialization, placement-move, turn-rotation, end-condition, rendering,
+and interactive-session tests for Tic-Tac-Toe.
 
 Future coverage will add:
 

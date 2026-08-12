@@ -1,157 +1,41 @@
 # Piecewise Game Engine
 
-The `engine` package contains the runtime model used to create and represent a
-running Piecewise game after parsing and semantic validation.
-
-The current increment provides game-state modelling, initialization, validated
-placement-move execution, automatic evaluation of win and draw conditions, and
-complete game-session management.
+The `engine` package turns a validated `GameDefinition` into immutable runtime
+snapshots, applies placement moves, evaluates terminal conditions, manages a
+complete session, and renders the board as plain text.
 
 ## Files
 
 ```text
 engine/
 ├── __init__.py             # Public engine API
-├── condition_evaluator.py  # Win and draw condition evaluation
+├── board_renderer.py       # Plain-text board rendering
+├── condition_evaluator.py  # Win and draw evaluation
 ├── errors.py               # Engine-specific exceptions
-├── game_initializer.py     # Validated AST to initial runtime state
-├── game_session.py         # Complete game-session orchestration
+├── game_initializer.py     # GameDefinition to initial GameState
+├── game_session.py         # Current-session orchestration
 ├── game_state.py           # Immutable runtime domain model
-├── move.py                 # Immutable placement-move request
-├── move_executor.py        # Placement validation and execution
-└── README.md
+├── move.py                 # Immutable placement request
+└── move_executor.py        # Move validation and execution
 ```
 
 ## Runtime model
 
 `game_state.py` defines:
 
-- `Coordinate`: a zero-based row and column on the runtime board;
+- `Coordinate`: a zero-based row and column;
 - `PlacedPiece`: a named piece, its owner, and its coordinate;
 - `GameStatus`: `ongoing`, `won`, or `drawn`;
 - `GameState`: an immutable snapshot of a running game.
 
-`GameState` enforces the following invariants:
+`GameState` enforces positive board dimensions and turn numbers, valid winner
+and status combinations, in-bounds pieces, and unique occupied coordinates.
 
-- board dimensions are greater than zero;
-- turn numbers start at one;
-- the current player is not empty;
-- only a won game has a winner, and every won game has one;
-- placed pieces remain inside the board;
-- no two pieces occupy the same coordinate.
+## Initialize and play
 
-## Initialize a game
-
-`GameInitializer` validates a `GameDefinition` before creating its initial
-runtime state:
-
-```python
-from engine import GameInitializer
-from parser.game_parser import GameParser
-
-game = GameParser().parse_game_file("games/tictactoe.game")
-state = GameInitializer().initialize(game)
-
-print(state.current_player)  # X
-print(state.turn_number)     # 1
-print(state.pieces)          # ()
-```
-
-The initial state uses the board dimensions from the definition, selects the
-first player in `turn_order`, starts at turn one, contains no placed pieces, and
-has status `GameStatus.ONGOING`.
-
-Validation is repeated at the engine boundary because `GameDefinition` does not
-record whether it has already been validated. Invalid definitions raise
-`GameInitializationError` with the collected semantic diagnostics.
-
-## Represent a move
-
-`Move` is an immutable placement request containing the requesting player, the
-piece type, and its destination coordinate:
-
-```python
-from engine import Coordinate, Move
-
-move = Move(
-    player="X",
-    piece_name="Mark",
-    coordinate=Coordinate(row=1, column=1),
-)
-```
-
-The player and piece name cannot be empty. State-dependent rules are enforced
-by `MoveExecutor`, not by the request object.
-
-## Execute a placement move
-
-`MoveExecutor` applies a valid move and returns a new `GameState`:
-
-```python
-from engine import GameInitializer, MoveExecutor
-from parser.game_parser import GameParser
-
-game = GameParser().parse_game_file("games/tictactoe.game")
-state = GameInitializer().initialize(game)
-next_state = MoveExecutor(game).apply(state, move)
-
-print(next_state.current_player)  # O
-print(next_state.turn_number)     # 2
-print(state.pieces)               # ()
-```
-
-The executor validates that:
-
-- the game is still ongoing;
-- the move belongs to the current player;
-- the coordinate is inside the runtime board;
-- the destination is allowed by the board's `playable_cells` setting;
-- the piece type exists and belongs to the requesting player;
-- the destination cell is empty.
-
-A successful move appends a `PlacedPiece`, advances the turn number, rotates to
-the next player declared in `turn_order`, and evaluates the declared end
-conditions. The previous state is unchanged. Rejected requests raise
-`InvalidMoveError`.
-
-This increment supports the DSL's current `ANY_EMPTY_CELL` placement model. It
-does not yet implement movement, capture, promotion, gravity, or initial piece
-setup.
-
-## Evaluate end conditions
-
-`ConditionEvaluator` evaluates the state produced by a placement move using the
-conditions declared in the game's immutable AST:
-
-```python
-from engine import ConditionEvaluator
-
-evaluated_state = ConditionEvaluator(game).evaluate(
-    next_state,
-    move,
-)
-```
-
-For normal gameplay, callers do not need to invoke the evaluator directly:
-`MoveExecutor.apply()` performs this step automatically after placement.
-
-The evaluator supports:
-
-- consecutive same-owner alignments in a row;
-- consecutive same-owner alignments in a column;
-- consecutive same-owner alignments across both diagonal directions;
-- full-board draws based only on the board's playable cells.
-
-Alignment checks start from the last placed piece, because a new win can only
-be created by the latest move. When a move both creates a winning alignment and
-fills the board, victory takes precedence over the draw condition. A win sets
-`GameStatus.WON` and the winner; a draw sets `GameStatus.DRAWN`. If no terminal
-condition matches, the existing ongoing state is returned unchanged.
-
-## Manage a game session
-
-`GameSession` connects initialization and move execution behind a small
-high-level API:
+`GameSession` is the high-level engine API. It validates and initializes the
+game, exposes the current snapshot through `state`, and replaces that snapshot
+after each successful move:
 
 ```python
 from engine import Coordinate, GameSession, Move
@@ -160,47 +44,78 @@ from parser.game_parser import GameParser
 game = GameParser().parse_game_file("games/tictactoe.game")
 session = GameSession(game)
 
-result = session.play(
+next_state = session.play(
     Move(
         player="X",
         piece_name="Mark",
-        coordinate=Coordinate(row=0, column=0),
+        coordinate=Coordinate(row=1, column=1),
     )
 )
-
-assert result is session.state
 ```
 
-Construction validates the definition and creates the initial state through
-`GameInitializer`. The `state` property exposes the current immutable snapshot,
-while `play()` passes a move to `MoveExecutor`, stores the returned snapshot,
-and returns it to the caller.
+Previous `GameState` instances remain unchanged. If a move raises
+`InvalidMoveError`, the session retains its current snapshot.
 
-The session itself is intentionally stateful, but the snapshots it manages are
-not. References to previous `GameState` instances therefore remain unchanged
-as the game progresses. If move execution raises `InvalidMoveError`, assignment
-never occurs and the session retains its previous state. The executor also
-prevents additional moves once the session reaches a won or drawn state.
+`MoveExecutor` rejects moves when the game has ended, when the wrong player is
+acting, when a coordinate is outside or unavailable, when a piece is unknown
+or unowned, or when a destination is occupied. A successful placement advances
+the turn and invokes `ConditionEvaluator`.
+
+## End conditions
+
+`ConditionEvaluator` supports consecutive same-owner alignments across rows,
+columns, and both diagonal directions, plus full-board draws. Only playable
+cells count toward a full board. A win takes precedence when the last move also
+fills the board.
+
+## Render a board
+
+`BoardRenderer` creates a terminal-friendly view of any rectangular
+`GameState`:
+
+```python
+from engine import BoardRenderer
+
+print(BoardRenderer(game).render(session.state))
+```
+
+```text
+    0   1   2
+0   . | . | .
+1   . | X | .
+2   . | . | .
+```
+
+The renderer uses:
+
+- `.` for an empty playable cell;
+- `#` for a non-playable cell;
+- the owner name for a placed piece.
+
+Placed pieces take visual precedence over cell markers. Rendering is read-only
+and does not modify the supplied state.
 
 ## Architectural boundary
 
-The parser constructs the immutable AST. The semantic validator checks domain
-relationships and constraints. The engine accepts the resulting definition and
-creates runtime state.
-
-The engine does not depend on Lark or concrete syntax. It consumes the typed
-`GameDefinition`, creates immutable runtime snapshots, applies placement moves,
-evaluates the AST's typed end conditions, and manages the current snapshot for
-a complete game session.
+The engine consumes the typed AST and has no dependency on Lark or concrete
+DSL syntax. Terminal input and output belong to the separate `cli` package.
+The current engine supports `ANY_EMPTY_CELL` placement; movement, capture,
+promotion, gravity, and initial piece setup remain future increments.
 
 ## Testing
 
-Run the engine tests from the project root:
+Run all engine and renderer tests from the project root:
 
 ```bash
-python -m pytest tests/test_game_state.py tests/test_game_initializer.py tests/test_game_session.py tests/test_move.py tests/test_condition_evaluator.py tests/test_move_executor.py -v
+python -m pytest \
+  tests/test_game_state.py \
+  tests/test_game_initializer.py \
+  tests/test_game_session.py \
+  tests/test_move.py \
+  tests/test_condition_evaluator.py \
+  tests/test_move_executor.py \
+  tests/test_board_renderer.py -v
 ```
 
-These modules contain 56 engine-focused test cases. Run `python -m pytest -v`
-from the project root for the complete 66-test suite.
-
+These modules contain 64 engine-focused tests. The complete project suite
+contains 81 tests.

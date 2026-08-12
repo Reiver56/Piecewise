@@ -41,14 +41,16 @@ The current increment supports:
 - automatic evaluation of row, column, and diagonal win conditions;
 - full-board draw detection with victory taking precedence;
 - complete game-session management with sequential state updates;
-- parser, AST, semantic-validation, and engine tests with pytest;
+- text rendering for rectangular boards and non-playable cells;
+- an interactive Tic-Tac-Toe CLI with recoverable input errors;
+- parser, AST, semantic-validation, engine, renderer, and CLI tests with pytest;
 - automatic test execution on pull requests through GitHub Actions.
 
 The following features are designed but not implemented yet:
 
 - Checkers movement, capture, promotion, and setup;
 - Connect Four gravity and column placement;
-- command-line or graphical interaction.
+- graphical interaction.
 
 The Checkers and Connect Four files are design examples for future DSL
 increments. The current grammar parses Tic-Tac-Toe only.
@@ -68,6 +70,8 @@ increments. The current grammar parses Tic-Tac-Toe only.
     -> Win/draw evaluation
     -> Ongoing or terminal GameState
     -> GameSession current state
+    -> BoardRenderer
+    -> Interactive GameCLI
 ```
 
 Parsing, transformation, validation, and execution are intentionally separated.
@@ -83,6 +87,7 @@ Piecewise/
 │       └── tests.yml            # Pull-request test workflow
 ├── engine/
 │   ├── README.md                # Runtime-model and initialization guide
+│   ├── board_renderer.py        # Plain-text board rendering
 │   ├── condition_evaluator.py   # Win and draw condition evaluation
 │   ├── errors.py                # Engine-specific exceptions
 │   ├── game_initializer.py      # Validated AST to initial runtime state
@@ -90,6 +95,11 @@ Piecewise/
 │   ├── game_state.py            # Immutable runtime domain model
 │   ├── move.py                  # Immutable placement-move request
 │   └── move_executor.py         # Placement validation and execution
+├── cli/
+│   ├── README.md                # Interactive CLI guide
+│   ├── __init__.py              # Public CLI API
+│   ├── __main__.py              # `python -m cli` entry point
+│   └── game_cli.py              # Testable interactive game loop
 ├── games/
 │   ├── README.md                # Guide to Piecewise game definitions
 │   ├── tictactoe.game           # Currently supported example
@@ -107,6 +117,8 @@ Piecewise/
 │   ├── tests_README.md          # Testing strategy
 │   ├── test_parser.py
 │   ├── test_ast_transformer.py
+│   ├── test_board_renderer.py
+│   ├── test_game_cli.py
 │   ├── test_semantic_validator.py
 │   ├── test_condition_evaluator.py
 │   ├── test_game_initializer.py
@@ -276,14 +288,57 @@ state through `state`, and replaces that snapshot after every successful
 session keeps its previous state. Terminal-state protection remains delegated
 to `MoveExecutor`, so moves after a win or draw are rejected consistently.
 
+## Render a board
+
+`BoardRenderer` converts a runtime snapshot into plain text without modifying
+the state:
+
+```python
+from engine import BoardRenderer, GameSession
+from parser.game_parser import GameParser
+
+game = GameParser().parse_game_file("games/tictactoe.game")
+session = GameSession(game)
+
+print(BoardRenderer(game).render(session.state))
+```
+
+```text
+    0   1   2
+0   . | . | .
+1   . | . | .
+2   . | . | .
+```
+
+The renderer uses `.` for an empty playable cell, `#` for a non-playable cell,
+and the piece owner as the placement symbol.
+
+## Play from the terminal
+
+Start the bundled Tic-Tac-Toe definition from the project root:
+
+```bash
+python -m cli
+```
+
+An explicit `.game` path can also be supplied:
+
+```bash
+python -m cli games/tictactoe.game
+```
+
+Enter moves as zero-based `row column` coordinates, such as `1 2`. Invalid
+input is reported without ending the session. Enter `quit` to abandon the
+current game.
+
 ## Run the tests
 
 ```bash
 python -m pytest -v
 ```
 
-The current suite contains 66 parser, AST-transformation, semantic-validation,
-and engine tests. Pull requests targeting `main` run the same command
+The current suite contains 81 parser, AST-transformation, semantic-validation,
+engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 
 ## Documentation
@@ -292,8 +347,9 @@ automatically.
 - [`grammar/README.md`](grammar/grammar_README.md): grammar structure and Lark notation;
 - [`parser/README.md`](parser/parser_README.md): parsing API, AST, and transformation;
 - [`engine/README.md`](engine/README.md): runtime model, initialization, and move execution;
+- [`cli/README.md`](cli/README.md): interactive play and command-line entry point;
 - [`tests/README.md`](tests/tests_README.md): test strategy and conventions;
-- [`validation/README.md`](validation/README.md): semantic rules and diagnostics.
+- [`validation/README.md`](validation/validation_README.md): semantic rules and diagnostics.
 
 ## Development workflow
 

@@ -31,4 +31,5 @@ __all__ = [
     "PlacedPiece",
     "ConditionEvaluator",
     "GameSession",
+    "BoardRenderer",
 ]

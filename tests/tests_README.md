@@ -52,7 +52,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 81 tests.
+The suite currently contains 84 tests.
 
 ### Parser tests
 
@@ -146,11 +146,14 @@ The seven cases in `test_game_session.py` verify:
 
 ### Move tests
 
-The four cases in `test_move.py` verify:
+The seven cases in `test_move.py` verify:
 
 - storage of the player, piece name, and destination coordinate;
 - rejection of an empty player or piece name;
-- immutability of placement requests.
+- immutability of move requests;
+- identification of placement requests without a source;
+- representation of relocation requests with source and destination;
+- rejection of equal source and destination coordinates.
 
 ### Move-executor tests
 
@@ -281,8 +284,8 @@ can require the `pytest` status check before merge.
 ## Coverage roadmap
 
 Completed coverage includes parser, AST, semantic-validation, runtime-state,
-game-initialization, placement-move, turn-rotation, end-condition, rendering,
-and interactive-session tests for Tic-Tac-Toe.
+game-initialization, placement and relocation request modelling, turn-rotation,
+end-condition, rendering, and interactive-session tests for Tic-Tac-Toe.
 
 Future coverage will add:
 

@@ -36,7 +36,7 @@ The current increment supports:
 - semantic validation with cumulative, structured diagnostics;
 - an immutable runtime game-state model with enforced invariants;
 - initialization of runtime state from a semantically valid definition;
-- immutable placement-move requests;
+- immutable placement and relocation requests;
 - validated placement execution with turn rotation;
 - automatic evaluation of row, column, and diagonal win conditions;
 - full-board draw detection with victory taking precedence;
@@ -93,7 +93,7 @@ Piecewise/
 │   ├── game_initializer.py      # Validated AST to initial runtime state
 │   ├── game_session.py          # Complete game-session orchestration
 │   ├── game_state.py            # Immutable runtime domain model
-│   ├── move.py                  # Immutable placement-move request
+│   ├── move.py                  # Immutable placement or relocation request
 │   └── move_executor.py         # Placement validation and execution
 ├── cli/
 │   ├── README.md                # Interactive CLI guide
@@ -222,6 +222,38 @@ print(state.turn_number)
 The initial state contains no placed pieces, starts at turn one, and uses the
 first player declared in `turn_order`.
 
+## Represent a move
+
+`Move` represents both placement and relocation requests. A placement specifies
+only its destination:
+
+```python
+placement = Move(
+    player="X",
+    piece_name="Mark",
+    coordinate=Coordinate(row=1, column=1),
+)
+```
+
+A relocation also specifies the source coordinate:
+
+```python
+relocation = Move(
+    player="White",
+    piece_name="Man",
+    source=Coordinate(row=5, column=0),
+    coordinate=Coordinate(row=4, column=1),
+)
+```
+
+`coordinate` remains the destination field for backward compatibility and is
+also available through `destination`. The `is_placement` and `is_relocation`
+properties identify the request type. Source and destination must differ.
+
+The runtime model can now express relocation requests, while rule-aware
+relocation execution will be introduced with the corresponding DSL and AST
+extensions.
+
 ## Execute a placement move
 
 `MoveExecutor` validates a placement request and returns a new immutable
@@ -337,7 +369,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 81 parser, AST-transformation, semantic-validation,
+The current suite contains 84 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

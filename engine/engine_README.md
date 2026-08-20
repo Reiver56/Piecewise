@@ -1,8 +1,9 @@
 # Piecewise Game Engine
 
 The `engine` package turns a validated `GameDefinition` into immutable runtime
-snapshots, applies placement moves, evaluates terminal conditions, manages a
-complete session, and renders the board as plain text.
+snapshots, represents placement and relocation requests, executes supported
+placement moves, evaluates terminal conditions, manages a complete session,
+and renders the board as plain text.
 
 ## Files
 
@@ -15,7 +16,7 @@ engine/
 ├── game_initializer.py     # GameDefinition to initial GameState
 ├── game_session.py         # Current-session orchestration
 ├── game_state.py           # Immutable runtime domain model
-├── move.py                 # Immutable placement request
+├── move.py                 # Immutable placement or relocation request
 └── move_executor.py        # Move validation and execution
 ```
 
@@ -30,6 +31,38 @@ engine/
 
 `GameState` enforces positive board dimensions and turn numbers, valid winner
 and status combinations, in-bounds pieces, and unique occupied coordinates.
+
+## Move requests
+
+`Move` represents both placement and relocation requests.
+
+A placement specifies only its destination:
+
+```python
+placement = Move(
+    player="X",
+    piece_name="Mark",
+    coordinate=Coordinate(row=1, column=1),
+)
+```
+
+A relocation also specifies the source coordinate:
+
+```python
+relocation = Move(
+    player="White",
+    piece_name="Man",
+    source=Coordinate(row=5, column=0),
+    coordinate=Coordinate(row=4, column=1),
+)
+```
+
+`coordinate` remains the destination field for backward compatibility and is
+also exposed through the `destination` property. The `is_placement` and
+`is_relocation` properties identify the request type.
+
+A move cannot use the same coordinate as both its source and destination.
+`Move` instances remain immutable.
 
 ## Initialize and play
 
@@ -99,8 +132,10 @@ and does not modify the supplied state.
 
 The engine consumes the typed AST and has no dependency on Lark or concrete
 DSL syntax. Terminal input and output belong to the separate `cli` package.
-The current engine supports `ANY_EMPTY_CELL` placement; movement, capture,
-promotion, gravity, and initial piece setup remain future increments.
+The runtime model can represent both placement and relocation requests. The
+current executor supports only `ANY_EMPTY_CELL` placement. Relocation-rule
+validation, capture, promotion, gravity, and initial piece setup remain future
+increments.
 
 ## Testing
 
@@ -117,5 +152,5 @@ python -m pytest \
   tests/test_board_renderer.py -v
 ```
 
-These modules contain 64 engine-focused tests. The complete project suite
-contains 81 tests.
+These modules contain 67 engine-focused tests. The complete project suite
+contains 84 tests.

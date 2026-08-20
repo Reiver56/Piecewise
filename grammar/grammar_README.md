@@ -9,9 +9,9 @@ This directory contains the formal Lark grammar used to parse Piecewise
 .game file -> Lark grammar -> Parse tree -> GameAstTransformer -> GameDefinition
 ```
 
-The grammar performs syntactic analysis. The transformer is implemented and
-converts the resulting tree into typed AST objects. Semantic validation and
-execution remain separate future stages.
+The grammar performs syntactic analysis. The transformer converts the resulting
+tree into typed AST objects. Semantic validation and execution remain separate
+stages.
 
 ## Files
 
@@ -61,6 +61,17 @@ players_block: "players" "{" player_declaration+ turn_order "}"
 
 The block contains player declarations followed by `turn_order`.
 
+A player may optionally declare its forward direction:
+
+```text
+player White {
+    forward: up
+}
+```
+
+Supported values are `up` and `down`. Players without a block remain valid, so
+the Tic-Tac-Toe declarations `player X` and `player O` are unchanged.
+
 ### Pieces
 
 ```lark
@@ -70,7 +81,21 @@ piece_block: "piece" NAME "{" piece_property+ "}"
 The current piece properties are:
 
 - `owner`;
-- `place: any_empty_cell`.
+- `place: any_empty_cell`;
+- `move: diagonal forward DISTANCE if empty`;
+- `move: diagonal any DISTANCE if empty`.
+
+For example:
+
+```text
+piece Man {
+    owner: White, Black
+    move: diagonal forward 1 if empty
+}
+```
+
+Movement distances use `INT`. Whether a distance or rule is meaningful belongs
+to semantic validation rather than grammar parsing.
 
 ### End conditions
 
@@ -100,6 +125,18 @@ alignment_direction: "same_row" -> same_row
 These aliases preserve which literal was selected in the parse tree, allowing
 `GameAstTransformer` to map each value to the correct enum.
 
+Directional players and movement rules use the same pattern:
+
+```lark
+forward_direction: "up"   -> forward_up
+                 | "down" -> forward_down
+
+movement_direction: "diagonal" "forward" -> diagonal_forward
+                  | "diagonal" "any"     -> diagonal_any
+
+destination_condition: "empty" -> empty_destination
+```
+
 ## Lark notation
 
 | Notation | Meaning |
@@ -123,7 +160,7 @@ These aliases preserve which literal was selected in the parse tree, allowing
 ```
 
 - `NAME` represents identifiers such as `TicTacToe`, `Mark`, and `X`;
-- `INT` represents dimensions and alignment lengths;
+- `INT` represents dimensions, alignment lengths, and movement distances;
 - whitespace and indentation have no syntactic meaning.
 
 ## Inspect the parse tree
@@ -152,15 +189,16 @@ whether that player was declared belongs to semantic validation.
 
 ## Current limitations
 
-The current grammar parses the Tic-Tac-Toe subset only. It does not support:
+The grammar supports Tic-Tac-Toe plus the directional-player and basic
+non-capturing movement declarations required for the next Checkers increment.
+It does not yet support:
 
-- directional players;
-- piece movement or capture;
+- capture rules;
 - promotion;
 - initial setup;
 - gravity;
 - placement by column;
-- Checkers or Connect Four definitions.
+- complete Checkers or Connect Four definitions.
 
 ## Extension workflow
 
@@ -173,4 +211,3 @@ Every grammar extension should:
 5. update AST nodes and transformation when necessary;
 6. inspect the resulting parse tree;
 7. update this document.
-

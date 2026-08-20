@@ -33,6 +33,7 @@ The current increment supports:
 - syntax parsing with Lark;
 - generation of a Lark parse tree;
 - transformation into an immutable, typed AST;
+- directional-player and diagonal-movement syntax in the grammar and AST;
 - semantic validation with cumulative, structured diagnostics;
 - an immutable runtime game-state model with enforced invariants;
 - initialization of runtime state from a semantically valid definition;
@@ -48,12 +49,14 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- Checkers movement, capture, promotion, and setup;
+- Checkers movement execution, capture, promotion, and setup;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
 The Checkers and Connect Four files are design examples for future DSL
-increments. The current grammar parses Tic-Tac-Toe only.
+increments. The grammar and AST now support the directional-player and basic
+movement declarations used by Checkers, but the complete files still contain
+unsupported constructs.
 
 ## Architecture
 
@@ -203,6 +206,30 @@ SemanticValidator().validate_or_raise(game)
 Use `validate()` instead to receive every issue as an immutable tuple without
 raising an exception.
 
+## Define movement rules
+
+Players may declare the direction considered forward:
+
+```text
+player White {
+    forward: up
+}
+```
+
+Pieces may declare a non-capturing diagonal movement rule:
+
+```text
+piece Man {
+    owner: White, Black
+    move: diagonal forward 1 if empty
+}
+```
+
+The grammar also supports `diagonal any`, which is represented by a typed,
+immutable `MovementRule`. These declarations are parsed and transformed into
+the AST; semantic validation and runtime execution of the rules remain future
+increments.
+
 ## Initialize a game
 
 `GameInitializer` validates the definition at the engine boundary and creates
@@ -250,9 +277,9 @@ relocation = Move(
 also available through `destination`. The `is_placement` and `is_relocation`
 properties identify the request type. Source and destination must differ.
 
-The runtime model can now express relocation requests, while rule-aware
-relocation execution will be introduced with the corresponding DSL and AST
-extensions.
+The runtime model can express relocation requests, and the DSL and AST can now
+describe basic movement rules. Semantic validation and rule-aware relocation
+execution remain future increments.
 
 ## Execute a placement move
 
@@ -369,7 +396,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 84 parser, AST-transformation, semantic-validation,
+The current suite contains 90 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

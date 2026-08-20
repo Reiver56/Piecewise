@@ -52,7 +52,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 84 tests.
+The suite currently contains 90 tests.
 
 ### Parser tests
 
@@ -72,6 +72,14 @@ The suite currently contains 84 tests.
 - creates a temporary `.txt` file;
 - verifies that `GameParser.parse_file` raises `ValueError`.
 
+`test_parse_movement_rule_syntax`
+
+- parses directional players and two diagonal movement forms;
+- verifies the corresponding parse-tree aliases.
+
+The two parameterized `test_reject_invalid_movement_syntax` cases verify that
+unsupported player-forward and movement directions raise `UnexpectedInput`.
+
 ### AST tests
 
 `test_transform_tictactoe_definition`
@@ -90,6 +98,24 @@ The suite currently contains 84 tests.
 
 - attempts to modify a parsed `GameDefinition`;
 - verifies that the frozen dataclass raises `FrozenInstanceError`.
+
+`test_transform_player_forward_directions`
+
+- transforms `up` and `down` into typed `ForwardDirection` values;
+- preserves the declared turn order.
+
+`test_transform_piece_movement_rules`
+
+- transforms `diagonal forward` and `diagonal any` rules;
+- verifies distance and destination-condition values;
+- verifies that movement-only pieces have no placement rule.
+
+`test_movement_rule_is_immutable`
+
+- verifies that a transformed `MovementRule` cannot be modified.
+
+The Tic-Tac-Toe transformation test also verifies that its players have no
+forward direction and its placement piece has no movement rule.
 
 ### Semantic-validation tests
 
@@ -284,12 +310,13 @@ can require the `pytest` status check before merge.
 ## Coverage roadmap
 
 Completed coverage includes parser, AST, semantic-validation, runtime-state,
-game-initialization, placement and relocation request modelling, turn-rotation,
-end-condition, rendering, and interactive-session tests for Tic-Tac-Toe.
+game-initialization, placement and relocation request modelling, directional
+players, typed movement rules, turn-rotation, end-condition, rendering, and
+interactive-session tests for Tic-Tac-Toe.
 
 Future coverage will add:
 
-1. parser, AST, and semantic-validation tests for Checkers;
+1. semantic-validation and execution tests for Checkers movement rules;
 2. parser, AST, and semantic-validation tests for Connect Four;
 3. complete game-scenario tests for additional supported games.
 

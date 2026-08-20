@@ -91,6 +91,10 @@ supported domain:
 - `BoardFullCondition`;
 - `PlayableCells`;
 - `PlacementType`;
+- `ForwardDirection`;
+- `MovementDirection`;
+- `DestinationCondition`;
+- `MovementRule`;
 - `AlignmentDirection`;
 - `Outcome`.
 
@@ -107,7 +111,9 @@ independent from the parsing technology.
 ```text
 size_property          -> BoardDefinition data
 player_declaration     -> PlayerDefinition
+forward_property       -> ForwardDirection data
 piece_block            -> PieceDefinition
+move_property          -> MovementRule
 align_condition        -> AlignCondition
 board_full_condition   -> BoardFullCondition
 game_definition        -> GameDefinition
@@ -170,6 +176,24 @@ print(game.turn_order)             # ("X", "O")
 print(game.win_conditions)         # Typed condition objects
 ```
 
+Movement syntax is transformed into typed domain data as well:
+
+```text
+player White {
+    forward: up
+}
+
+piece Man {
+    owner: White, Black
+    move: diagonal forward 1 if empty
+}
+```
+
+The player receives `ForwardDirection.UP`. The piece has no placement rule and
+contains an immutable `MovementRule` with direction
+`MovementDirection.DIAGONAL_FORWARD`, distance `1`, and destination condition
+`DestinationCondition.EMPTY`.
+
 ## Testing
 
 ```bash
@@ -181,22 +205,27 @@ The current suite verifies:
 - valid Tic-Tac-Toe parsing;
 - invalid and incomplete syntax;
 - invalid file extensions;
+- valid directional-player and movement-rule syntax;
+- rejection of unsupported forward and movement directions;
 - complete AST transformation;
 - typed win conditions;
-- AST immutability.
+- typed movement rules and AST immutability;
+- backward compatibility with the Tic-Tac-Toe AST.
 
 Semantic-validation behaviour is covered independently in
 `tests/test_semantic_validator.py`.
 
 ## Current limitations
 
-Only the Tic-Tac-Toe subset is transformed. Checkers and Connect Four require
-new grammar rules, AST nodes, transformer mappings, and tests.
+Tic-Tac-Toe is fully transformed. The parser and AST also support the
+directional-player and non-capturing diagonal-movement subset required for
+Checkers. Capture, promotion, setup, Checkers end conditions, and Connect Four
+gravity still require additional grammar and AST increments.
 
 ## Next steps
 
 1. improve user-facing diagnostics;
-2. extend the language for Checkers;
+2. add semantic validation for movement rules;
 3. extend the language for Connect Four;
 4. pass validated definitions to the game engine.
 

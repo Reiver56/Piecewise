@@ -13,6 +13,20 @@ class PlacementType(str, Enum):
     ANY_EMPTY_CELL = "any_empty_cell"
 
 
+class ForwardDirection(str, Enum):
+    UP = "up"
+    DOWN = "down"
+
+
+class MovementDirection(str, Enum):
+    DIAGONAL_FORWARD = "diagonal_forward"
+    DIAGONAL_ANY = "diagonal_any"
+
+
+class DestinationCondition(str, Enum):
+    EMPTY = "empty"
+
+
 class AlignmentDirection(str, Enum):
     SAME_ROW = "same_row"
     SAME_COL = "same_col"
@@ -34,13 +48,22 @@ class BoardDefinition:
 @dataclass(frozen=True, slots=True)
 class PlayerDefinition:
     name: str
+    forward: ForwardDirection | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class MovementRule:
+    direction: MovementDirection
+    distance: int
+    destination_condition: DestinationCondition
 
 
 @dataclass(frozen=True, slots=True)
 class PieceDefinition:
     name: str
     owners: tuple[str, ...]
-    placement: PlacementType
+    placement: PlacementType | None = None
+    movement: MovementRule | None = None
 
 
 @dataclass(frozen=True, slots=True)

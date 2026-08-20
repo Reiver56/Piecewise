@@ -8,7 +8,11 @@ from parser.ast_nodes import (
     AlignmentDirection,
     BoardDefinition,
     BoardFullCondition,
+    DestinationCondition,
+    ForwardDirection,
     GameDefinition,
+    MovementDirection,
+    MovementRule,
     PieceDefinition,
     PlacementType,
     PlayableCells,
@@ -68,11 +72,41 @@ class GameAstTransformer(Transformer[Any, GameDefinition]):
 
     # Players
 
+    def forward_up(
+        self,
+        children: list[Any],
+    ) -> ForwardDirection:
+        return ForwardDirection.UP
+
+    def forward_down(
+        self,
+        children: list[Any],
+    ) -> ForwardDirection:
+        return ForwardDirection.DOWN
+
+    def forward_property(
+        self,
+        children: list[Any],
+    ) -> tuple[str, ForwardDirection]:
+        return "forward", children[0]
+
+    def player_block(
+        self,
+        children: list[Any],
+    ) -> dict[str, ForwardDirection]:
+        return dict(children)
+
     def player_declaration(
         self,
         children: list[Any],
     ) -> PlayerDefinition:
-        return PlayerDefinition(name=str(children[0]))
+        name = str(children[0])
+        properties = children[1] if len(children) > 1 else {}
+
+        return PlayerDefinition(
+            name=name,
+            forward=properties.get("forward"),
+        )
 
     def turn_order(self, children: list[Any]) -> tuple[str, ...]:
         return children[0]
@@ -109,6 +143,39 @@ class GameAstTransformer(Transformer[Any, GameDefinition]):
     ) -> tuple[str, PlacementType]:
         return "placement", PlacementType.ANY_EMPTY_CELL
 
+    def diagonal_forward(
+        self,
+        children: list[Any],
+    ) -> MovementDirection:
+        return MovementDirection.DIAGONAL_FORWARD
+
+    def diagonal_any(
+        self,
+        children: list[Any],
+    ) -> MovementDirection:
+        return MovementDirection.DIAGONAL_ANY
+
+    def empty_destination(
+        self,
+        children: list[Any],
+    ) -> DestinationCondition:
+        return DestinationCondition.EMPTY
+
+    def move_property(
+        self,
+        children: list[Any],
+    ) -> tuple[str, MovementRule]:
+        direction, distance, destination_condition = children
+
+        return (
+            "movement",
+            MovementRule(
+                direction=direction,
+                distance=int(distance),
+                destination_condition=destination_condition,
+            ),
+        )
+
     def piece_block(self, children: list[Any]) -> PieceDefinition:
         name = str(children[0])
         properties = dict(children[1:])
@@ -116,7 +183,8 @@ class GameAstTransformer(Transformer[Any, GameDefinition]):
         return PieceDefinition(
             name=name,
             owners=properties["owners"],
-            placement=properties["placement"],
+            placement=properties.get("placement"),
+            movement=properties.get("movement"),
         )
 
     # Win conditions

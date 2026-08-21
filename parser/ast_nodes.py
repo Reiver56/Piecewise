@@ -65,6 +65,14 @@ class PieceDefinition:
     placement: PlacementType | None = None
     movement: MovementRule | None = None
 
+@dataclass(frozen=True, slots=True)
+class SetupRule:
+    piece_name: str
+    owner: str
+    first_row: int
+    last_row: int
+    playable_cells_only: bool
+
 
 @dataclass(frozen=True, slots=True)
 class AlignCondition:
@@ -80,7 +88,6 @@ class BoardFullCondition:
 
 WinCondition: TypeAlias = AlignCondition | BoardFullCondition
 
-
 @dataclass(frozen=True, slots=True)
 class GameDefinition:
     name: str
@@ -89,3 +96,4 @@ class GameDefinition:
     turn_order: tuple[str, ...]
     pieces: tuple[PieceDefinition, ...]
     win_conditions: tuple[WinCondition, ...]
+    setup: tuple[SetupRule, ...] = ()

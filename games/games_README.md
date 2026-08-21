@@ -2,9 +2,10 @@
 
 Piecewise games are described using declarative `.game` files.
 
-> Piecewise is under development. The current parser supports the Tic-Tac-Toe
-> subset documented below. Checkers and Connect Four are design examples for
-> future language increments and cannot be parsed by the current grammar yet.
+> Piecewise is under development. Tic-Tac-Toe is fully supported. The parser
+> and AST also support the directional movement and initial-setup subset used
+> by Checkers, while its capture, promotion, and end-condition constructs and
+> the Connect Four extensions remain future increments.
 
 ## Processing pipeline
 
@@ -12,8 +13,8 @@ Piecewise games are described using declarative `.game` files.
 .game file -> Lark parser -> Parse tree -> AST transformer -> GameDefinition -> SemanticValidator
 ```
 
-Semantic validation is available as a separate processing stage. Game execution
-will be added in a future increment.
+Semantic validation and runtime execution are separate processing stages. The
+currently supported Tic-Tac-Toe rules can be executed by the engine.
 
 ## Create a game file
 
@@ -39,13 +40,19 @@ game GameName {
         ...
     }
 
+    setup {
+        ...
+    }
+
     win_condition {
         ...
     }
 }
 ```
 
-The order of these blocks is significant in the current grammar.
+The order of these blocks is significant in the current grammar. The `setup`
+block is optional; when present, it must follow every piece block and precede
+`win_condition`.
 
 ## Currently supported syntax
 
@@ -103,7 +110,24 @@ piece Mark {
 The current grammar supports:
 
 - a list of owners;
-- placement on any empty cell.
+- placement on any empty cell;
+- non-capturing `diagonal forward` and `diagonal any` movement rules.
+
+### Initial setup
+
+The optional setup block follows all piece blocks:
+
+```text
+setup {
+    place: Man owned_by White on rows 6..8 playable_cells
+    place: Man owned_by Black on rows 1..3 playable_cells
+}
+```
+
+Each rule selects a piece type, its owner, an inclusive one-based row range,
+and playable cells only. The parser preserves these declarations as ordered,
+immutable `SetupRule` objects. Their semantic validation and application to the
+initial runtime board are not implemented yet.
 
 ### Win and draw conditions
 
@@ -122,8 +146,8 @@ Supported alignment directions are:
 - `same_col`;
 - `diagonal`.
 
-The parser records these conditions in the AST. The engine does not evaluate
-them yet.
+The parser records these conditions in the AST, and the engine evaluates the
+currently supported alignment and full-board conditions.
 
 ## Complete supported example
 
@@ -173,7 +197,7 @@ game = GameParser().parse_game_file("games/tictactoe.game")
 - diagonal movement;
 - capture;
 - promotion;
-- initial piece placement;
+- initial piece placement, which is now supported by the grammar and AST;
 - loss caused by having no pieces or legal moves.
 
 ### Connect Four
@@ -184,8 +208,8 @@ game = GameParser().parse_game_file("games/tictactoe.game")
 - placement in non-full columns;
 - alignments of four pieces.
 
-These constructs are not part of `grammar/piecewise.lark` yet. They must be
-introduced together with AST changes and automated tests.
+The remaining constructs must be introduced together with AST changes and
+automated tests.
 
 ## Semantic rules
 
@@ -195,6 +219,9 @@ The current semantic validator rejects definitions when:
 - player or piece names are duplicated;
 - `turn_order` references undeclared players;
 - a piece references an undeclared owner;
+- a piece declares neither placement nor movement, or declares both;
+- a movement distance is not positive;
+- a forward-moving owner has no declared forward direction;
 - an alignment length cannot fit on the board;
 - declared players are missing from the turn order.
 
@@ -208,4 +235,3 @@ When adding a DSL construct:
 4. update `GameAstTransformer`;
 5. add valid and invalid tests;
 6. update the relevant README files.
-

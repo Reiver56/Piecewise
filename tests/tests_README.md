@@ -52,7 +52,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 110 tests.
+The suite currently contains 113 tests.
 
 ### Parser tests
 
@@ -113,6 +113,22 @@ unsupported player-forward and movement directions raise `UnexpectedInput`.
 `test_movement_rule_is_immutable`
 
 - verifies that a transformed `MovementRule` cannot be modified.
+
+`test_transform_setup_rules`
+
+- transforms multiple initial-placement declarations into ordered `SetupRule`
+  objects;
+- verifies piece names, owners, inclusive one-based row ranges, and the
+  playable-cells-only marker.
+
+`test_game_without_setup_has_empty_setup`
+
+- verifies backward compatibility through the empty `GameDefinition.setup`
+  tuple.
+
+`test_setup_rule_is_immutable`
+
+- verifies that a transformed `SetupRule` cannot be modified.
 
 The Tic-Tac-Toe transformation test also verifies that its players have no
 forward direction and its placement piece has no movement rule.
@@ -339,15 +355,17 @@ can require the `pytest` status check before merge.
 
 Completed coverage includes parser, AST, semantic-validation, runtime-state,
 game-initialization, placement and relocation request modelling, directional
-players, typed and semantically validated movement rules, non-capturing
-relocation execution, turn-rotation, end-condition, rendering, and
+players, typed and semantically validated movement rules, immutable initial
+setup AST rules, non-capturing relocation execution, turn-rotation,
+end-condition, rendering, and
 interactive-session tests for Tic-Tac-Toe.
 
 Future coverage will add:
 
-1. capture, promotion, and setup tests for Checkers;
-2. parser, AST, and semantic-validation tests for Connect Four;
-3. complete game-scenario tests for additional supported games.
+1. semantic-validation and runtime-initialization tests for Checkers setup;
+2. capture and promotion tests for Checkers;
+3. parser, AST, and semantic-validation tests for Connect Four;
+4. complete game-scenario tests for additional supported games.
 
 Every new DSL construct should include:
 

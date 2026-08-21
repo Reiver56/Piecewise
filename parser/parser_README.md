@@ -95,6 +95,7 @@ supported domain:
 - `MovementDirection`;
 - `DestinationCondition`;
 - `MovementRule`;
+- `SetupRule`;
 - `AlignmentDirection`;
 - `Outcome`.
 
@@ -114,13 +115,16 @@ player_declaration     -> PlayerDefinition
 forward_property       -> ForwardDirection data
 piece_block            -> PieceDefinition
 move_property          -> MovementRule
+setup_rule             -> SetupRule
+setup_block            -> setup-rule collection
 align_condition        -> AlignCondition
 board_full_condition   -> BoardFullCondition
 game_definition        -> GameDefinition
 ```
 
-The private `_PlayersBlock` object groups players and turn order while the
-transformer assembles the final game.
+The private `_PlayersBlock` object groups players and turn order, while
+`_SetupBlock` distinguishes the optional setup-rule collection from other
+tuples while the transformer assembles the final game.
 
 ## Error handling
 
@@ -194,6 +198,20 @@ contains an immutable `MovementRule` with direction
 `MovementDirection.DIAGONAL_FORWARD`, distance `1`, and destination condition
 `DestinationCondition.EMPTY`.
 
+Optional setup syntax is transformed into immutable domain data:
+
+```text
+setup {
+    place: Man owned_by White on rows 6..8 playable_cells
+    place: Man owned_by Black on rows 1..3 playable_cells
+}
+```
+
+Each declaration becomes a `SetupRule`. `GameDefinition.setup` preserves the
+declared order and defaults to `()` when the block is absent. Row values remain
+one-based at this layer; runtime-coordinate conversion does not belong to the
+parser.
+
 ## Testing
 
 ```bash
@@ -210,6 +228,7 @@ The current suite verifies:
 - complete AST transformation;
 - typed win conditions;
 - typed movement rules and AST immutability;
+- ordered, immutable setup rules and optional-setup compatibility;
 - backward compatibility with the Tic-Tac-Toe AST.
 
 Semantic-validation behaviour is covered independently in
@@ -218,14 +237,17 @@ Semantic-validation behaviour is covered independently in
 ## Current limitations
 
 Tic-Tac-Toe is fully transformed. The parser and AST also support the
-directional-player and non-capturing diagonal-movement subset required for
-Checkers. Capture, promotion, setup, Checkers end conditions, and Connect Four
-gravity still require additional grammar and AST increments.
+directional-player, non-capturing diagonal-movement, and initial-setup subset
+required for Checkers. Capture, promotion, Checkers end conditions, and Connect
+Four gravity still require additional grammar and AST increments. Setup
+semantic validation and runtime placement remain responsibilities of later
+layers.
 
 ## Next steps
 
 1. improve user-facing diagnostics;
 2. add capture and promotion syntax;
-3. extend the language for Connect Four;
-4. add the remaining Checkers constructs.
+3. validate and execute setup rules in their respective layers;
+4. extend the language for Connect Four;
+5. add the remaining Checkers constructs.
 

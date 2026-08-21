@@ -2,8 +2,8 @@
 
 The `engine` package turns a validated `GameDefinition` into immutable runtime
 snapshots, represents placement and relocation requests, executes supported
-placement moves, evaluates terminal conditions, manages a complete session,
-and renders the board as plain text.
+placement and non-capturing relocation moves, evaluates terminal conditions,
+manages a complete session, and renders the board as plain text.
 
 ## Files
 
@@ -91,8 +91,24 @@ Previous `GameState` instances remain unchanged. If a move raises
 
 `MoveExecutor` rejects moves when the game has ended, when the wrong player is
 acting, when a coordinate is outside or unavailable, when a piece is unknown
-or unowned, or when a destination is occupied. A successful placement advances
-the turn and invokes `ConditionEvaluator`.
+or unowned, or when a destination is occupied. It dispatches placement and
+relocation requests according to the action supported by the piece definition.
+A successful move advances the turn and invokes `ConditionEvaluator`.
+
+## Execute a relocation
+
+For a relocation, `MoveExecutor` verifies that:
+
+- the source is inside the board and playable;
+- the source contains the requested piece;
+- the current player owns that runtime piece;
+- the destination is inside the board, playable, and empty;
+- source and destination match the declared diagonal distance;
+- `diagonal forward` follows the owner's `up` or `down` orientation;
+- `diagonal any` may move in either vertical direction.
+
+The source `PlacedPiece` is replaced immutably with a copy at the destination.
+All other pieces and the previous `GameState` remain unchanged.
 
 ## End conditions
 
@@ -132,11 +148,11 @@ and does not modify the supplied state.
 
 The engine consumes the typed AST and has no dependency on Lark or concrete
 DSL syntax. Terminal input and output belong to the separate `cli` package.
-The runtime model can represent both placement and relocation requests. The
-current executor supports only `ANY_EMPTY_CELL` placement. Relocation-rule
-execution, capture, promotion, gravity, and initial piece setup remain future
-increments. Movement-rule consistency is validated before the engine boundary
-by `SemanticValidator`.
+The executor supports `ANY_EMPTY_CELL` placement plus validated,
+non-capturing `DIAGONAL_FORWARD` and `DIAGONAL_ANY` relocation. Capture,
+promotion, gravity, initial piece setup, and interactive relocation input remain
+future increments. Movement-rule consistency is validated before the engine
+boundary by `SemanticValidator`.
 
 ## Testing
 
@@ -153,5 +169,5 @@ python -m pytest \
   tests/test_board_renderer.py -v
 ```
 
-These modules contain 67 engine-focused tests. The complete project suite
-contains 95 tests.
+These modules contain 82 engine-focused tests. The complete project suite
+contains 110 tests.

@@ -123,7 +123,7 @@ python -m pytest tests/test_semantic_validator.py -v
 The nine focused tests cover valid Tic-Tac-Toe and movement definitions,
 cumulative diagnostics, stable codes and paths, piece-action exclusivity,
 movement distances, required player orientation, and
-`SemanticValidationError` behaviour. The complete project suite contains 95
+`SemanticValidationError` behaviour. The complete project suite contains 110
 tests.
 
 ## Current limitations

@@ -134,8 +134,9 @@ The engine consumes the typed AST and has no dependency on Lark or concrete
 DSL syntax. Terminal input and output belong to the separate `cli` package.
 The runtime model can represent both placement and relocation requests. The
 current executor supports only `ANY_EMPTY_CELL` placement. Relocation-rule
-validation, capture, promotion, gravity, and initial piece setup remain future
-increments.
+execution, capture, promotion, gravity, and initial piece setup remain future
+increments. Movement-rule consistency is validated before the engine boundary
+by `SemanticValidator`.
 
 ## Testing
 
@@ -153,4 +154,4 @@ python -m pytest \
 ```
 
 These modules contain 67 engine-focused tests. The complete project suite
-contains 84 tests.
+contains 95 tests.

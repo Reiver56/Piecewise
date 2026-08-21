@@ -52,7 +52,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 90 tests.
+The suite currently contains 95 tests.
 
 ### Parser tests
 
@@ -119,6 +119,18 @@ forward direction and its placement piece has no movement rule.
 
 ### Semantic-validation tests
 
+The nine cases in `test_semantic_validator.py` verify:
+
+- valid Tic-Tac-Toe and movement-rule definitions;
+- acceptance of valid definitions through `validate_or_raise()`;
+- cumulative diagnostics with stable codes and paths;
+- complete issue exposure through `SemanticValidationError`;
+- rejection of pieces with neither placement nor movement;
+- rejection of pieces declaring both placement and movement;
+- rejection of non-positive movement distances;
+- the requirement that every owner of a `diagonal forward` piece declares a
+  forward direction.
+
 `test_valid_tictactoe_has_no_semantic_issues`
 
 - validates the parsed Tic-Tac-Toe definition;
@@ -137,6 +149,10 @@ forward direction and its placement piece has no movement rule.
 
 - verifies that `SemanticValidationError` exposes every collected issue;
 - checks the formatted error message.
+
+The movement-rule cases exercise the diagnostic codes
+`missing_piece_action`, `conflicting_piece_actions`,
+`invalid_movement_distance`, and `missing_forward_direction`.
 
 ### Game-initializer tests
 
@@ -311,12 +327,12 @@ can require the `pytest` status check before merge.
 
 Completed coverage includes parser, AST, semantic-validation, runtime-state,
 game-initialization, placement and relocation request modelling, directional
-players, typed movement rules, turn-rotation, end-condition, rendering, and
-interactive-session tests for Tic-Tac-Toe.
+players, typed and semantically validated movement rules, turn-rotation,
+end-condition, rendering, and interactive-session tests for Tic-Tac-Toe.
 
 Future coverage will add:
 
-1. semantic-validation and execution tests for Checkers movement rules;
+1. execution tests for validated Checkers movement rules;
 2. parser, AST, and semantic-validation tests for Connect Four;
 3. complete game-scenario tests for additional supported games.
 

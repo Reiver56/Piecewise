@@ -35,6 +35,7 @@ The current increment supports:
 - transformation into an immutable, typed AST;
 - directional-player and diagonal-movement syntax in the grammar and AST;
 - semantic validation with cumulative, structured diagnostics;
+- semantic validation of piece actions and movement rules;
 - an immutable runtime game-state model with enforced invariants;
 - initialization of runtime state from a semantically valid definition;
 - immutable placement and relocation requests;
@@ -226,9 +227,14 @@ piece Man {
 ```
 
 The grammar also supports `diagonal any`, which is represented by a typed,
-immutable `MovementRule`. These declarations are parsed and transformed into
-the AST; semantic validation and runtime execution of the rules remain future
-increments.
+immutable `MovementRule`. These declarations are parsed, transformed, and
+validated semantically. Runtime execution of the rules remains a future
+increment.
+
+Each piece must declare exactly one action: `place` or `move`. Movement
+distances must be positive, and every owner of a `diagonal forward` piece must
+declare a forward direction. Violations are returned as cumulative,
+machine-readable diagnostics.
 
 ## Initialize a game
 
@@ -277,9 +283,9 @@ relocation = Move(
 also available through `destination`. The `is_placement` and `is_relocation`
 properties identify the request type. Source and destination must differ.
 
-The runtime model can express relocation requests, and the DSL and AST can now
-describe basic movement rules. Semantic validation and rule-aware relocation
-execution remain future increments.
+The runtime model can express relocation requests, while the DSL, AST, and
+semantic validator describe and validate basic movement rules. Rule-aware
+relocation execution remains a future increment.
 
 ## Execute a placement move
 
@@ -396,7 +402,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 90 parser, AST-transformation, semantic-validation,
+The current suite contains 95 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

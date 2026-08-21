@@ -7,7 +7,12 @@ from parser.ast_nodes import (
     AlignCondition,
     AlignmentDirection,
     BoardDefinition,
+    DestinationCondition,
+    ForwardDirection,
+    MovementDirection,
+    MovementRule,
     PieceDefinition,
+    PlacementType,
     PlayerDefinition,
 )
 from parser.game_parser import GameParser
@@ -24,6 +29,34 @@ TICTACTOE_PATH = PROJECT_ROOT / "games" / "tictactoe.game"
 @pytest.fixture(scope="module")
 def valid_game():
     return GameParser().parse_game_file(TICTACTOE_PATH)
+
+@pytest.fixture(scope="module")
+def valid_movement_game(valid_game):
+    return replace(
+        valid_game,
+        players=(
+            PlayerDefinition(
+                name="White",
+                forward=ForwardDirection.UP,
+            ),
+            PlayerDefinition(
+                name="Black",
+                forward=ForwardDirection.DOWN,
+            ),
+        ),
+        turn_order=("White", "Black"),
+        pieces=(
+            PieceDefinition(
+                name="Man",
+                owners=("White", "Black"),
+                movement=MovementRule(
+                    direction=MovementDirection.DIAGONAL_FORWARD,
+                    distance=1,
+                    destination_condition=DestinationCondition.EMPTY,
+                ),
+            ),
+        ),
+    )
 
 
 @pytest.fixture
@@ -127,3 +160,111 @@ def test_validate_or_raise_contains_all_issues(
     assert "Invalid game definition:" in message
     assert "[invalid_board_rows] board.rows:" in message
     assert "[invalid_board_columns] board.columns:" in message
+
+def test_valid_movement_rules_have_no_semantic_issues(
+    valid_movement_game,
+    validator: SemanticValidator,
+) -> None:
+    assert validator.validate(valid_movement_game) == ()
+
+
+def test_rejects_piece_without_placement_or_movement(
+    valid_movement_game,
+    validator: SemanticValidator,
+) -> None:
+    piece = valid_movement_game.pieces[0]
+    invalid_game = replace(
+        valid_movement_game,
+        pieces=(
+            replace(
+                piece,
+                placement=None,
+                movement=None,
+            ),
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "missing_piece_action"
+        and issue.path == "pieces.Man.action"
+        for issue in issues
+    )
+
+
+def test_rejects_piece_with_placement_and_movement(
+    valid_movement_game,
+    validator: SemanticValidator,
+) -> None:
+    piece = valid_movement_game.pieces[0]
+    invalid_game = replace(
+        valid_movement_game,
+        pieces=(
+            replace(
+                piece,
+                placement=PlacementType.ANY_EMPTY_CELL,
+            ),
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "conflicting_piece_actions"
+        and issue.path == "pieces.Man.action"
+        for issue in issues
+    )
+
+
+def test_rejects_non_positive_movement_distance(
+    valid_movement_game,
+    validator: SemanticValidator,
+) -> None:
+    piece = valid_movement_game.pieces[0]
+    movement = piece.movement
+
+    assert movement is not None
+
+    invalid_game = replace(
+        valid_movement_game,
+        pieces=(
+            replace(
+                piece,
+                movement=replace(
+                    movement,
+                    distance=0,
+                ),
+            ),
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "invalid_movement_distance"
+        and issue.path == "pieces.Man.movement.distance"
+        for issue in issues
+    )
+
+
+def test_forward_movement_requires_owner_direction(
+    valid_movement_game,
+    validator: SemanticValidator,
+) -> None:
+    white, black = valid_movement_game.players
+    invalid_game = replace(
+        valid_movement_game,
+        players=(
+            replace(white, forward=None),
+            black,
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "missing_forward_direction"
+        and issue.path == "players.White.forward"
+        for issue in issues
+    )

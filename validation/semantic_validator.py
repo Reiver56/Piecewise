@@ -5,7 +5,11 @@ from parser.ast_nodes import (
     AlignCondition,
     AlignmentDirection,
     GameDefinition,
+    MovementDirection,
+    PieceDefinition,
+    PlayerDefinition,
 )
+
 from validation.errors import (
     SemanticValidationError,
     ValidationIssue,
@@ -122,8 +126,9 @@ class SemanticValidator:
         issues: list[ValidationIssue],
     ) -> None:
         piece_names = tuple(piece.name for piece in game.pieces)
-        declared_players = {
-            player.name for player in game.players
+        players_by_name = {
+            player.name: player
+            for player in game.players
         }
 
         for name in self._duplicates(piece_names):
@@ -137,7 +142,7 @@ class SemanticValidator:
 
         for piece in game.pieces:
             for owner in piece.owners:
-                if owner not in declared_players:
+                if owner not in players_by_name:
                     issues.append(
                         ValidationIssue(
                             code="unknown_piece_owner",
@@ -148,6 +153,97 @@ class SemanticValidator:
                             ),
                         )
                     )
+
+            self._validate_piece_action(
+                piece,
+                issues,
+            )
+            self._validate_movement_rule(
+                piece,
+                players_by_name,
+                issues,
+            )
+
+    def _validate_piece_action(
+        self,
+        piece: PieceDefinition,
+        issues: list[ValidationIssue],
+    ) -> None:
+        has_placement = piece.placement is not None
+        has_movement = piece.movement is not None
+        path = f"pieces.{piece.name}.action"
+
+        if not has_placement and not has_movement:
+            issues.append(
+                ValidationIssue(
+                    code="missing_piece_action",
+                    path=path,
+                    message=(
+                        f"Piece '{piece.name}' must declare "
+                        "either placement or movement."
+                    ),
+                )
+            )
+            return
+
+        if has_placement and has_movement:
+            issues.append(
+                ValidationIssue(
+                    code="conflicting_piece_actions",
+                    path=path,
+                    message=(
+                        f"Piece '{piece.name}' cannot declare "
+                        "both placement and movement."
+                    ),
+                )
+            )
+
+    def _validate_movement_rule(
+        self,
+        piece: PieceDefinition,
+        players_by_name: dict[str, PlayerDefinition],
+        issues: list[ValidationIssue],
+    ) -> None:
+        movement = piece.movement
+
+        if movement is None:
+            return
+
+        if movement.distance <= 0:
+            issues.append(
+                ValidationIssue(
+                    code="invalid_movement_distance",
+                    path=(
+                        f"pieces.{piece.name}."
+                        "movement.distance"
+                    ),
+                    message=(
+                        f"Movement distance for piece "
+                        f"'{piece.name}' must be greater than zero."
+                    ),
+                )
+            )
+
+        if movement.direction is not MovementDirection.DIAGONAL_FORWARD:
+            return
+
+        for owner in piece.owners:
+            player = players_by_name.get(owner)
+
+            if player is None or player.forward is not None:
+                continue
+
+            issues.append(
+                ValidationIssue(
+                    code="missing_forward_direction",
+                    path=f"players.{owner}.forward",
+                    message=(
+                        f"Player '{owner}' must declare a forward "
+                        f"direction to own piece '{piece.name}' "
+                        "with a diagonal-forward movement rule."
+                    ),
+                )
+            )
 
     def _validate_win_conditions(
         self,

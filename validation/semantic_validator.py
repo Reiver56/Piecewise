@@ -335,6 +335,43 @@ class SemanticValidator:
                         ),
                     )
                 )
+                
+        valid_setup_rules = tuple(
+            (index, rule)
+            for index, rule in enumerate(game.setup)
+            if (
+                1
+                <= rule.first_row
+                <= rule.last_row
+                <= game.board.rows
+            )
+        )
+
+        for position, (index, rule) in enumerate(valid_setup_rules):
+            previous_rules = valid_setup_rules[:position]
+
+            for previous_index, previous_rule in previous_rules:
+                ranges_overlap = (
+                    rule.first_row <= previous_rule.last_row
+                    and previous_rule.first_row <= rule.last_row
+                )
+
+                if not ranges_overlap:
+                    continue
+                
+                issues.append(
+                    ValidationIssue(
+                        code="overlapping_setup_rules",
+                        path=f"setup[{index}].rows",
+                        message=(
+                            f"Setup rows {rule.first_row}..{rule.last_row} "
+                            f"overlap rows {previous_rule.first_row}.."
+                            f"{previous_rule.last_row} from setup rule "
+                            f"{previous_index}."
+                        ),
+                    )
+                )
+                break
     
 
     def _validate_win_conditions(

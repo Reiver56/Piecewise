@@ -423,6 +423,13 @@ def test_rejects_setup_rows_outside_board(
             ),
         ),
     )
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "setup_rows_out_of_bounds"
+        and issue.path == "setup[0].rows"
+        for issue in issues
+    )
 
 def test_rejects_overlapping_setup_rules(
     valid_setup_game,
@@ -446,13 +453,5 @@ def test_rejects_overlapping_setup_rules(
     assert any(
         issue.code == "overlapping_setup_rules"
         and issue.path == "setup[1].rows"
-        for issue in issues
-    )
-
-    issues = validator.validate(invalid_game)
-
-    assert any(
-        issue.code == "setup_rows_out_of_bounds"
-        and issue.path == "setup[0].rows"
         for issue in issues
     )

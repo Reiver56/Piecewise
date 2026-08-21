@@ -14,7 +14,10 @@ from parser.ast_nodes import (
     PieceDefinition,
     PlacementType,
     PlayerDefinition,
+    PlayableCells,
+    SetupRule,
 )
+
 from parser.game_parser import GameParser
 from validation import (
     SemanticValidationError,
@@ -54,6 +57,34 @@ def valid_movement_game(valid_game):
                     distance=1,
                     destination_condition=DestinationCondition.EMPTY,
                 ),
+            ),
+        ),
+    )
+
+@pytest.fixture(scope="module")
+def valid_setup_game(valid_movement_game):
+    return replace(
+        valid_movement_game,
+        board=replace(
+            valid_movement_game.board,
+            rows=8,
+            columns=8,
+            playable_cells=PlayableCells.DARK,
+        ),
+        setup=(
+            SetupRule(
+                piece_name="Man",
+                owner="White",
+                first_row=6,
+                last_row=8,
+                playable_cells_only=True,
+            ),
+            SetupRule(
+                piece_name="Man",
+                owner="Black",
+                first_row=1,
+                last_row=3,
+                playable_cells_only=True,
             ),
         ),
     )
@@ -266,5 +297,113 @@ def test_forward_movement_requires_owner_direction(
     assert any(
         issue.code == "missing_forward_direction"
         and issue.path == "players.White.forward"
+        for issue in issues
+    )
+
+def test_valid_setup_rules_have_no_semantic_issues(
+    valid_setup_game,
+    validator: SemanticValidator,
+) -> None:
+    assert validator.validate(valid_setup_game) == ()
+
+def test_rejects_unknown_setup_piece(
+    valid_setup_game,
+    validator: SemanticValidator,
+) -> None:
+    setup_rule = valid_setup_game.setup[0]
+    invalid_game = replace(
+        valid_setup_game,
+        setup=(
+            replace(
+                setup_rule,
+                piece_name="Ghost",
+            ),
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "unknown_setup_piece"
+        and issue.path == "setup[0].piece_name"
+        for issue in issues
+    )
+
+def test_rejects_unknown_setup_owner(
+    valid_setup_game,
+    validator: SemanticValidator,
+) -> None:
+    setup_rule = valid_setup_game.setup[0]
+    invalid_game = replace(
+        valid_setup_game,
+        setup=(
+            replace(
+                setup_rule,
+                owner="Ghost",
+            ),
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "unknown_setup_owner"
+        and issue.path == "setup[0].owner"
+        for issue in issues
+    )
+
+def test_rejects_setup_owner_not_allowed_for_piece(
+    valid_setup_game,
+    validator: SemanticValidator,
+) -> None:
+    man = valid_setup_game.pieces[0]
+    invalid_game = replace(
+        valid_setup_game,
+        pieces=(
+            replace(
+                man,
+                owners=("White",),
+            ),
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "setup_owner_not_allowed"
+        and issue.path == "setup[1].owner"
+        for issue in issues
+    )
+
+@pytest.mark.parametrize(
+    ("first_row", "last_row"),
+    [
+        (0, 3),
+        (5, 3),
+    ],
+)
+def test_rejects_invalid_setup_row_range(
+    valid_setup_game,
+    validator: SemanticValidator,
+    first_row: int,
+    last_row: int,
+) -> None:
+    setup_rule = valid_setup_game.setup[0]
+    invalid_game = replace(
+        valid_setup_game,
+        setup=(
+            replace(
+                setup_rule,
+                first_row=first_row,
+                last_row=last_row,
+            ),
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "invalid_setup_row_range"
+        and issue.path == "setup[0].rows"
         for issue in issues
     )

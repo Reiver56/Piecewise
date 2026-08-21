@@ -304,6 +304,39 @@ class SemanticValidator:
                     )
                 )
 
+            has_valid_row_range = (
+                    rule.first_row >= 1
+                    and rule.first_row <= rule.last_row
+                )
+
+            if not has_valid_row_range:
+                issues.append(
+                    ValidationIssue(
+                        code="invalid_setup_row_range",
+                        path=f"setup[{index}].rows",
+                        message=(
+                            f"Setup rows {rule.first_row}..{rule.last_row} "
+                            "must form an ordered one-based range."
+                        ),
+                    )
+                )
+
+            if (
+                has_valid_row_range
+                and rule.last_row > game.board.rows
+            ):
+                issues.append(
+                    ValidationIssue(
+                        code="setup_rows_out_of_bounds",
+                        path=f"setup[{index}].rows",
+                        message=(
+                            f"Setup rows {rule.first_row}..{rule.last_row} "
+                            f"do not fit a board with {game.board.rows} rows."
+                        ),
+                    )
+                )
+    
+
     def _validate_win_conditions(
         self,
         game: GameDefinition,

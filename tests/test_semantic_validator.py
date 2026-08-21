@@ -407,3 +407,52 @@ def test_rejects_invalid_setup_row_range(
         and issue.path == "setup[0].rows"
         for issue in issues
     )
+
+def test_rejects_setup_rows_outside_board(
+    valid_setup_game,
+    validator: SemanticValidator,
+) -> None:
+    setup_rule = valid_setup_game.setup[0]
+    invalid_game = replace(
+        valid_setup_game,
+        setup=(
+            replace(
+                setup_rule,
+                first_row=7,
+                last_row=9,
+            ),
+        ),
+    )
+
+def test_rejects_overlapping_setup_rules(
+    valid_setup_game,
+    validator: SemanticValidator,
+) -> None:
+    white_rule, black_rule = valid_setup_game.setup
+    invalid_game = replace(
+        valid_setup_game,
+        setup=(
+            white_rule,
+            replace(
+                black_rule,
+                first_row=5,
+                last_row=7,
+            ),
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "overlapping_setup_rules"
+        and issue.path == "setup[1].rows"
+        for issue in issues
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "setup_rows_out_of_bounds"
+        and issue.path == "setup[0].rows"
+        for issue in issues
+    )

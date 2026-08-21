@@ -11,7 +11,7 @@
 start: game_definition
 
 // game definition
-game_definition: "game" NAME "{" board_block players_block piece_block+ win_condition_block "}"
+game_definition: "game" NAME "{" board_block players_block piece_block+ setup_block? win_condition_block "}" // setup_block is optional (for example, in tic-tac-toe, there is no setup block)
 // board block
 board_block: "board" "{" board_property+ "}"
 // board properties
@@ -64,6 +64,11 @@ destination_condition: "empty" -> empty_destination
 
 // win condition block
 win_condition_block: "win_condition" "{" win_condition+ "}"
+
+// setup block
+setup_block: "setup" "{" setup_rule+ "}" // for the same reason as GameDefinition, we can have multiple setup rules (defined by prefix +)
+
+setup_rule: "place" ":" NAME "owned_by" NAME "on" "rows" INT ".." INT "playable_cells"
 
 // win conditions
 ?win_condition: align_condition

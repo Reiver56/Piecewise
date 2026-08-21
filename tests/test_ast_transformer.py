@@ -17,6 +17,7 @@ from parser.ast_nodes import (
     PlacementType,
     PlayableCells,
     PlayerDefinition,
+    SetupRule,
 )
 
 from parser.game_parser import GameParser
@@ -59,6 +60,36 @@ game MovementGame {
     }
 }
 """
+
+SETUP_GAME_SOURCE = """
+game SetupGame {
+    board {
+        size: 8x8
+        playable_cells: dark
+    }
+
+    players {
+        player White
+        player Black
+        turn_order: White, Black
+    }
+
+    piece Man {
+        owner: White, Black
+        move: diagonal forward 1 if empty
+    }
+
+    setup {
+        place: Man owned_by White on rows 6..8 playable_cells
+        place: Man owned_by Black on rows 1..3 playable_cells
+    }
+
+    win_condition {
+        board_full: no_winner -> draw
+    }
+}
+"""
+
 @pytest.fixture(scope="module")
 def tictactoe_game() -> GameDefinition:
     return GameParser().parse_game_file(TICTACTOE_PATH)
@@ -66,6 +97,10 @@ def tictactoe_game() -> GameDefinition:
 @pytest.fixture(scope="module")
 def movement_game() -> GameDefinition:
     return GameParser().parse_game(MOVEMENT_GAME_SOURCE)
+
+@pytest.fixture(scope="module")
+def setup_game() -> GameDefinition:
+    return GameParser().parse_game(SETUP_GAME_SOURCE)
 
 
 def test_transform_tictactoe_definition(
@@ -179,3 +214,36 @@ def test_movement_rule_is_immutable(
 
     with pytest.raises(FrozenInstanceError):
         setattr(movement_rule, "distance", 2)
+
+def test_transform_setup_rules(
+    setup_game: GameDefinition,
+) -> None:
+    assert setup_game.setup == (
+        SetupRule(
+            piece_name="Man",
+            owner="White",
+            first_row=6,
+            last_row=8,
+            playable_cells_only=True,
+        ),
+        SetupRule(
+            piece_name="Man",
+            owner="Black",
+            first_row=1,
+            last_row=3,
+            playable_cells_only=True,
+        ),
+    )
+
+def test_game_without_setup_has_empty_setup(
+    tictactoe_game: GameDefinition,
+) -> None:
+    assert tictactoe_game.setup == ()
+
+def test_setup_rule_is_immutable(
+    setup_game: GameDefinition,
+) -> None:
+    setup_rule = setup_game.setup[0]
+
+    with pytest.raises(FrozenInstanceError):
+        setattr(setup_rule, "first_row", 5)

@@ -150,9 +150,9 @@ The engine consumes the typed AST and has no dependency on Lark or concrete
 DSL syntax. Terminal input and output belong to the separate `cli` package.
 The executor supports `ANY_EMPTY_CELL` placement plus validated,
 non-capturing `DIAGONAL_FORWARD` and `DIAGONAL_ANY` relocation. Capture,
-promotion, gravity, initial piece setup, and interactive relocation input remain
-future increments. Movement-rule consistency is validated before the engine
-boundary by `SemanticValidator`.
+promotion, gravity, application of parsed initial setup, and interactive
+relocation input remain future increments. Movement-rule consistency is
+validated before the engine boundary by `SemanticValidator`.
 
 ## Testing
 
@@ -170,4 +170,4 @@ python -m pytest \
 ```
 
 These modules contain 82 engine-focused tests. The complete project suite
-contains 110 tests.
+contains 113 tests.

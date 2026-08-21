@@ -30,7 +30,7 @@ start: game_definition
 The top-level rule requires:
 
 ```lark
-game_definition: "game" NAME "{" board_block players_block piece_block+ win_condition_block "}"
+game_definition: "game" NAME "{" board_block players_block piece_block+ setup_block? win_condition_block "}"
 ```
 
 Therefore, the current grammar expects blocks in this order:
@@ -38,7 +38,8 @@ Therefore, the current grammar expects blocks in this order:
 1. one board block;
 2. one players block;
 3. one or more piece blocks;
-4. one win-condition block.
+4. zero or one setup block;
+5. one win-condition block.
 
 ## Supported grammar
 
@@ -96,6 +97,29 @@ piece Man {
 
 Movement distances use `INT`. Whether a distance or rule is meaningful belongs
 to semantic validation rather than grammar parsing.
+
+### Initial setup
+
+An optional setup block may contain one or more initial-placement rules:
+
+```lark
+setup_block: "setup" "{" setup_rule+ "}"
+setup_rule: "place" ":" NAME "owned_by" NAME "on" "rows" INT ".." INT "playable_cells"
+```
+
+For example:
+
+```text
+setup {
+    place: Man owned_by White on rows 6..8 playable_cells
+    place: Man owned_by Black on rows 1..3 playable_cells
+}
+```
+
+The first `NAME` identifies the piece, the second identifies its owner, and the
+two `INT` values form an inclusive row range. The grammar checks only this
+shape; reference validity, row ordering, board bounds, and overlapping setup
+rules belong to semantic validation.
 
 ### End conditions
 
@@ -160,7 +184,8 @@ destination_condition: "empty" -> empty_destination
 ```
 
 - `NAME` represents identifiers such as `TicTacToe`, `Mark`, and `X`;
-- `INT` represents dimensions, alignment lengths, and movement distances;
+- `INT` represents dimensions, alignment lengths, movement distances, and
+  setup row bounds;
 - whitespace and indentation have no syntactic meaning.
 
 ## Inspect the parse tree
@@ -189,13 +214,12 @@ whether that player was declared belongs to semantic validation.
 
 ## Current limitations
 
-The grammar supports Tic-Tac-Toe plus the directional-player and basic
-non-capturing movement declarations required for the next Checkers increment.
+The grammar supports Tic-Tac-Toe plus the directional-player, basic
+non-capturing movement, and initial-setup declarations required by Checkers.
 It does not yet support:
 
 - capture rules;
 - promotion;
-- initial setup;
 - gravity;
 - placement by column;
 - complete Checkers or Connect Four definitions.

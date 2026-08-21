@@ -34,6 +34,7 @@ The current increment supports:
 - generation of a Lark parse tree;
 - transformation into an immutable, typed AST;
 - directional-player and diagonal-movement syntax in the grammar and AST;
+- optional initial-setup syntax and immutable setup rules in the AST;
 - semantic validation with cumulative, structured diagnostics;
 - semantic validation of piece actions and movement rules;
 - an immutable runtime game-state model with enforced invariants;
@@ -50,14 +51,15 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- Checkers capture, promotion, setup, end conditions, and interactive play;
+- Checkers capture, promotion, setup validation and execution, end conditions,
+  and interactive play;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
 The Checkers and Connect Four files are design examples for future DSL
-increments. The grammar and AST now support the directional-player and basic
-movement declarations used by Checkers, but the complete files still contain
-unsupported constructs.
+increments. The grammar and AST now support the directional-player, basic
+movement, and initial-setup declarations used by Checkers, but the complete
+files still contain unsupported constructs.
 
 ## Architecture
 
@@ -228,13 +230,34 @@ piece Man {
 
 The grammar also supports `diagonal any`, which is represented by a typed,
 immutable `MovementRule`. These declarations are parsed, transformed, and
-validated semantically. Runtime execution of the rules remains a future
-increment.
+validated semantically. `MoveExecutor` executes the supported non-capturing
+movement rules.
 
 Each piece must declare exactly one action: `place` or `move`. Movement
 distances must be positive, and every owner of a `diagonal forward` piece must
 declare a forward direction. Violations are returned as cumulative,
 machine-readable diagnostics.
+
+## Define an initial setup
+
+Games may optionally declare one or more initial-placement rules after their
+piece blocks and before `win_condition`:
+
+```text
+setup {
+    place: Man owned_by White on rows 6..8 playable_cells
+    place: Man owned_by Black on rows 1..3 playable_cells
+}
+```
+
+Each declaration becomes an immutable `SetupRule` containing the piece name,
+owner, inclusive row range, and the requirement to use playable cells only.
+The row numbers remain one-based in the AST so it faithfully represents the
+DSL source. Games without a setup block receive an empty setup tuple.
+
+This increment covers syntax and AST transformation only. Checking setup
+references and row ranges, converting them to zero-based coordinates, and
+placing runtime pieces remain separate validation and engine increments.
 
 ## Initialize a game
 
@@ -252,8 +275,9 @@ print(state.current_player)
 print(state.turn_number)
 ```
 
-The initial state contains no placed pieces, starts at turn one, and uses the
-first player declared in `turn_order`.
+The initial state currently contains no placed pieces, starts at turn one, and
+uses the first player declared in `turn_order`. Parsed setup rules are not yet
+applied by `GameInitializer`.
 
 ## Represent a move
 
@@ -346,9 +370,9 @@ next_state = MoveExecutor(game).apply(state, move)
 replaces the source piece with an equivalent piece at the destination, advances
 the turn, and leaves the previous `GameState` unchanged.
 
-The current relocation executor is deliberately non-capturing. Initial setup,
-captures, promotion, and Checkers-specific end conditions remain future
-increments.
+The current relocation executor is deliberately non-capturing. Applying the
+parsed initial setup, captures, promotion, and Checkers-specific end conditions
+remain future increments.
 
 ## Manage a complete game session
 
@@ -429,7 +453,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 110 parser, AST-transformation, semantic-validation,
+The current suite contains 113 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

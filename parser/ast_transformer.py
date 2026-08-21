@@ -17,6 +17,7 @@ from parser.ast_nodes import (
     PlacementType,
     PlayableCells,
     PlayerDefinition,
+    SetupRule,
     WinCondition,
 )
 
@@ -26,6 +27,9 @@ class _PlayersBlock:
     players: tuple[PlayerDefinition, ...]
     turn_order: tuple[str, ...]
 
+@dataclass
+class _SetupBlock:
+    rules: tuple[SetupRule, ...]
 
 class GameAstTransformer(Transformer[Any, GameDefinition]):
     """Transform a Lark parse tree into the Piecewise domain model."""
@@ -218,13 +222,47 @@ class GameAstTransformer(Transformer[Any, GameDefinition]):
     ) -> tuple[WinCondition, ...]:
         return tuple(children)
 
+    # Setup
+
+    def setup_rule(self, children: list[Any]) -> SetupRule:
+        piece_name, owner, first_row, last_row = children
+
+        return SetupRule(
+            piece_name=str(piece_name),
+            owner=str(owner),
+            first_row=int(first_row),
+            last_row=int(last_row),
+            playable_cells_only=True,
+        )
+
+    def setup_block(self, children: list[Any]) -> _SetupBlock:
+        return _SetupBlock(
+            rules=tuple(children),
+        )
+
     # Complete game
 
     def game_definition(self, children: list[Any]) -> GameDefinition:
         name = str(children[0])
         board = children[1]
         players_block = children[2]
-        pieces = tuple(children[3:-1])
+        game_components = children[3:-1]
+
+        pieces = tuple(
+            component
+            for component in game_components
+            if isinstance(component, PieceDefinition)
+        )
+
+        setup_block = next(
+            (
+                component
+                for component in game_components
+                if isinstance(component, _SetupBlock)
+            ),
+            None,
+        )
+
         win_conditions = children[-1]
 
         return GameDefinition(
@@ -234,4 +272,9 @@ class GameAstTransformer(Transformer[Any, GameDefinition]):
             turn_order=players_block.turn_order,
             pieces=pieces,
             win_conditions=win_conditions,
+            setup=(
+                setup_block.rules
+                if setup_block is not None
+                else ()
+            ),
         )

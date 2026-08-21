@@ -61,11 +61,20 @@ The validator detects:
 - undeclared players in the turn order;
 - declared players missing from the turn order;
 - undeclared piece owners;
+- pieces declaring neither placement nor movement;
+- pieces declaring both placement and movement;
+- non-positive movement distances;
+- owners missing a forward direction required by `diagonal forward`;
 - non-positive alignment lengths;
 - alignments that do not fit the board in their specified direction.
 
 Row alignments are limited by the number of columns, column alignments by the
 number of rows, and diagonal alignments by the smaller board dimension.
+
+Piece actions are exclusive: each piece must declare exactly one of `place` or
+`move`. A `diagonal any` rule does not depend on player orientation, while every
+declared owner of a `diagonal forward` rule must provide `forward: up` or
+`forward: down`.
 
 ## Diagnostics
 
@@ -84,12 +93,21 @@ For example:
 Validation is cumulative: independent problems are collected in one pass.
 Constructing `SemanticValidationError` without issues raises `ValueError`.
 
+Movement validation uses these stable diagnostics:
+
+| Code | Path | Meaning |
+| --- | --- | --- |
+| `missing_piece_action` | `pieces.NAME.action` | Neither `place` nor `move` is declared |
+| `conflicting_piece_actions` | `pieces.NAME.action` | Both `place` and `move` are declared |
+| `invalid_movement_distance` | `pieces.NAME.movement.distance` | Distance is not positive |
+| `missing_forward_direction` | `players.NAME.forward` | A forward-moving owner has no orientation |
+
 ## Architectural boundary
 
 The parser verifies syntax and constructs the AST. This package validates
-relationships and domain constraints within that AST. The future engine will
-receive validated definitions and manage runtime state, legal moves, turns, and
-end-condition evaluation.
+relationships and domain constraints within that AST. The engine receives
+validated definitions and manages runtime state, turns, and supported move
+execution. Geometric movement execution remains a separate engine concern.
 
 Validation is currently invoked explicitly; `GameParser` does not run it
 automatically.
@@ -102,10 +120,14 @@ Run the focused tests from the project root:
 python -m pytest tests/test_semantic_validator.py -v
 ```
 
-They cover valid Tic-Tac-Toe, cumulative diagnostics, stable codes, and
-`SemanticValidationError` behaviour.
+The nine focused tests cover valid Tic-Tac-Toe and movement definitions,
+cumulative diagnostics, stable codes and paths, piece-action exclusivity,
+movement distances, required player orientation, and
+`SemanticValidationError` behaviour. The complete project suite contains 95
+tests.
 
 ## Current limitations
 
-The rules cover the currently implemented Tic-Tac-Toe AST. Future Checkers and
-Connect Four constructs will require additional semantic checks.
+The rules cover Tic-Tac-Toe and the current directional, non-capturing movement
+subset. Capture, promotion, initial setup, Checkers end conditions, and Connect
+Four gravity will require additional semantic checks.

@@ -39,7 +39,7 @@ The current increment supports:
 - an immutable runtime game-state model with enforced invariants;
 - initialization of runtime state from a semantically valid definition;
 - immutable placement and relocation requests;
-- validated placement execution with turn rotation;
+- validated placement and non-capturing relocation execution with turn rotation;
 - automatic evaluation of row, column, and diagonal win conditions;
 - full-board draw detection with victory taking precedence;
 - complete game-session management with sequential state updates;
@@ -50,7 +50,7 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- Checkers movement execution, capture, promotion, and setup;
+- Checkers capture, promotion, setup, end conditions, and interactive play;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
@@ -284,8 +284,9 @@ also available through `destination`. The `is_placement` and `is_relocation`
 properties identify the request type. Source and destination must differ.
 
 The runtime model can express relocation requests, while the DSL, AST, and
-semantic validator describe and validate basic movement rules. Rule-aware
-relocation execution remains a future increment.
+semantic validator describe and validate basic movement rules. `MoveExecutor`
+applies validated `diagonal forward` and `diagonal any` relocations to immutable
+runtime snapshots.
 
 ## Execute a placement move
 
@@ -322,6 +323,32 @@ diagonals, and detects a draw when every playable cell is occupied. A winning
 alignment takes precedence when the final move also fills the board. The
 returned state is marked `GameStatus.WON` with its winner or
 `GameStatus.DRAWN`; further moves are then rejected.
+
+## Execute a relocation move
+
+A relocation identifies both its source and destination. `MoveExecutor`
+verifies the source piece, its owner and type, the destination, the declared
+distance, and the allowed diagonal direction:
+
+```python
+move = Move(
+    player="White",
+    piece_name="Man",
+    source=Coordinate(row=5, column=0),
+    coordinate=Coordinate(row=4, column=1),
+)
+
+next_state = MoveExecutor(game).apply(state, move)
+```
+
+`diagonal forward` uses the owner's `forward: up|down` declaration, while
+`diagonal any` accepts either vertical direction. Successful relocation
+replaces the source piece with an equivalent piece at the destination, advances
+the turn, and leaves the previous `GameState` unchanged.
+
+The current relocation executor is deliberately non-capturing. Initial setup,
+captures, promotion, and Checkers-specific end conditions remain future
+increments.
 
 ## Manage a complete game session
 
@@ -402,7 +429,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 95 parser, AST-transformation, semantic-validation,
+The current suite contains 110 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

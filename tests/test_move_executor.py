@@ -8,7 +8,15 @@ from engine.game_initializer import GameInitializer
 from engine.game_state import Coordinate, GameState, GameStatus, PlacedPiece
 from engine.move import Move
 from engine.move_executor import MoveExecutor
-from parser.ast_nodes import PlayableCells
+from parser.ast_nodes import (
+    DestinationCondition,
+    ForwardDirection,
+    MovementDirection,
+    MovementRule,
+    PieceDefinition,
+    PlayableCells,
+    PlayerDefinition,
+)
 from parser.game_parser import GameParser
 
 
@@ -20,6 +28,174 @@ def load_tictactoe():
         GAMES_DIRECTORY / "tictactoe.game"
     )
 
+def create_movement_game(
+    direction: MovementDirection = (
+        MovementDirection.DIAGONAL_FORWARD
+    ),
+):
+    game = load_tictactoe()
+
+    return replace(
+        game,
+        board=replace(
+            game.board,
+            rows=8,
+            columns=8,
+            playable_cells=PlayableCells.DARK,
+        ),
+        players=(
+            PlayerDefinition(
+                name="White",
+                forward=ForwardDirection.UP,
+            ),
+            PlayerDefinition(
+                name="Black",
+                forward=ForwardDirection.DOWN,
+            ),
+        ),
+        turn_order=("White", "Black"),
+        pieces=(
+            PieceDefinition(
+                name="Man",
+                owners=("White", "Black"),
+                movement=MovementRule(
+                    direction=direction,
+                    distance=1,
+                    destination_condition=DestinationCondition.EMPTY,
+                ),
+            ),
+        ),
+    )
+
+
+def create_movement_state(
+    *,
+    owner: str,
+    coordinate: Coordinate,
+    current_player: str,
+    turn_number: int = 1,
+) -> GameState:
+    return GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner=owner,
+                coordinate=coordinate,
+            ),
+        ),
+        current_player=current_player,
+        turn_number=turn_number,
+    )
+
+def test_apply_relocates_piece_forward_for_up_player() -> None:
+    game = create_movement_game()
+    state = create_movement_state(
+        owner="White",
+        coordinate=Coordinate(row=5, column=0),
+        current_player="White",
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=0),
+        coordinate=Coordinate(row=4, column=1),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="Man",
+            owner="White",
+            coordinate=Coordinate(row=4, column=1),
+        ),
+    )
+    assert result.current_player == "Black"
+    assert result.turn_number == 2
+
+
+def test_apply_relocates_piece_forward_for_down_player() -> None:
+    game = create_movement_game()
+    state = create_movement_state(
+        owner="Black",
+        coordinate=Coordinate(row=2, column=1),
+        current_player="Black",
+        turn_number=2,
+    )
+    move = Move(
+        player="Black",
+        piece_name="Man",
+        source=Coordinate(row=2, column=1),
+        coordinate=Coordinate(row=3, column=0),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="Man",
+            owner="Black",
+            coordinate=Coordinate(row=3, column=0),
+        ),
+    )
+    assert result.current_player == "White"
+    assert result.turn_number == 3
+
+
+def test_apply_diagonal_any_allows_backward_relocation() -> None:
+    game = create_movement_game(
+        MovementDirection.DIAGONAL_ANY,
+    )
+    state = create_movement_state(
+        owner="White",
+        coordinate=Coordinate(row=4, column=1),
+        current_player="White",
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=4, column=1),
+        coordinate=Coordinate(row=5, column=2),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert result.pieces[0].coordinate == Coordinate(
+        row=5,
+        column=2,
+    )
+    assert result.current_player == "Black"
+
+
+def test_relocation_does_not_modify_previous_state() -> None:
+    game = create_movement_game()
+    state = create_movement_state(
+        owner="White",
+        coordinate=Coordinate(row=5, column=0),
+        current_player="White",
+    )
+    original_piece = state.pieces[0]
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=0),
+        coordinate=Coordinate(row=4, column=1),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert result is not state
+    assert state.pieces == (original_piece,)
+    assert state.pieces[0].coordinate == Coordinate(
+        row=5,
+        column=0,
+    )
+    assert result.pieces[0].coordinate == Coordinate(
+        row=4,
+        column=1,
+    )
 
 def test_apply_places_piece_and_advances_turn() -> None:
     game = load_tictactoe()
@@ -324,3 +500,256 @@ def test_apply_marks_state_as_drawn_after_board_filling_move() -> None:
     assert result.winner is None
     assert result.turn_number == 10
     assert result.current_player == "O"
+
+def test_relocation_rejects_source_outside_board() -> None:
+    game = create_movement_game()
+    state = create_movement_state(
+        owner="White",
+        coordinate=Coordinate(row=5, column=0),
+        current_player="White",
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=8, column=1),
+        coordinate=Coordinate(row=4, column=1),
+    )
+
+    with pytest.raises(InvalidMoveError, match="outside"):
+        MoveExecutor(game).apply(state, move)
+
+
+def test_relocation_rejects_empty_source() -> None:
+    game = create_movement_game()
+    state = create_movement_state(
+        owner="White",
+        coordinate=Coordinate(row=5, column=0),
+        current_player="White",
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=2),
+        coordinate=Coordinate(row=4, column=3),
+    )
+
+    with pytest.raises(
+        InvalidMoveError,
+        match="does not contain a piece",
+    ):
+        MoveExecutor(game).apply(state, move)
+
+
+def test_relocation_rejects_opponent_piece() -> None:
+    game = create_movement_game()
+    state = create_movement_state(
+        owner="Black",
+        coordinate=Coordinate(row=5, column=0),
+        current_player="White",
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=0),
+        coordinate=Coordinate(row=4, column=1),
+    )
+
+    with pytest.raises(
+        InvalidMoveError,
+        match="does not own",
+    ):
+        MoveExecutor(game).apply(state, move)
+
+
+def test_relocation_rejects_wrong_piece_type() -> None:
+    game = create_movement_game()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="King",
+                owner="White",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=0),
+        coordinate=Coordinate(row=4, column=1),
+    )
+
+    with pytest.raises(
+        InvalidMoveError,
+        match="'King', not 'Man'",
+    ):
+        MoveExecutor(game).apply(state, move)
+
+
+@pytest.mark.parametrize(
+    "destination",
+    [
+        Coordinate(row=5, column=2),
+        Coordinate(row=3, column=2),
+    ],
+)
+def test_relocation_rejects_invalid_diagonal_geometry(
+    destination: Coordinate,
+) -> None:
+    game = create_movement_game()
+    state = create_movement_state(
+        owner="White",
+        coordinate=Coordinate(row=5, column=0),
+        current_player="White",
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=0),
+        coordinate=destination,
+    )
+
+    with pytest.raises(
+        InvalidMoveError,
+        match="must move diagonally by 1",
+    ):
+        MoveExecutor(game).apply(state, move)
+
+
+def test_forward_relocation_rejects_backward_direction() -> None:
+    game = create_movement_game()
+    state = create_movement_state(
+        owner="White",
+        coordinate=Coordinate(row=4, column=1),
+        current_player="White",
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=4, column=1),
+        coordinate=Coordinate(row=5, column=2),
+    )
+
+    with pytest.raises(
+        InvalidMoveError,
+        match="must move piece 'Man' forward",
+    ):
+        MoveExecutor(game).apply(state, move)
+
+
+def test_relocation_rejects_occupied_destination() -> None:
+    game = create_movement_game()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=1),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=0),
+        coordinate=Coordinate(row=4, column=1),
+    )
+
+    with pytest.raises(
+        InvalidMoveError,
+        match="already occupied",
+    ):
+        MoveExecutor(game).apply(state, move)
+
+
+def test_movement_piece_rejects_placement_request() -> None:
+    game = create_movement_game()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(),
+        current_player="White",
+        turn_number=1,
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        coordinate=Coordinate(row=5, column=0),
+    )
+
+    with pytest.raises(
+        InvalidMoveError,
+        match="does not support placement",
+    ):
+        MoveExecutor(game).apply(state, move)
+
+
+def test_placement_piece_rejects_relocation_request() -> None:
+    game = load_tictactoe()
+    state = GameState(
+        rows=3,
+        columns=3,
+        pieces=(
+            PlacedPiece(
+                piece_name="Mark",
+                owner="X",
+                coordinate=Coordinate(row=0, column=0),
+            ),
+        ),
+        current_player="X",
+        turn_number=2,
+    )
+    move = Move(
+        player="X",
+        piece_name="Mark",
+        source=Coordinate(row=0, column=0),
+        coordinate=Coordinate(row=1, column=1),
+    )
+
+    with pytest.raises(
+        InvalidMoveError,
+        match="does not support relocation",
+    ):
+        MoveExecutor(game).apply(state, move)
+
+
+def test_forward_relocation_requires_player_direction() -> None:
+    game = create_movement_game()
+    white, black = game.players
+    invalid_game = replace(
+        game,
+        players=(
+            replace(white, forward=None),
+            black,
+        ),
+    )
+    state = create_movement_state(
+        owner="White",
+        coordinate=Coordinate(row=5, column=0),
+        current_player="White",
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=0),
+        coordinate=Coordinate(row=4, column=1),
+    )
+
+    with pytest.raises(
+        InvalidMoveError,
+        match="has no forward direction",
+    ):
+        MoveExecutor(invalid_game).apply(state, move)

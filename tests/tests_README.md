@@ -52,7 +52,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 95 tests.
+The suite currently contains 110 tests.
 
 ### Parser tests
 
@@ -199,7 +199,7 @@ The seven cases in `test_move.py` verify:
 
 ### Move-executor tests
 
-The 13 cases in `test_move_executor.py` verify:
+The 28 cases in `test_move_executor.py` verify:
 
 - piece placement, turn-number advancement, and player rotation;
 - creation of a new state without modifying the previous snapshot;
@@ -209,7 +209,18 @@ The 13 cases in `test_move_executor.py` verify:
 - rejection of unknown or unowned piece types;
 - rejection of occupied destination cells;
 - automatic transition to a won state after a winning placement;
-- automatic transition to a drawn state after a board-filling placement.
+- automatic transition to a drawn state after a board-filling placement;
+- forward relocation for players oriented `up` and `down`;
+- unrestricted vertical direction for `diagonal any`;
+- immutable replacement of the source piece at the destination;
+- rejection of missing, out-of-bounds, opponent-owned, or wrongly typed source
+  pieces;
+- enforcement of diagonal geometry and declared distance;
+- rejection of backward `diagonal forward` movement;
+- rejection of occupied relocation destinations;
+- rejection of placement requests for movement-only pieces and relocation
+  requests for placement-only pieces;
+- runtime protection when a forward direction is unavailable.
 
 ### Condition-evaluator tests
 
@@ -279,11 +290,12 @@ runtime states are rejected with the correct error category.
 
 ### End-to-end tests
 
-The move-executor suite verifies the integrated transition from a valid
-placement to a won or drawn runtime state. The game-session suite exercises a
-complete deterministic game from initialization through sequential moves to a
-terminal result. The CLI suite covers the full path from simulated user input
-to moves, state transitions, final board rendering, and the result message.
+The move-executor suite verifies both placement transitions to won or drawn
+states and immutable, non-capturing relocation transitions. The game-session
+suite exercises a complete deterministic game from initialization through
+sequential moves to a terminal result. The CLI suite covers the full path from
+simulated user input to moves, state transitions, final board rendering, and
+the result message.
 
 ## Fixtures
 
@@ -327,12 +339,13 @@ can require the `pytest` status check before merge.
 
 Completed coverage includes parser, AST, semantic-validation, runtime-state,
 game-initialization, placement and relocation request modelling, directional
-players, typed and semantically validated movement rules, turn-rotation,
-end-condition, rendering, and interactive-session tests for Tic-Tac-Toe.
+players, typed and semantically validated movement rules, non-capturing
+relocation execution, turn-rotation, end-condition, rendering, and
+interactive-session tests for Tic-Tac-Toe.
 
 Future coverage will add:
 
-1. execution tests for validated Checkers movement rules;
+1. capture, promotion, and setup tests for Checkers;
 2. parser, AST, and semantic-validation tests for Connect Four;
 3. complete game-scenario tests for additional supported games.
 

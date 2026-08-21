@@ -225,7 +225,7 @@ gravity still require additional grammar and AST increments.
 ## Next steps
 
 1. improve user-facing diagnostics;
-2. execute validated movement rules in the engine;
+2. add capture and promotion syntax;
 3. extend the language for Connect Four;
 4. add the remaining Checkers constructs.
 

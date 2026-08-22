@@ -174,3 +174,78 @@ def test_initialize_uses_only_playable_light_cells() -> None:
         Coordinate(row=1, column=1),
         Coordinate(row=1, column=3),
     )
+
+def test_initialize_applies_multiple_setup_rules() -> None:
+    game = load_tictactoe()
+    game_with_setup = replace(
+        game,
+        board=replace(
+            game.board,
+            rows=8,
+            columns=8,
+            playable_cells=PlayableCells.DARK,
+        ),
+        setup=(
+            SetupRule(
+                piece_name="Mark",
+                owner="X",
+                first_row=6,
+                last_row=8,
+                playable_cells_only=True,
+            ),
+            SetupRule(
+                piece_name="Mark",
+                owner="O",
+                first_row=1,
+                last_row=3,
+                playable_cells_only=True,
+            ),
+        ),
+    )
+
+    state = GameInitializer().initialize(game_with_setup)
+
+    x_pieces = tuple(
+        piece
+        for piece in state.pieces
+        if piece.owner == "X"
+    )
+    o_pieces = tuple(
+        piece
+        for piece in state.pieces
+        if piece.owner == "O"
+    )
+
+    assert len(state.pieces) == 24
+    assert len(x_pieces) == 12
+    assert len(o_pieces) == 12
+
+    assert x_pieces[0].coordinate == Coordinate(
+        row=5,
+        column=0,
+    )
+    assert o_pieces[0].coordinate == Coordinate(
+        row=0,
+        column=1,
+    )
+
+def test_initialize_rejects_invalid_setup() -> None:
+    game = load_tictactoe()
+    invalid_game = replace(
+        game,
+        setup=(
+            SetupRule(
+                piece_name="Mark",
+                owner="X",
+                first_row=1,
+                last_row=4,
+                playable_cells_only=True,
+            ),
+        ),
+    )
+
+    with pytest.raises(
+        GameInitializationError,
+        match="setup_rows_out_of_bounds",
+    ):
+        GameInitializer().initialize(invalid_game)

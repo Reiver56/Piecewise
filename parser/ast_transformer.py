@@ -19,6 +19,8 @@ from parser.ast_nodes import (
     PlayerDefinition,
     SetupRule,
     WinCondition,
+    CaptureCondition,
+    CaptureRule,
 )
 
 
@@ -165,6 +167,27 @@ class GameAstTransformer(Transformer[Any, GameDefinition]):
     ) -> DestinationCondition:
         return DestinationCondition.EMPTY
 
+    def enemy_capture(
+        self,
+        children: list[Any],
+    ) -> CaptureCondition:
+        return CaptureCondition.ENEMY
+
+    def capture_property(
+        self,
+        children: list[Any],
+    ) -> tuple[str, CaptureRule]:
+        direction, distance, condition = children
+
+        return (
+            "capture",
+            CaptureRule(
+                direction=direction,
+                distance=int(distance),
+                condition=condition,
+            ),
+        )
+
     def move_property(
         self,
         children: list[Any],
@@ -189,6 +212,7 @@ class GameAstTransformer(Transformer[Any, GameDefinition]):
             owners=properties["owners"],
             placement=properties.get("placement"),
             movement=properties.get("movement"),
+            capture=properties.get("capture"),
         )
 
     # Win conditions

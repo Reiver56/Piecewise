@@ -34,6 +34,7 @@ The current increment supports:
 - generation of a Lark parse tree;
 - transformation into an immutable, typed AST;
 - directional-player and diagonal-movement syntax in the grammar and AST;
+- diagonal-capture syntax and immutable capture rules in the AST;
 - optional initial-setup syntax and immutable setup rules in the AST;
 - semantic validation with cumulative, structured diagnostics;
 - semantic validation of piece actions and movement rules;
@@ -52,14 +53,15 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- Checkers capture, promotion, end conditions, and interactive play;
+- Checkers capture validation and execution, promotion, end conditions, and
+  interactive play;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
 The Checkers and Connect Four files are design examples for future DSL
 increments. The grammar and AST now support the directional-player, basic
-movement, and initial-setup declarations used by Checkers, but the complete
-files still contain unsupported constructs.
+movement, capture, and initial-setup declarations used by Checkers, but the
+complete files still contain unsupported constructs.
 
 ## Architecture
 
@@ -238,6 +240,26 @@ distances must be positive, and every owner of a `diagonal forward` piece must
 declare a forward direction. Violations are returned as cumulative,
 machine-readable diagnostics.
 
+## Define capture rules
+
+Movement pieces may optionally declare a capture rule:
+
+```text
+piece Man {
+    owner: White, Black
+    move: diagonal forward 1 if empty
+    capture: diagonal forward 2 if enemy
+}
+```
+
+The grammar supports both `diagonal forward` and `diagonal any` capture
+directions. Each declaration becomes an immutable `CaptureRule` containing its
+typed direction, distance, and `CaptureCondition.ENEMY`. Pieces without a
+capture declaration keep `PieceDefinition.capture` set to `None`.
+
+This increment covers syntax parsing and AST transformation only. Capture-rule
+semantic validation and runtime execution remain separate engine increments.
+
 ## Define an initial setup
 
 Games may optionally declare one or more initial-placement rules after their
@@ -374,7 +396,8 @@ next_state = MoveExecutor(game).apply(state, move)
 replaces the source piece with an equivalent piece at the destination, advances
 the turn, and leaves the previous `GameState` unchanged.
 
-The current relocation executor is deliberately non-capturing. Captures,
+The current relocation executor is deliberately non-capturing. Capture rules
+can be represented by the grammar and AST, but capture validation, execution,
 promotion, and Checkers-specific end conditions remain future increments.
 
 ## Manage a complete game session
@@ -456,7 +479,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 126 parser, AST-transformation, semantic-validation,
+The current suite contains 130 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

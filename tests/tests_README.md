@@ -52,7 +52,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 135 tests.
+The suite currently contains 142 tests.
 
 ### Parser tests
 
@@ -255,7 +255,7 @@ The seven cases in `test_move.py` verify:
 
 ### Move-executor tests
 
-The 28 cases in `test_move_executor.py` verify:
+The 36 cases in `test_move_executor.py` verify:
 
 - piece placement, turn-number advancement, and player rotation;
 - creation of a new state without modifying the previous snapshot;
@@ -276,7 +276,14 @@ The 28 cases in `test_move_executor.py` verify:
 - rejection of occupied relocation destinations;
 - rejection of placement requests for movement-only pieces and relocation
   requests for placement-only pieces;
-- runtime protection when a forward direction is unavailable.
+- runtime protection when a forward direction is unavailable;
+- forward captures for players oriented both `up` and `down`;
+- backward captures for `diagonal any` and their rejection for
+  `diagonal forward`;
+- rejection of an empty intermediate cell or a piece owned by the active
+  player;
+- immutable enemy removal and preservation of the previous snapshot;
+- normal turn rotation after a successful capture.
 
 ### Condition-evaluator tests
 
@@ -346,8 +353,8 @@ runtime states are rejected with the correct error category.
 
 ### End-to-end tests
 
-The move-executor suite verifies both placement transitions to won or drawn
-states and immutable, non-capturing relocation transitions. The game-session
+The move-executor suite verifies placement transitions to won or drawn states,
+ordinary relocation, and immutable single-enemy capture transitions. The game-session
 suite exercises a complete deterministic game from initialization through
 sequential moves to a terminal result. The CLI suite covers the full path from
 simulated user input to moves, state transitions, final board rendering, and
@@ -397,13 +404,13 @@ Completed coverage includes parser, AST, semantic-validation, runtime-state,
 game-initialization, placement and relocation request modelling, directional
 players, typed and semantically validated movement rules, immutable and
 semantically validated initial setup rules, capture syntax, immutable capture
-AST rules, semantic capture constraints, non-capturing relocation execution,
-runtime setup expansion, turn-rotation, end-condition, rendering, and
-interactive-session tests for Tic-Tac-Toe.
+AST rules, semantic capture constraints, ordinary relocation and capture
+execution, runtime setup expansion, turn-rotation, end-condition, rendering,
+and interactive-session tests for Tic-Tac-Toe.
 
 Future coverage will add:
 
-1. capture runtime-execution tests for Checkers;
+1. multiple and mandatory capture tests for Checkers;
 2. promotion tests for Checkers;
 3. parser, AST, and semantic-validation tests for Connect Four;
 4. complete game-scenario tests for additional supported games.

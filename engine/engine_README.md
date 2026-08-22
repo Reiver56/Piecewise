@@ -2,7 +2,7 @@
 
 The `engine` package turns a validated `GameDefinition` into immutable runtime
 snapshots, represents placement and relocation requests, executes supported
-placement and non-capturing relocation moves, evaluates terminal conditions,
+placement, ordinary relocation, and capture moves, evaluates terminal conditions,
 manages a complete session, and renders the board as plain text.
 
 ## Files
@@ -128,6 +128,27 @@ For a relocation, `MoveExecutor` verifies that:
 The source `PlacedPiece` is replaced immutably with a copy at the destination.
 All other pieces and the previous `GameState` remain unchanged.
 
+## Execute a capture
+
+A capture uses the same `Move` request as any relocation. `MoveExecutor`
+recognizes it when the source-to-destination displacement matches the piece's
+`capture.distance` rather than its ordinary `movement.distance`.
+
+For a valid capture, the executor:
+
+- validates a diagonal displacement of the declared distance;
+- applies the owner's orientation to `diagonal forward`;
+- permits either vertical direction for `diagonal any`;
+- calculates the intermediate coordinate between source and destination;
+- requires that coordinate to contain an enemy piece;
+- rejects an empty intermediate cell or a piece owned by the active player;
+- moves the active piece and removes the enemy in a new immutable tuple;
+- advances the turn without modifying the previous `GameState`.
+
+The same logic supports players oriented both `up` and `down`. One move captures
+exactly one enemy; chained captures and mandatory-capture selection are outside
+the current increment.
+
 ## End conditions
 
 `ConditionEvaluator` supports consecutive same-owner alignments across rows,
@@ -166,11 +187,11 @@ and does not modify the supplied state.
 
 The engine consumes the typed AST and has no dependency on Lark or concrete
 DSL syntax. Terminal input and output belong to the separate `cli` package.
-The executor supports `ANY_EMPTY_CELL` placement plus validated,
-non-capturing `DIAGONAL_FORWARD` and `DIAGONAL_ANY` relocation. Capture,
-promotion, gravity, and interactive relocation input remain future increments.
-Movement and setup-rule consistency is validated before the engine boundary by
-`SemanticValidator`.
+The executor supports `ANY_EMPTY_CELL` placement plus validated ordinary and
+capturing `DIAGONAL_FORWARD` and `DIAGONAL_ANY` relocation. Multiple captures,
+mandatory capture, promotion, gravity, and interactive relocation input remain
+future increments. Movement, capture, and setup-rule consistency is validated
+before the engine boundary by `SemanticValidator`.
 
 ## Testing
 
@@ -187,5 +208,5 @@ python -m pytest \
   tests/test_board_renderer.py -v
 ```
 
-These modules contain 87 engine-focused tests. The complete project suite
-contains 126 tests.
+These modules contain 94 engine-focused tests. The complete project suite
+contains 142 tests.

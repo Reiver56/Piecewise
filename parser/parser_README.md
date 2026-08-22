@@ -258,18 +258,16 @@ Semantic-validation behaviour is covered independently in
 
 Tic-Tac-Toe is fully transformed. The parser and AST also support the
 directional-player, diagonal-movement, capture-rule, and initial-setup subset
-required for Checkers. Capture rules are represented in the AST but are not yet
-executed by the engine. They are validated independently by
-`SemanticValidator`. Promotion, Checkers end conditions, and Connect Four
-gravity still require additional grammar and AST increments. Setup rules are
-validated by `SemanticValidator` and applied to runtime state by
-`GameInitializer`.
+required for Checkers. Capture rules are represented in the AST, validated by
+`SemanticValidator`, and executed for supported single jumps by `MoveExecutor`.
+Promotion, Checkers end conditions, and Connect Four gravity still require
+additional grammar and AST increments. Setup rules are validated by
+`SemanticValidator` and applied to runtime state by `GameInitializer`.
 
 ## Next steps
 
 1. improve user-facing diagnostics;
-2. add capture runtime execution;
-3. add promotion syntax;
-4. extend the language for Connect Four;
-5. add the remaining Checkers constructs.
+2. add promotion syntax;
+3. extend the language for Connect Four;
+4. add the remaining Checkers constructs.
 

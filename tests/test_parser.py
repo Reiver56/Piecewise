@@ -113,3 +113,18 @@ def test_reject_invalid_movement_syntax(
 ) -> None:
     with pytest.raises(UnexpectedInput):
         game_parser.parse(invalid_source)
+
+def test_reject_invalid_capture_condition(
+    game_parser: GameParser,
+) -> None:
+    invalid_source = MOVEMENT_GAME_SOURCE.replace(
+        "move: diagonal forward 1 if empty",
+        (
+            "move: diagonal forward 1 if empty\n"
+            "        capture: diagonal forward 2 if friend"
+        ),
+        1,
+    )
+
+    with pytest.raises(UnexpectedInput):
+        game_parser.parse(invalid_source)

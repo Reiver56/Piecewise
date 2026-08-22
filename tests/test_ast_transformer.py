@@ -18,6 +18,8 @@ from parser.ast_nodes import (
     PlayableCells,
     PlayerDefinition,
     SetupRule,
+    CaptureCondition,
+    CaptureRule,
 )
 
 from parser.game_parser import GameParser
@@ -90,6 +92,44 @@ game SetupGame {
 }
 """
 
+CAPTURE_GAME_SOURCE = """
+game CaptureGame {
+    board {
+        size: 8x8
+        playable_cells: dark
+    }
+
+    players {
+        player White {
+            forward: up
+        }
+
+        player Black {
+            forward: down
+        }
+
+        turn_order: White, Black
+    }
+
+    piece Man {
+        owner: White, Black
+        move: diagonal forward 1 if empty
+        capture: diagonal forward 2 if enemy
+    }
+
+    piece King {
+        owner: White, Black
+        move: diagonal any 1 if empty
+        capture: diagonal any 2 if enemy
+    }
+
+    win_condition {
+        board_full: no_winner -> draw
+    }
+}
+"""
+
+
 @pytest.fixture(scope="module")
 def tictactoe_game() -> GameDefinition:
     return GameParser().parse_game_file(TICTACTOE_PATH)
@@ -97,6 +137,10 @@ def tictactoe_game() -> GameDefinition:
 @pytest.fixture(scope="module")
 def movement_game() -> GameDefinition:
     return GameParser().parse_game(MOVEMENT_GAME_SOURCE)
+
+@pytest.fixture(scope="module")
+def capture_game() -> GameDefinition:
+    return GameParser().parse_game(CAPTURE_GAME_SOURCE)
 
 @pytest.fixture(scope="module")
 def setup_game() -> GameDefinition:
@@ -204,6 +248,42 @@ def test_transform_piece_movement_rules(
         ),
     )
 
+def test_transform_piece_capture_rules(
+    capture_game: GameDefinition,
+) -> None:
+    man_capture = capture_game.pieces[0].capture
+    king_capture = capture_game.pieces[1].capture
+
+    assert man_capture == CaptureRule(
+        direction=MovementDirection.DIAGONAL_FORWARD,
+        distance=2,
+        condition=CaptureCondition.ENEMY,
+    )
+
+    assert king_capture == CaptureRule(
+        direction=MovementDirection.DIAGONAL_ANY,
+        distance=2,
+        condition=CaptureCondition.ENEMY,
+    )
+
+def test_piece_without_capture_has_no_capture(
+    movement_game: GameDefinition,
+) -> None:
+    assert all(
+        piece.capture is None
+        for piece in movement_game.pieces
+    )
+
+
+def test_capture_rule_is_immutable(
+    capture_game: GameDefinition,
+) -> None:
+    capture_rule = capture_game.pieces[0].capture
+
+    assert capture_rule is not None
+
+    with pytest.raises(FrozenInstanceError):
+        setattr(capture_rule, "distance", 3)
 
 def test_movement_rule_is_immutable(
     movement_game: GameDefinition,

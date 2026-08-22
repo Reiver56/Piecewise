@@ -26,6 +26,8 @@ class MovementDirection(str, Enum):
 class DestinationCondition(str, Enum):
     EMPTY = "empty"
 
+class CaptureCondition(str, Enum):
+    ENEMY = "enemy"
 
 class AlignmentDirection(str, Enum):
     SAME_ROW = "same_row"
@@ -59,11 +61,19 @@ class MovementRule:
 
 
 @dataclass(frozen=True, slots=True)
+class CaptureRule:
+    direction: MovementDirection
+    distance: int
+    condition: CaptureCondition
+
+
+@dataclass(frozen=True, slots=True)
 class PieceDefinition:
     name: str
     owners: tuple[str, ...]
     placement: PlacementType | None = None
     movement: MovementRule | None = None
+    capture: CaptureRule | None = None
 
 @dataclass(frozen=True, slots=True)
 class SetupRule:

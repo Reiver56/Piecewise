@@ -52,7 +52,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 126 tests.
+The suite currently contains 130 tests.
 
 ### Parser tests
 
@@ -79,6 +79,12 @@ The suite currently contains 126 tests.
 
 The two parameterized `test_reject_invalid_movement_syntax` cases verify that
 unsupported player-forward and movement directions raise `UnexpectedInput`.
+
+`test_reject_invalid_capture_condition`
+
+- adds a capture declaration using the unsupported `friend` condition;
+- verifies that the grammar raises `UnexpectedInput` because only `enemy` is
+  accepted.
 
 ### AST tests
 
@@ -113,6 +119,20 @@ unsupported player-forward and movement directions raise `UnexpectedInput`.
 `test_movement_rule_is_immutable`
 
 - verifies that a transformed `MovementRule` cannot be modified.
+
+`test_transform_piece_capture_rules`
+
+- transforms `diagonal forward` and `diagonal any` capture declarations;
+- verifies typed directions, distance, and `CaptureCondition.ENEMY`.
+
+`test_piece_without_capture_has_no_capture`
+
+- verifies backward compatibility through the optional
+  `PieceDefinition.capture` field.
+
+`test_capture_rule_is_immutable`
+
+- verifies that a transformed `CaptureRule` cannot be modified.
 
 `test_transform_setup_rules`
 
@@ -366,15 +386,17 @@ can require the `pytest` status check before merge.
 Completed coverage includes parser, AST, semantic-validation, runtime-state,
 game-initialization, placement and relocation request modelling, directional
 players, typed and semantically validated movement rules, immutable and
-semantically validated initial setup rules, non-capturing relocation execution,
-runtime setup expansion, turn-rotation, end-condition, rendering, and
-interactive-session tests for Tic-Tac-Toe.
+semantically validated initial setup rules, capture syntax and immutable capture
+AST rules, non-capturing relocation execution, runtime setup expansion,
+turn-rotation, end-condition, rendering, and interactive-session tests for
+Tic-Tac-Toe.
 
 Future coverage will add:
 
-1. capture and promotion tests for Checkers;
-2. parser, AST, and semantic-validation tests for Connect Four;
-3. complete game-scenario tests for additional supported games.
+1. capture semantic-validation and runtime-execution tests for Checkers;
+2. promotion tests for Checkers;
+3. parser, AST, and semantic-validation tests for Connect Four;
+4. complete game-scenario tests for additional supported games.
 
 Every new DSL construct should include:
 

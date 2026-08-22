@@ -140,11 +140,11 @@ The 17 focused tests cover valid Tic-Tac-Toe, movement, and setup definitions,
 cumulative diagnostics, stable codes and paths, piece-action exclusivity,
 movement distances, required player orientation, setup references, ownership,
 row ranges, overlaps, and `SemanticValidationError` behaviour. The complete
-project suite contains 121 tests.
+project suite contains 126 tests.
 
 ## Current limitations
 
 The rules cover Tic-Tac-Toe and the current directional, non-capturing movement
 and initial-setup subsets. Capture, promotion, Checkers end conditions, and
-Connect Four gravity will require additional semantic checks. Applying valid
-setup rules remains an engine responsibility.
+Connect Four gravity will require additional semantic checks. Valid setup rules
+are applied to runtime state by `GameInitializer`.

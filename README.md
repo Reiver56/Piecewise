@@ -39,7 +39,7 @@ The current increment supports:
 - semantic validation of piece actions and movement rules;
 - semantic validation of setup references, ownership, row ranges, and overlaps;
 - an immutable runtime game-state model with enforced invariants;
-- initialization of runtime state from a semantically valid definition;
+- initialization of runtime state and setup pieces from a valid definition;
 - immutable placement and relocation requests;
 - validated placement and non-capturing relocation execution with turn rotation;
 - automatic evaluation of row, column, and diagonal win conditions;
@@ -52,8 +52,7 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- Checkers capture, promotion, setup execution, end conditions, and interactive
-  play;
+- Checkers capture, promotion, end conditions, and interactive play;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
@@ -259,8 +258,8 @@ DSL source. Games without a setup block receive an empty setup tuple.
 Setup rules are validated semantically before reaching the engine. The
 validator checks that referenced pieces and players exist, that ownership is
 allowed, that one-based row ranges are ordered and fit the board, and that two
-rules do not overlap. Converting valid ranges to zero-based coordinates and
-placing runtime pieces remain a separate engine increment.
+rules do not overlap. `GameInitializer` converts valid ranges to zero-based
+coordinates and creates a `PlacedPiece` on each selected playable cell.
 
 ## Initialize a game
 
@@ -278,9 +277,11 @@ print(state.current_player)
 print(state.turn_number)
 ```
 
-The initial state currently contains no placed pieces, starts at turn one, and
-uses the first player declared in `turn_order`. Parsed setup rules are not yet
-applied by `GameInitializer`.
+The initial state starts at turn one and uses the first player declared in
+`turn_order`. Games without setup rules begin with no pieces. For configured
+setups, `GameInitializer` preserves rule order, expands each inclusive row
+range, and filters cells according to `ALL`, `DARK`, or `LIGHT` board
+playability.
 
 ## Represent a move
 
@@ -373,9 +374,8 @@ next_state = MoveExecutor(game).apply(state, move)
 replaces the source piece with an equivalent piece at the destination, advances
 the turn, and leaves the previous `GameState` unchanged.
 
-The current relocation executor is deliberately non-capturing. Applying the
-parsed initial setup, captures, promotion, and Checkers-specific end conditions
-remain future increments.
+The current relocation executor is deliberately non-capturing. Captures,
+promotion, and Checkers-specific end conditions remain future increments.
 
 ## Manage a complete game session
 
@@ -456,7 +456,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 121 parser, AST-transformation, semantic-validation,
+The current suite contains 126 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

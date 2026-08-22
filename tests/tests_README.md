@@ -52,7 +52,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 121 tests.
+The suite currently contains 126 tests.
 
 ### Parser tests
 
@@ -177,12 +177,17 @@ The movement-rule cases exercise the diagnostic codes
 
 ### Game-initializer tests
 
-The four tests in `test_game_initializer.py` verify that:
+The nine tests in `test_game_initializer.py` verify that:
 
 - initialization creates an empty, ongoing state;
 - the first player in `turn_order` becomes the current player;
 - semantically invalid definitions are rejected;
-- `GameInitializationError` includes validation details.
+- `GameInitializationError` includes validation details;
+- one-based setup rows become zero-based runtime coordinates;
+- `ALL`, `DARK`, and `LIGHT` cell selection is respected;
+- multiple setup rules create the expected 24-piece initial position;
+- invalid setup diagnostics cross the engine boundary as
+  `GameInitializationError`.
 
 ### Game-state tests
 
@@ -362,15 +367,14 @@ Completed coverage includes parser, AST, semantic-validation, runtime-state,
 game-initialization, placement and relocation request modelling, directional
 players, typed and semantically validated movement rules, immutable and
 semantically validated initial setup rules, non-capturing relocation execution,
-turn-rotation, end-condition, rendering, and
+runtime setup expansion, turn-rotation, end-condition, rendering, and
 interactive-session tests for Tic-Tac-Toe.
 
 Future coverage will add:
 
-1. runtime-initialization tests for Checkers setup;
-2. capture and promotion tests for Checkers;
-3. parser, AST, and semantic-validation tests for Connect Four;
-4. complete game-scenario tests for additional supported games.
+1. capture and promotion tests for Checkers;
+2. parser, AST, and semantic-validation tests for Connect Four;
+3. complete game-scenario tests for additional supported games.
 
 Every new DSL construct should include:
 

@@ -64,6 +64,24 @@ also exposed through the `destination` property. The `is_placement` and
 A move cannot use the same coordinate as both its source and destination.
 `Move` instances remain immutable.
 
+## Initialize setup pieces
+
+`GameInitializer` validates the complete `GameDefinition` before creating the
+first `GameState`. Invalid setup rules therefore raise
+`GameInitializationError` with the semantic diagnostics.
+
+For a valid setup, each inclusive one-based DSL row range is converted to
+zero-based runtime rows. The initializer creates `PlacedPiece` instances in
+rule, row, and column order and keeps only the requested playable cells:
+
+- `ALL` accepts every cell;
+- `DARK` accepts coordinates whose row-column sum is odd;
+- `LIGHT` accepts coordinates whose row-column sum is even.
+
+An absent setup produces the empty piece tuple used by Tic-Tac-Toe. The two
+standard three-row Checkers ranges on an 8x8 dark-cell board produce 12 pieces
+per player and 24 pieces in total.
+
 ## Initialize and play
 
 `GameSession` is the high-level engine API. It validates and initializes the
@@ -150,9 +168,9 @@ The engine consumes the typed AST and has no dependency on Lark or concrete
 DSL syntax. Terminal input and output belong to the separate `cli` package.
 The executor supports `ANY_EMPTY_CELL` placement plus validated,
 non-capturing `DIAGONAL_FORWARD` and `DIAGONAL_ANY` relocation. Capture,
-promotion, gravity, application of parsed initial setup, and interactive
-relocation input remain future increments. Movement-rule consistency is
-validated before the engine boundary by `SemanticValidator`.
+promotion, gravity, and interactive relocation input remain future increments.
+Movement and setup-rule consistency is validated before the engine boundary by
+`SemanticValidator`.
 
 ## Testing
 
@@ -169,5 +187,5 @@ python -m pytest \
   tests/test_board_renderer.py -v
 ```
 
-These modules contain 82 engine-focused tests. The complete project suite
-contains 121 tests.
+These modules contain 87 engine-focused tests. The complete project suite
+contains 126 tests.

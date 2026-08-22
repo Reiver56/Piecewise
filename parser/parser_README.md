@@ -240,14 +240,13 @@ Tic-Tac-Toe is fully transformed. The parser and AST also support the
 directional-player, non-capturing diagonal-movement, and initial-setup subset
 required for Checkers. Capture, promotion, Checkers end conditions, and Connect
 Four gravity still require additional grammar and AST increments. Setup rules
-are validated by `SemanticValidator`; runtime placement remains an engine
-responsibility.
+are validated by `SemanticValidator` and applied to runtime state by
+`GameInitializer`.
 
 ## Next steps
 
 1. improve user-facing diagnostics;
 2. add capture and promotion syntax;
-3. execute validated setup rules in the engine;
-4. extend the language for Connect Four;
-5. add the remaining Checkers constructs.
+3. extend the language for Connect Four;
+4. add the remaining Checkers constructs.
 

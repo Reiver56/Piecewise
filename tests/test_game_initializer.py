@@ -5,8 +5,16 @@ import pytest
 
 from engine.errors import GameInitializationError
 from engine.game_initializer import GameInitializer
-from engine.game_state import GameStatus
+from engine.game_state import (
+    Coordinate,
+    GameStatus,
+    PlacedPiece,
+)
 from parser.game_parser import GameParser
+from parser.ast_nodes import (
+    PlayableCells,
+    SetupRule,
+)
 
 
 GAMES_DIRECTORY = Path(__file__).parent.parent / "games"
@@ -65,3 +73,179 @@ def test_initialization_error_contains_validation_details() -> None:
     assert "board" in message.lower()
     assert "rows" in message.lower()
     assert "columns" in message.lower()
+
+def test_initialize_places_setup_pieces() -> None:
+    game = load_tictactoe()
+    game_with_setup = replace(
+        game,
+        setup=(
+            SetupRule(
+                piece_name="Mark",
+                owner="X",
+                first_row=1,
+                last_row=1,
+                playable_cells_only=True,
+            ),
+        ),
+    )
+
+    state = GameInitializer().initialize(game_with_setup)
+
+    assert state.pieces == (
+        PlacedPiece(
+            piece_name="Mark",
+            owner="X",
+            coordinate=Coordinate(row=0, column=0),
+        ),
+        PlacedPiece(
+            piece_name="Mark",
+            owner="X",
+            coordinate=Coordinate(row=0, column=1),
+        ),
+        PlacedPiece(
+            piece_name="Mark",
+            owner="X",
+            coordinate=Coordinate(row=0, column=2),
+        ),
+    )
+
+def test_initialize_uses_only_playable_dark_cells() -> None:
+    game = load_tictactoe()
+    game_with_setup = replace(
+        game,
+        board=replace(
+            game.board,
+            rows=4,
+            columns=4,
+            playable_cells=PlayableCells.DARK,
+        ),
+        setup=(
+            SetupRule(
+                piece_name="Mark",
+                owner="X",
+                first_row=1,
+                last_row=2,
+                playable_cells_only=True,
+            ),
+        ),
+    )
+
+    state = GameInitializer().initialize(game_with_setup)
+
+    assert tuple(
+        piece.coordinate
+        for piece in state.pieces
+    ) == (
+        Coordinate(row=0, column=1),
+        Coordinate(row=0, column=3),
+        Coordinate(row=1, column=0),
+        Coordinate(row=1, column=2),
+    )
+
+def test_initialize_uses_only_playable_light_cells() -> None:
+    game = load_tictactoe()
+    game_with_setup = replace(
+        game,
+        board=replace(
+            game.board,
+            rows=4,
+            columns=4,
+            playable_cells=PlayableCells.LIGHT,
+        ),
+        setup=(
+            SetupRule(
+                piece_name="Mark",
+                owner="X",
+                first_row=1,
+                last_row=2,
+                playable_cells_only=True,
+            ),
+        ),
+    )
+
+    state = GameInitializer().initialize(game_with_setup)
+
+    assert tuple(
+        piece.coordinate
+        for piece in state.pieces
+    ) == (
+        Coordinate(row=0, column=0),
+        Coordinate(row=0, column=2),
+        Coordinate(row=1, column=1),
+        Coordinate(row=1, column=3),
+    )
+
+def test_initialize_applies_multiple_setup_rules() -> None:
+    game = load_tictactoe()
+    game_with_setup = replace(
+        game,
+        board=replace(
+            game.board,
+            rows=8,
+            columns=8,
+            playable_cells=PlayableCells.DARK,
+        ),
+        setup=(
+            SetupRule(
+                piece_name="Mark",
+                owner="X",
+                first_row=6,
+                last_row=8,
+                playable_cells_only=True,
+            ),
+            SetupRule(
+                piece_name="Mark",
+                owner="O",
+                first_row=1,
+                last_row=3,
+                playable_cells_only=True,
+            ),
+        ),
+    )
+
+    state = GameInitializer().initialize(game_with_setup)
+
+    x_pieces = tuple(
+        piece
+        for piece in state.pieces
+        if piece.owner == "X"
+    )
+    o_pieces = tuple(
+        piece
+        for piece in state.pieces
+        if piece.owner == "O"
+    )
+
+    assert len(state.pieces) == 24
+    assert len(x_pieces) == 12
+    assert len(o_pieces) == 12
+
+    assert x_pieces[0].coordinate == Coordinate(
+        row=5,
+        column=0,
+    )
+    assert o_pieces[0].coordinate == Coordinate(
+        row=0,
+        column=1,
+    )
+
+def test_initialize_rejects_invalid_setup() -> None:
+    game = load_tictactoe()
+    invalid_game = replace(
+        game,
+        setup=(
+            SetupRule(
+                piece_name="Mark",
+                owner="X",
+                first_row=1,
+                last_row=4,
+                playable_cells_only=True,
+            ),
+        ),
+    )
+
+    with pytest.raises(
+        GameInitializationError,
+        match="setup_rows_out_of_bounds",
+    ):
+        GameInitializer().initialize(invalid_game)

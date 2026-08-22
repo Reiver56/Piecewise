@@ -127,8 +127,9 @@ setup {
 Each rule selects a piece type, its owner, an inclusive one-based row range,
 and playable cells only. The parser preserves these declarations as ordered,
 immutable `SetupRule` objects. Semantic validation checks references, ownership,
-row ordering, board bounds, and overlapping ranges. Application to the initial
-runtime board is not implemented yet.
+row ordering, board bounds, and overlapping ranges. `GameInitializer` then
+converts the one-based rows to zero-based coordinates and places pieces only on
+the selected playable cells.
 
 ### Win and draw conditions
 

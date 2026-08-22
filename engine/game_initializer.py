@@ -1,8 +1,15 @@
-from parser.ast_nodes import GameDefinition
+from parser.ast_nodes import (
+    GameDefinition,
+    PlayableCells,
+)
 from validation import SemanticValidator
 
 from engine.errors import GameInitializationError
-from engine.game_state import GameState
+from engine.game_state import (
+    Coordinate,
+    GameState,
+    PlacedPiece,
+)
 
 
 class GameInitializer:
@@ -34,7 +41,54 @@ class GameInitializer:
         return GameState(
             rows=game.board.rows,
             columns=game.board.columns,
-            pieces=(),
+            pieces=self._create_setup_pieces(game),
             current_player=game.turn_order[0],
             turn_number=1,
         )
+    
+    @staticmethod
+    def _create_setup_pieces(
+        game: GameDefinition,
+    ) -> tuple[PlacedPiece, ...]:
+        return tuple(
+            PlacedPiece(
+                piece_name=rule.piece_name,
+                owner=rule.owner,
+                coordinate=Coordinate(
+                    row=row,
+                    column=column,
+                ),
+            )
+            for rule in game.setup
+            for row in range(
+                rule.first_row - 1,
+                rule.last_row,
+            )
+            for column in range(game.board.columns)
+            if (
+                not rule.playable_cells_only
+                or GameInitializer._is_playable_cell(
+                    game,
+                    row,
+                    column,
+                )
+            )
+        )
+    
+    @staticmethod
+    def _is_playable_cell(
+        game: GameDefinition,
+        row: int,
+        column: int,
+    ) -> bool:
+        playable_cells = game.board.playable_cells
+
+        if playable_cells is PlayableCells.ALL:
+            return True
+
+        is_dark_cell = (row + column) % 2 == 1
+
+        if playable_cells is PlayableCells.DARK:
+            return is_dark_cell
+
+        return not is_dark_cell

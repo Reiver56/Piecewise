@@ -65,6 +65,11 @@ The validator detects:
 - pieces declaring both placement and movement;
 - non-positive movement distances;
 - owners missing a forward direction required by `diagonal forward`;
+- setup rules referencing undeclared pieces or players;
+- setup owners not allowed by their referenced piece;
+- setup row ranges that are not ordered and one-based;
+- setup row ranges extending beyond the board;
+- setup rules whose playable row ranges overlap;
 - non-positive alignment lengths;
 - alignments that do not fit the board in their specified direction.
 
@@ -102,6 +107,17 @@ Movement validation uses these stable diagnostics:
 | `invalid_movement_distance` | `pieces.NAME.movement.distance` | Distance is not positive |
 | `missing_forward_direction` | `players.NAME.forward` | A forward-moving owner has no orientation |
 
+Setup validation uses indexed paths so diagnostics identify the exact rule:
+
+| Code | Path | Meaning |
+| --- | --- | --- |
+| `unknown_setup_piece` | `setup[N].piece_name` | Referenced piece is undeclared |
+| `unknown_setup_owner` | `setup[N].owner` | Referenced player is undeclared |
+| `setup_owner_not_allowed` | `setup[N].owner` | Piece cannot belong to that player |
+| `invalid_setup_row_range` | `setup[N].rows` | Range is not ordered and one-based |
+| `setup_rows_out_of_bounds` | `setup[N].rows` | Range exceeds the board |
+| `overlapping_setup_rules` | `setup[N].rows` | Range overlaps an earlier setup rule |
+
 ## Architectural boundary
 
 The parser verifies syntax and constructs the AST. This package validates
@@ -120,14 +136,15 @@ Run the focused tests from the project root:
 python -m pytest tests/test_semantic_validator.py -v
 ```
 
-The nine focused tests cover valid Tic-Tac-Toe and movement definitions,
+The 17 focused tests cover valid Tic-Tac-Toe, movement, and setup definitions,
 cumulative diagnostics, stable codes and paths, piece-action exclusivity,
-movement distances, required player orientation, and
-`SemanticValidationError` behaviour. The complete project suite contains 113
-tests.
+movement distances, required player orientation, setup references, ownership,
+row ranges, overlaps, and `SemanticValidationError` behaviour. The complete
+project suite contains 121 tests.
 
 ## Current limitations
 
 The rules cover Tic-Tac-Toe and the current directional, non-capturing movement
-subset. Capture, promotion, semantic validation of initial setup, Checkers end
-conditions, and Connect Four gravity will require additional semantic checks.
+and initial-setup subsets. Capture, promotion, Checkers end conditions, and
+Connect Four gravity will require additional semantic checks. Applying valid
+setup rules remains an engine responsibility.

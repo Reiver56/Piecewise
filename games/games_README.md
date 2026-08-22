@@ -126,8 +126,9 @@ setup {
 
 Each rule selects a piece type, its owner, an inclusive one-based row range,
 and playable cells only. The parser preserves these declarations as ordered,
-immutable `SetupRule` objects. Their semantic validation and application to the
-initial runtime board are not implemented yet.
+immutable `SetupRule` objects. Semantic validation checks references, ownership,
+row ordering, board bounds, and overlapping ranges. Application to the initial
+runtime board is not implemented yet.
 
 ### Win and draw conditions
 
@@ -222,6 +223,9 @@ The current semantic validator rejects definitions when:
 - a piece declares neither placement nor movement, or declares both;
 - a movement distance is not positive;
 - a forward-moving owner has no declared forward direction;
+- a setup rule references an undeclared piece or player;
+- a setup owner is not allowed for the referenced piece;
+- a setup row range is malformed, outside the board, or overlaps another rule;
 - an alignment length cannot fit on the board;
 - declared players are missing from the turn order.
 

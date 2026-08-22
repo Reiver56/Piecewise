@@ -239,15 +239,15 @@ Semantic-validation behaviour is covered independently in
 Tic-Tac-Toe is fully transformed. The parser and AST also support the
 directional-player, non-capturing diagonal-movement, and initial-setup subset
 required for Checkers. Capture, promotion, Checkers end conditions, and Connect
-Four gravity still require additional grammar and AST increments. Setup
-semantic validation and runtime placement remain responsibilities of later
-layers.
+Four gravity still require additional grammar and AST increments. Setup rules
+are validated by `SemanticValidator`; runtime placement remains an engine
+responsibility.
 
 ## Next steps
 
 1. improve user-facing diagnostics;
 2. add capture and promotion syntax;
-3. validate and execute setup rules in their respective layers;
+3. execute validated setup rules in the engine;
 4. extend the language for Connect Four;
 5. add the remaining Checkers constructs.
 

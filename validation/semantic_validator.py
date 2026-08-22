@@ -29,6 +29,7 @@ class SemanticValidator:
         self._validate_board(game, issues)
         self._validate_players(game, issues)
         self._validate_pieces(game, issues)
+        self._validate_setup(game, issues)
         self._validate_win_conditions(game, issues)
 
         return tuple(issues)
@@ -244,6 +245,134 @@ class SemanticValidator:
                     ),
                 )
             )
+
+    def _validate_setup(
+        self,
+        game: GameDefinition,
+        issues: list[ValidationIssue],
+    ) -> None:
+        pieces_by_name = {
+            piece.name: piece
+            for piece in game.pieces
+        }
+
+        declared_players = {
+            player.name
+            for player in game.players
+        }
+
+        for index, rule in enumerate(game.setup):
+            piece = pieces_by_name.get(rule.piece_name)
+
+            if piece is None:
+                issues.append(
+                    ValidationIssue(
+                        code="unknown_setup_piece",
+                        path=f"setup[{index}].piece_name",
+                        message=(
+                            f"Piece '{rule.piece_name}' used in setup "
+                            "is not declared."
+                        ),
+                    )
+                )
+
+            if rule.owner not in declared_players:
+                issues.append(
+                    ValidationIssue(
+                        code="unknown_setup_owner",
+                        path=f"setup[{index}].owner",
+                        message=(
+                            f"Player '{rule.owner}' used in setup "
+                            "is not declared."
+                        ),
+                    )
+                )
+
+            if (
+                piece is not None
+                and rule.owner in declared_players
+                and rule.owner not in piece.owners
+            ):
+                issues.append(
+                    ValidationIssue(
+                        code="setup_owner_not_allowed",
+                        path=f"setup[{index}].owner",
+                        message=(
+                            f"Player '{rule.owner}' cannot own piece "
+                            f"'{rule.piece_name}' used in setup."
+                        ),
+                    )
+                )
+
+            has_valid_row_range = (
+                    rule.first_row >= 1
+                    and rule.first_row <= rule.last_row
+                )
+
+            if not has_valid_row_range:
+                issues.append(
+                    ValidationIssue(
+                        code="invalid_setup_row_range",
+                        path=f"setup[{index}].rows",
+                        message=(
+                            f"Setup rows {rule.first_row}..{rule.last_row} "
+                            "must form an ordered one-based range."
+                        ),
+                    )
+                )
+
+            if (
+                has_valid_row_range
+                and rule.last_row > game.board.rows
+            ):
+                issues.append(
+                    ValidationIssue(
+                        code="setup_rows_out_of_bounds",
+                        path=f"setup[{index}].rows",
+                        message=(
+                            f"Setup rows {rule.first_row}..{rule.last_row} "
+                            f"do not fit a board with {game.board.rows} rows."
+                        ),
+                    )
+                )
+                
+        valid_setup_rules = tuple(
+            (index, rule)
+            for index, rule in enumerate(game.setup)
+            if (
+                1
+                <= rule.first_row
+                <= rule.last_row
+                <= game.board.rows
+            )
+        )
+
+        for position, (index, rule) in enumerate(valid_setup_rules):
+            previous_rules = valid_setup_rules[:position]
+
+            for previous_index, previous_rule in previous_rules:
+                ranges_overlap = (
+                    rule.first_row <= previous_rule.last_row
+                    and previous_rule.first_row <= rule.last_row
+                )
+
+                if not ranges_overlap:
+                    continue
+                
+                issues.append(
+                    ValidationIssue(
+                        code="overlapping_setup_rules",
+                        path=f"setup[{index}].rows",
+                        message=(
+                            f"Setup rows {rule.first_row}..{rule.last_row} "
+                            f"overlap rows {previous_rule.first_row}.."
+                            f"{previous_rule.last_row} from setup rule "
+                            f"{previous_index}."
+                        ),
+                    )
+                )
+                break
+    
 
     def _validate_win_conditions(
         self,

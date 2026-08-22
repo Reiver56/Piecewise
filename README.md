@@ -38,6 +38,7 @@ The current increment supports:
 - optional initial-setup syntax and immutable setup rules in the AST;
 - semantic validation with cumulative, structured diagnostics;
 - semantic validation of piece actions and movement rules;
+- semantic validation of capture dependencies, distances, and orientation;
 - semantic validation of setup references, ownership, row ranges, and overlaps;
 - an immutable runtime game-state model with enforced invariants;
 - initialization of runtime state and setup pieces from a valid definition;
@@ -53,8 +54,7 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- Checkers capture validation and execution, promotion, end conditions, and
-  interactive play;
+- Checkers capture execution, promotion, end conditions, and interactive play;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
@@ -257,8 +257,10 @@ directions. Each declaration becomes an immutable `CaptureRule` containing its
 typed direction, distance, and `CaptureCondition.ENEMY`. Pieces without a
 capture declaration keep `PieceDefinition.capture` set to `None`.
 
-This increment covers syntax parsing and AST transformation only. Capture-rule
-semantic validation and runtime execution remain separate engine increments.
+Capture rules are also validated semantically. A capture requires a normal
+movement rule, its distance must be positive, and every owner of a `diagonal
+forward` capture must declare `forward: up` or `forward: down`. Runtime capture
+execution remains a separate engine increment.
 
 ## Define an initial setup
 
@@ -397,8 +399,8 @@ replaces the source piece with an equivalent piece at the destination, advances
 the turn, and leaves the previous `GameState` unchanged.
 
 The current relocation executor is deliberately non-capturing. Capture rules
-can be represented by the grammar and AST, but capture validation, execution,
-promotion, and Checkers-specific end conditions remain future increments.
+can be represented and validated, but capture execution, promotion, and
+Checkers-specific end conditions remain future increments.
 
 ## Manage a complete game session
 
@@ -479,7 +481,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 130 parser, AST-transformation, semantic-validation,
+The current suite contains 135 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

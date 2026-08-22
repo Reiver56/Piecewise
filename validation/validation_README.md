@@ -65,6 +65,9 @@ The validator detects:
 - pieces declaring both placement and movement;
 - non-positive movement distances;
 - owners missing a forward direction required by `diagonal forward`;
+- capture rules declared without a movement rule;
+- non-positive capture distances;
+- owners missing a forward direction required by a `diagonal forward` capture;
 - setup rules referencing undeclared pieces or players;
 - setup owners not allowed by their referenced piece;
 - setup row ranges that are not ordered and one-based;
@@ -80,6 +83,12 @@ Piece actions are exclusive: each piece must declare exactly one of `place` or
 `move`. A `diagonal any` rule does not depend on player orientation, while every
 declared owner of a `diagonal forward` rule must provide `forward: up` or
 `forward: down`.
+
+A capture is an optional capability of a movement piece, not a standalone
+piece action. Therefore it requires a normal movement rule. Capture distances
+must be positive, and `diagonal forward` captures use the same player
+orientation requirement as forward movement. When both rules require forward
+orientation, the validator avoids reporting the same missing direction twice.
 
 ## Diagnostics
 
@@ -107,6 +116,14 @@ Movement validation uses these stable diagnostics:
 | `invalid_movement_distance` | `pieces.NAME.movement.distance` | Distance is not positive |
 | `missing_forward_direction` | `players.NAME.forward` | A forward-moving owner has no orientation |
 
+Capture validation adds these diagnostics while reusing
+`missing_forward_direction` for player orientation:
+
+| Code | Path | Meaning |
+| --- | --- | --- |
+| `capture_requires_movement` | `pieces.NAME.capture` | Capture is declared without movement |
+| `invalid_capture_distance` | `pieces.NAME.capture.distance` | Distance is not positive |
+
 Setup validation uses indexed paths so diagnostics identify the exact rule:
 
 | Code | Path | Meaning |
@@ -124,6 +141,8 @@ The parser verifies syntax and constructs the AST. This package validates
 relationships and domain constraints within that AST. The engine receives
 validated definitions and manages runtime state, turns, and supported move
 execution. Geometric movement execution remains a separate engine concern.
+Removing an enemy piece and moving the capturing piece are likewise runtime
+engine responsibilities, not semantic-validation responsibilities.
 
 Validation is currently invoked explicitly; `GameParser` does not run it
 automatically.
@@ -136,15 +155,16 @@ Run the focused tests from the project root:
 python -m pytest tests/test_semantic_validator.py -v
 ```
 
-The 17 focused tests cover valid Tic-Tac-Toe, movement, and setup definitions,
-cumulative diagnostics, stable codes and paths, piece-action exclusivity,
-movement distances, required player orientation, setup references, ownership,
-row ranges, overlaps, and `SemanticValidationError` behaviour. The complete
-project suite contains 126 tests.
+The 22 focused tests cover valid Tic-Tac-Toe, movement, capture, and setup
+definitions, cumulative diagnostics, stable codes and paths, piece-action
+exclusivity, movement and capture distances, required player orientation,
+capture-to-movement dependency, setup references, ownership, row ranges,
+overlaps, and `SemanticValidationError` behaviour. The complete project suite
+contains 135 tests.
 
 ## Current limitations
 
-The rules cover Tic-Tac-Toe and the current directional, non-capturing movement
-and initial-setup subsets. Capture, promotion, Checkers end conditions, and
-Connect Four gravity will require additional semantic checks. Valid setup rules
-are applied to runtime state by `GameInitializer`.
+The rules cover Tic-Tac-Toe and the current directional movement, capture, and
+initial-setup subsets. Capture execution, promotion, Checkers end conditions,
+and Connect Four gravity still require future increments. Valid setup rules are
+applied to runtime state by `GameInitializer`.

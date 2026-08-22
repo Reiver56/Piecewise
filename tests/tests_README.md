@@ -52,7 +52,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 130 tests.
+The suite currently contains 135 tests.
 
 ### Parser tests
 
@@ -155,7 +155,7 @@ forward direction and its placement piece has no movement rule.
 
 ### Semantic-validation tests
 
-The 17 cases in `test_semantic_validator.py` verify:
+The 22 cases in `test_semantic_validator.py` verify:
 
 - valid Tic-Tac-Toe and movement-rule definitions;
 - acceptance of valid definitions through `validate_or_raise()`;
@@ -166,6 +166,11 @@ The 17 cases in `test_semantic_validator.py` verify:
 - rejection of non-positive movement distances;
 - the requirement that every owner of a `diagonal forward` piece declares a
   forward direction;
+- acceptance of valid capture rules;
+- rejection of non-positive capture distances;
+- rejection of capture rules without a normal movement rule;
+- the forward-direction requirement introduced by `diagonal forward` capture;
+- cumulative reporting of independent capture issues;
 - acceptance of valid initial setup rules;
 - rejection of unknown setup pieces and owners;
 - rejection of setup owners not allowed for their piece;
@@ -194,6 +199,11 @@ The 17 cases in `test_semantic_validator.py` verify:
 The movement-rule cases exercise the diagnostic codes
 `missing_piece_action`, `conflicting_piece_actions`,
 `invalid_movement_distance`, and `missing_forward_direction`.
+
+The capture-rule cases exercise `capture_requires_movement`,
+`invalid_capture_distance`, and the shared `missing_forward_direction`
+diagnostic. They also isolate forward capture from ordinary movement and verify
+that multiple capture problems are collected in one validation pass.
 
 ### Game-initializer tests
 
@@ -386,14 +396,14 @@ can require the `pytest` status check before merge.
 Completed coverage includes parser, AST, semantic-validation, runtime-state,
 game-initialization, placement and relocation request modelling, directional
 players, typed and semantically validated movement rules, immutable and
-semantically validated initial setup rules, capture syntax and immutable capture
-AST rules, non-capturing relocation execution, runtime setup expansion,
-turn-rotation, end-condition, rendering, and interactive-session tests for
-Tic-Tac-Toe.
+semantically validated initial setup rules, capture syntax, immutable capture
+AST rules, semantic capture constraints, non-capturing relocation execution,
+runtime setup expansion, turn-rotation, end-condition, rendering, and
+interactive-session tests for Tic-Tac-Toe.
 
 Future coverage will add:
 
-1. capture semantic-validation and runtime-execution tests for Checkers;
+1. capture runtime-execution tests for Checkers;
 2. promotion tests for Checkers;
 3. parser, AST, and semantic-validation tests for Connect Four;
 4. complete game-scenario tests for additional supported games.

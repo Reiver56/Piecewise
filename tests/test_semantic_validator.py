@@ -16,6 +16,8 @@ from parser.ast_nodes import (
     PlayerDefinition,
     PlayableCells,
     SetupRule,
+    CaptureCondition,
+    CaptureRule,
 )
 
 from parser.game_parser import GameParser
@@ -56,6 +58,24 @@ def valid_movement_game(valid_game):
                     direction=MovementDirection.DIAGONAL_FORWARD,
                     distance=1,
                     destination_condition=DestinationCondition.EMPTY,
+                ),
+            ),
+        ),
+    )
+
+@pytest.fixture(scope="module")
+def valid_capture_game(valid_movement_game):
+    piece = valid_movement_game.pieces[0]
+
+    return replace(
+        valid_movement_game,
+        pieces=(
+            replace(
+                piece,
+                capture=CaptureRule(
+                    direction=MovementDirection.DIAGONAL_FORWARD,
+                    distance=2,
+                    condition=CaptureCondition.ENEMY,
                 ),
             ),
         ),
@@ -197,6 +217,140 @@ def test_valid_movement_rules_have_no_semantic_issues(
     validator: SemanticValidator,
 ) -> None:
     assert validator.validate(valid_movement_game) == ()
+
+def test_valid_capture_rule_has_no_semantic_issues(
+    valid_capture_game,
+    validator: SemanticValidator,
+) -> None:
+    assert validator.validate(valid_capture_game) == ()
+
+
+def test_rejects_non_positive_capture_distance(
+    valid_capture_game,
+    validator: SemanticValidator,
+) -> None:
+    piece = valid_capture_game.pieces[0]
+    capture = piece.capture
+
+    assert capture is not None
+
+    invalid_game = replace(
+        valid_capture_game,
+        pieces=(
+            replace(
+                piece,
+                capture=replace(
+                    capture,
+                    distance=0,
+                ),
+            ),
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "invalid_capture_distance"
+        and issue.path == "pieces.Man.capture.distance"
+        for issue in issues
+    )
+
+def test_rejects_capture_without_movement(
+    valid_capture_game,
+    validator: SemanticValidator,
+) -> None:
+    piece = valid_capture_game.pieces[0]
+
+    invalid_game = replace(
+        valid_capture_game,
+        pieces=(
+            replace(
+                piece,
+                movement=None,
+            ),
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "capture_requires_movement"
+        and issue.path == "pieces.Man.capture"
+        for issue in issues
+    )
+
+def test_forward_capture_requires_owner_direction(
+    valid_capture_game,
+    validator: SemanticValidator,
+) -> None:
+    piece = valid_capture_game.pieces[0]
+    movement = piece.movement
+    white, black = valid_capture_game.players
+
+    assert movement is not None
+
+    invalid_game = replace(
+        valid_capture_game,
+        players=(
+            replace(
+                white,
+                forward=None,
+            ),
+            black,
+        ),
+        pieces=(
+            replace(
+                piece,
+                movement=replace(
+                    movement,
+                    direction=MovementDirection.DIAGONAL_ANY,
+                ),
+            ),
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "missing_forward_direction"
+        and issue.path == "players.White.forward"
+        for issue in issues
+    )
+
+def test_collects_multiple_capture_issues(
+    valid_capture_game,
+    validator: SemanticValidator,
+) -> None:
+    piece = valid_capture_game.pieces[0]
+    capture = piece.capture
+
+    assert capture is not None
+
+    invalid_game = replace(
+        valid_capture_game,
+        pieces=(
+            replace(
+                piece,
+                movement=None,
+                capture=replace(
+                    capture,
+                    distance=0,
+                ),
+            ),
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+    codes = {
+        issue.code
+        for issue in issues
+    }
+
+    assert codes == {
+        "missing_piece_action",
+        "capture_requires_movement",
+        "invalid_capture_distance",
+    }
 
 
 def test_rejects_piece_without_placement_or_movement(

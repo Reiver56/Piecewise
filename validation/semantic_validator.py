@@ -164,6 +164,12 @@ class SemanticValidator:
                 players_by_name,
                 issues,
             )
+            self._validate_capture_rule(
+                piece,
+                players_by_name,
+                issues,
+            )
+
 
     def _validate_piece_action(
         self,
@@ -245,6 +251,74 @@ class SemanticValidator:
                     ),
                 )
             )
+
+    def _validate_capture_rule(
+        self,
+        piece: PieceDefinition,
+        players_by_name: dict[str, PlayerDefinition],
+        issues: list[ValidationIssue],
+    ) -> None:
+        capture = piece.capture
+
+        if capture is None:
+            return
+
+        if piece.movement is None:
+            issues.append(
+                ValidationIssue(
+                    code="capture_requires_movement",
+                    path=f"pieces.{piece.name}.capture",
+                    message=(
+                        f"Piece '{piece.name}' cannot declare "
+                        "a capture rule without a movement rule."
+                    ),
+                )
+            )
+
+        if capture.distance <= 0:
+            issues.append(
+                ValidationIssue(
+                    code="invalid_capture_distance",
+                    path=(
+                        f"pieces.{piece.name}."
+                        "capture.distance"
+                    ),
+                    message=(
+                        f"Capture distance for piece "
+                        f"'{piece.name}' must be greater than zero."
+                    ),
+                )
+            )
+            
+        movement_already_requires_forward = (
+            piece.movement is not None
+            and piece.movement.direction
+            is MovementDirection.DIAGONAL_FORWARD
+        )
+
+        if (
+            capture.direction is not MovementDirection.DIAGONAL_FORWARD
+            or movement_already_requires_forward
+        ):
+            return
+
+        for owner in piece.owners:
+            player = players_by_name.get(owner)
+
+            if player is None or player.forward is not None:
+                continue
+            
+            issues.append(
+                ValidationIssue(
+                    code="missing_forward_direction",
+                    path=f"players.{owner}.forward",
+                    message=(
+                        f"Player '{owner}' must declare a forward "
+                        f"direction to own piece '{piece.name}' "
+                        "with a diagonal-forward capture rule."
+                    ),
+                )
+            )    
 
     def _validate_setup(
         self,

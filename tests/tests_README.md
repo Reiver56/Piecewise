@@ -52,7 +52,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 113 tests.
+The suite currently contains 121 tests.
 
 ### Parser tests
 
@@ -135,7 +135,7 @@ forward direction and its placement piece has no movement rule.
 
 ### Semantic-validation tests
 
-The nine cases in `test_semantic_validator.py` verify:
+The 17 cases in `test_semantic_validator.py` verify:
 
 - valid Tic-Tac-Toe and movement-rule definitions;
 - acceptance of valid definitions through `validate_or_raise()`;
@@ -145,7 +145,12 @@ The nine cases in `test_semantic_validator.py` verify:
 - rejection of pieces declaring both placement and movement;
 - rejection of non-positive movement distances;
 - the requirement that every owner of a `diagonal forward` piece declares a
-  forward direction.
+  forward direction;
+- acceptance of valid initial setup rules;
+- rejection of unknown setup pieces and owners;
+- rejection of setup owners not allowed for their piece;
+- rejection of non-one-based, reversed, and out-of-bounds row ranges;
+- rejection of overlapping setup ranges.
 
 `test_valid_tictactoe_has_no_semantic_issues`
 
@@ -355,14 +360,14 @@ can require the `pytest` status check before merge.
 
 Completed coverage includes parser, AST, semantic-validation, runtime-state,
 game-initialization, placement and relocation request modelling, directional
-players, typed and semantically validated movement rules, immutable initial
-setup AST rules, non-capturing relocation execution, turn-rotation,
-end-condition, rendering, and
+players, typed and semantically validated movement rules, immutable and
+semantically validated initial setup rules, non-capturing relocation execution,
+turn-rotation, end-condition, rendering, and
 interactive-session tests for Tic-Tac-Toe.
 
 Future coverage will add:
 
-1. semantic-validation and runtime-initialization tests for Checkers setup;
+1. runtime-initialization tests for Checkers setup;
 2. capture and promotion tests for Checkers;
 3. parser, AST, and semantic-validation tests for Connect Four;
 4. complete game-scenario tests for additional supported games.

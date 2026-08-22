@@ -37,6 +37,7 @@ The current increment supports:
 - optional initial-setup syntax and immutable setup rules in the AST;
 - semantic validation with cumulative, structured diagnostics;
 - semantic validation of piece actions and movement rules;
+- semantic validation of setup references, ownership, row ranges, and overlaps;
 - an immutable runtime game-state model with enforced invariants;
 - initialization of runtime state from a semantically valid definition;
 - immutable placement and relocation requests;
@@ -51,8 +52,8 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- Checkers capture, promotion, setup validation and execution, end conditions,
-  and interactive play;
+- Checkers capture, promotion, setup execution, end conditions, and interactive
+  play;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
@@ -255,9 +256,11 @@ owner, inclusive row range, and the requirement to use playable cells only.
 The row numbers remain one-based in the AST so it faithfully represents the
 DSL source. Games without a setup block receive an empty setup tuple.
 
-This increment covers syntax and AST transformation only. Checking setup
-references and row ranges, converting them to zero-based coordinates, and
-placing runtime pieces remain separate validation and engine increments.
+Setup rules are validated semantically before reaching the engine. The
+validator checks that referenced pieces and players exist, that ownership is
+allowed, that one-based row ranges are ordered and fit the board, and that two
+rules do not overlap. Converting valid ranges to zero-based coordinates and
+placing runtime pieces remain a separate engine increment.
 
 ## Initialize a game
 
@@ -453,7 +456,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 113 parser, AST-transformation, semantic-validation,
+The current suite contains 121 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

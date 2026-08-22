@@ -139,11 +139,26 @@ class MoveExecutor:
                 f"not '{move.piece_name}'."
             )
 
+        if self._matches_capture_distance(
+            move,
+            piece_definition,
+        ):
+            self._validate_capture_direction(
+                move,
+                piece_definition,
+            )
+
+            return self._apply_capture(
+                state,
+                move,
+                source_piece,
+            )
+
         self._validate_relocation_geometry(
             move,
             piece_definition,
         )
-
+        
         return tuple(
             replace(
                 piece,
@@ -152,6 +167,113 @@ class MoveExecutor:
             if piece is source_piece
             else piece
             for piece in state.pieces
+        )
+
+    def _matches_capture_distance(
+        self,
+        move: Move,
+        piece_definition: PieceDefinition,
+    ) -> bool:
+        source = move.source
+        capture = piece_definition.capture
+
+        if source is None or capture is None:
+            return False
+
+        row_delta = move.destination.row - source.row
+        column_delta = (
+            move.destination.column - source.column
+        )
+
+        return (
+            abs(row_delta) == capture.distance
+            and abs(column_delta) == capture.distance
+        )
+
+    def _validate_capture_direction(
+        self,
+        move: Move,
+        piece_definition: PieceDefinition,
+    ) -> None:
+        source = move.source
+        capture = piece_definition.capture
+
+        if source is None or capture is None:
+            return
+
+        if (
+            capture.direction
+            is MovementDirection.DIAGONAL_ANY
+        ):
+            return
+
+        row_delta = move.destination.row - source.row
+        forward = self._forward_direction(move.player)
+
+        expected_row_delta = (
+            -capture.distance
+            if forward is ForwardDirection.UP
+            else capture.distance
+        )
+
+        if row_delta != expected_row_delta:
+            raise InvalidMoveError(
+                f"Player '{move.player}' must capture piece "
+                f"'{piece_definition.name}' forward."
+            )
+    
+    def _apply_capture(
+        self,
+        state: GameState,
+        move: Move,
+        source_piece: PlacedPiece,
+    ) -> tuple[PlacedPiece, ...]:
+        source = move.source
+    
+        if source is None:
+            raise InvalidMoveError(
+                "A capture move requires a source coordinate."
+            )
+    
+        captured_coordinate = Coordinate(
+            row=(
+                source.row + move.destination.row
+            ) // 2,
+            column=(
+                source.column + move.destination.column
+            ) // 2,
+        )
+    
+        captured_piece = next(
+            (
+                piece
+                for piece in state.pieces
+                if piece.coordinate == captured_coordinate
+            ),
+            None,
+        )
+    
+        if captured_piece is None:
+            raise InvalidMoveError(
+                f"Capture coordinate {captured_coordinate} "
+                "does not contain a piece."
+            )
+    
+        if captured_piece.owner == move.player:
+            raise InvalidMoveError(
+                f"Player '{move.player}' cannot capture "
+                "their own piece."
+            )
+    
+        return tuple(
+            replace(
+                piece,
+                coordinate=move.destination,
+            )
+            if piece is source_piece
+            else piece
+            for piece in state.pieces
+            if piece is not captured_piece
         )
 
     def _validate_relocation_geometry(

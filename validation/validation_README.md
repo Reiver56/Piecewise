@@ -160,11 +160,12 @@ definitions, cumulative diagnostics, stable codes and paths, piece-action
 exclusivity, movement and capture distances, required player orientation,
 capture-to-movement dependency, setup references, ownership, row ranges,
 overlaps, and `SemanticValidationError` behaviour. The complete project suite
-contains 135 tests.
+contains 142 tests.
 
 ## Current limitations
 
 The rules cover Tic-Tac-Toe and the current directional movement, capture, and
-initial-setup subsets. Capture execution, promotion, Checkers end conditions,
-and Connect Four gravity still require future increments. Valid setup rules are
-applied to runtime state by `GameInitializer`.
+initial-setup subsets. Supported single-jump captures are executed by
+`MoveExecutor`; multiple captures, mandatory capture, promotion, Checkers end
+conditions, and Connect Four gravity still require future increments. Valid
+setup rules are applied to runtime state by `GameInitializer`.

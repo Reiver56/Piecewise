@@ -16,6 +16,8 @@ from parser.ast_nodes import (
     PieceDefinition,
     PlayableCells,
     PlayerDefinition,
+    CaptureCondition,
+    CaptureRule,
 )
 from parser.game_parser import GameParser
 
@@ -67,6 +69,27 @@ def create_movement_game(
         ),
     )
 
+def create_capture_game(
+    direction: MovementDirection = (
+        MovementDirection.DIAGONAL_FORWARD
+    ),
+):
+    game = create_movement_game(direction)
+    piece = game.pieces[0]
+
+    return replace(
+        game,
+        pieces=(
+            replace(
+                piece,
+                capture=CaptureRule(
+                    direction=direction,
+                    distance=2,
+                    condition=CaptureCondition.ENEMY,
+                ),
+            ),
+        ),
+    )
 
 def create_movement_state(
     *,
@@ -88,6 +111,334 @@ def create_movement_state(
         current_player=current_player,
         turn_number=turn_number,
     )
+
+def test_apply_captures_enemy_piece_forward() -> None:
+    game = create_capture_game()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=1),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=0),
+        coordinate=Coordinate(row=3, column=2),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="Man",
+            owner="White",
+            coordinate=Coordinate(row=3, column=2),
+        ),
+    )
+    assert result.current_player == "Black"
+    assert result.turn_number == 2
+    assert result.status is GameStatus.ONGOING 
+
+def test_capture_does_not_modify_previous_state() -> None:
+    game = create_capture_game()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=1),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    pieces_before_capture = state.pieces
+
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=0),
+        coordinate=Coordinate(row=3, column=2),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert state.pieces is pieces_before_capture
+    assert state.pieces == (
+        PlacedPiece(
+            piece_name="Man",
+            owner="White",
+            coordinate=Coordinate(row=5, column=0),
+        ),
+        PlacedPiece(
+            piece_name="Man",
+            owner="Black",
+            coordinate=Coordinate(row=4, column=1),
+        ),
+    )
+
+    assert result is not state
+    assert result.pieces is not pieces_before_capture
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="Man",
+            owner="White",
+            coordinate=Coordinate(row=3, column=2),
+        ),
+    )
+
+def test_capture_rejects_empty_intermediate_cell() -> None:
+    game = create_capture_game()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=0),
+        coordinate=Coordinate(row=3, column=2),
+    )
+
+    with pytest.raises(
+        InvalidMoveError,
+        match="does not contain a piece",
+    ):
+        MoveExecutor(game).apply(state, move)
+
+def test_capture_rejects_own_piece() -> None:
+    game = create_capture_game()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=4, column=1),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=0),
+        coordinate=Coordinate(row=3, column=2),
+    )
+
+    with pytest.raises(
+        InvalidMoveError,
+        match="cannot capture their own piece",
+    ):
+        MoveExecutor(game).apply(state, move)
+
+def test_diagonal_any_allows_backward_capture() -> None:
+    game = create_capture_game(
+        MovementDirection.DIAGONAL_ANY,
+    )
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=3, column=2),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=3),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=3, column=2),
+        coordinate=Coordinate(row=5, column=4),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="Man",
+            owner="White",
+            coordinate=Coordinate(row=5, column=4),
+        ),
+    )
+    assert result.current_player == "Black"
+    assert result.turn_number == 2
+
+def test_forward_capture_rejects_backward_direction() -> None:
+    game = create_capture_game()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=3, column=2),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=3),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=3, column=2),
+        coordinate=Coordinate(row=5, column=4),
+    )
+
+    with pytest.raises(
+        InvalidMoveError,
+        match="must capture piece 'Man' forward",
+    ):
+        MoveExecutor(game).apply(state, move)
+
+def test_apply_captures_enemy_piece_forward_for_down_player() -> None:
+    game = create_capture_game()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=2, column=1),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=3, column=2),
+            ),
+        ),
+        current_player="Black",
+        turn_number=2,
+    )
+    move = Move(
+        player="Black",
+        piece_name="Man",
+        source=Coordinate(row=2, column=1),
+        coordinate=Coordinate(row=4, column=3),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="Man",
+            owner="Black",
+            coordinate=Coordinate(row=4, column=3),
+        ),
+    )
+    assert result.current_player == "White"
+    assert result.turn_number == 3
+
+def test_forward_capture_requires_player_direction() -> None:
+    game = create_capture_game()
+    white, black = game.players
+    piece = game.pieces[0]
+    movement = piece.movement
+
+    assert movement is not None
+
+    invalid_game = replace(
+        game,
+        players=(
+            replace(
+                white,
+                forward=None,
+            ),
+            black,
+        ),
+        pieces=(
+            replace(
+                piece,
+                movement=replace(
+                    movement,
+                    direction=MovementDirection.DIAGONAL_ANY,
+                ),
+            ),
+        ),
+    )
+
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=1),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=0),
+        coordinate=Coordinate(row=3, column=2),
+    )
+
+    with pytest.raises(
+        InvalidMoveError,
+        match="has no forward direction",
+    ):
+        MoveExecutor(invalid_game).apply(state, move)
 
 def test_apply_relocates_piece_forward_for_up_player() -> None:
     game = create_movement_game()
@@ -114,7 +465,6 @@ def test_apply_relocates_piece_forward_for_up_player() -> None:
     )
     assert result.current_player == "Black"
     assert result.turn_number == 2
-
 
 def test_apply_relocates_piece_forward_for_down_player() -> None:
     game = create_movement_game()
@@ -143,7 +493,6 @@ def test_apply_relocates_piece_forward_for_down_player() -> None:
     assert result.current_player == "White"
     assert result.turn_number == 3
 
-
 def test_apply_diagonal_any_allows_backward_relocation() -> None:
     game = create_movement_game(
         MovementDirection.DIAGONAL_ANY,
@@ -167,7 +516,6 @@ def test_apply_diagonal_any_allows_backward_relocation() -> None:
         column=2,
     )
     assert result.current_player == "Black"
-
 
 def test_relocation_does_not_modify_previous_state() -> None:
     game = create_movement_game()
@@ -219,7 +567,6 @@ def test_apply_places_piece_and_advances_turn() -> None:
     assert new_state.turn_number == 2
     assert new_state.status is GameStatus.ONGOING
 
-
 def test_apply_does_not_modify_previous_state() -> None:
     game = load_tictactoe()
     initial_state = GameInitializer().initialize(game)
@@ -235,7 +582,6 @@ def test_apply_does_not_modify_previous_state() -> None:
     assert initial_state.pieces == ()
     assert initial_state.current_player == "X"
     assert initial_state.turn_number == 1
-
 
 def test_apply_rotates_back_to_first_player() -> None:
     game = load_tictactoe()
@@ -263,7 +609,6 @@ def test_apply_rotates_back_to_first_player() -> None:
     assert new_state.current_player == "X"
     assert new_state.turn_number == 3
 
-
 def test_apply_rejects_move_after_game_has_ended() -> None:
     game = load_tictactoe()
     state = GameState(
@@ -283,7 +628,6 @@ def test_apply_rejects_move_after_game_has_ended() -> None:
 
     with pytest.raises(InvalidMoveError, match="game has ended"):
         MoveExecutor(game).apply(state, move)
-
 
 def test_apply_rejects_wrong_player_turn() -> None:
     game = load_tictactoe()

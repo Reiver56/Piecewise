@@ -43,7 +43,8 @@ The current increment supports:
 - an immutable runtime game-state model with enforced invariants;
 - initialization of runtime state and setup pieces from a valid definition;
 - immutable placement and relocation requests;
-- validated placement and non-capturing relocation execution with turn rotation;
+- validated placement, ordinary relocation, and capture execution with turn
+  rotation;
 - automatic evaluation of row, column, and diagonal win conditions;
 - full-board draw detection with victory taking precedence;
 - complete game-session management with sequential state updates;
@@ -54,7 +55,8 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- Checkers capture execution, promotion, end conditions, and interactive play;
+- Checkers multiple and mandatory captures, promotion, end conditions, and
+  interactive play;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
@@ -259,8 +261,14 @@ capture declaration keep `PieceDefinition.capture` set to `None`.
 
 Capture rules are also validated semantically. A capture requires a normal
 movement rule, its distance must be positive, and every owner of a `diagonal
-forward` capture must declare `forward: up` or `forward: down`. Runtime capture
-execution remains a separate engine increment.
+forward` capture must declare `forward: up` or `forward: down`.
+
+At runtime, `MoveExecutor` distinguishes ordinary relocation distance from
+capture distance. It validates `diagonal forward` or `diagonal any`, identifies
+the intermediate coordinate, requires an enemy piece there, and returns a new
+snapshot with the moving piece at its destination and the enemy removed. The
+previous `GameState` remains unchanged. Multiple captures, mandatory capture,
+and promotion remain future increments.
 
 ## Define an initial setup
 
@@ -398,8 +406,11 @@ next_state = MoveExecutor(game).apply(state, move)
 replaces the source piece with an equivalent piece at the destination, advances
 the turn, and leaves the previous `GameState` unchanged.
 
-The current relocation executor is deliberately non-capturing. Capture rules
-can be represented and validated, but capture execution, promotion, and
+For a capture relocation, the executor matches `capture.distance`, validates
+the declared direction, and inspects the intermediate diagonal cell. An empty
+cell or a piece owned by the active player makes the move invalid. A successful
+capture removes exactly one enemy, advances the turn, and preserves the
+previous snapshot. Chained and mandatory captures, promotion, and
 Checkers-specific end conditions remain future increments.
 
 ## Manage a complete game session
@@ -481,7 +492,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 135 parser, AST-transformation, semantic-validation,
+The current suite contains 142 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

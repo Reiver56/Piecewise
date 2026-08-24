@@ -89,6 +89,9 @@ supported domain:
 - `PieceDefinition`;
 - `AlignCondition`;
 - `BoardFullCondition`;
+- `NoPiecesLeftCondition`;
+- `NoMovesLeftCondition`;
+- `PlayerTarget`;
 - `PlayableCells`;
 - `PlacementType`;
 - `ForwardDirection`;
@@ -125,6 +128,9 @@ setup_rule             -> SetupRule
 setup_block            -> setup-rule collection
 align_condition        -> AlignCondition
 board_full_condition   -> BoardFullCondition
+opponent_target        -> PlayerTarget.OPPONENT
+no_pieces_left_condition -> NoPiecesLeftCondition
+no_moves_left_condition  -> NoMovesLeftCondition
 game_definition        -> GameDefinition
 ```
 
@@ -258,8 +264,11 @@ The current suite verifies:
 - rejection of unsupported forward and movement directions;
 - valid capture-rule syntax and rejection of unsupported capture conditions;
 - valid promotion syntax and rejection of unsupported promotion conditions;
+- valid Checkers player-state end-condition syntax and rejection of unsupported
+  targets;
 - complete AST transformation;
 - typed win conditions;
+- typed, immutable `NoPiecesLeftCondition` and `NoMovesLeftCondition` nodes;
 - typed movement rules and AST immutability;
 - typed, optional, immutable capture rules;
 - typed, optional, immutable promotion rules;
@@ -271,14 +280,13 @@ Semantic-validation behaviour is covered independently in
 
 ## Current limitations
 
-Tic-Tac-Toe is fully transformed. The parser and AST also support the
-directional-player, diagonal-movement, capture-rule, and initial-setup subset
-required for Checkers. Capture rules are represented in the AST, validated by
-`SemanticValidator`, and executed for supported single jumps by `MoveExecutor`.
-Promotion is represented in the AST but is not yet semantically validated or
-executed by the engine. Checkers end conditions and Connect Four gravity still
-require additional grammar and AST increments. Setup rules are validated by
-`SemanticValidator` and applied to runtime state by `GameInitializer`.
+Tic-Tac-Toe and the current Checkers example are fully transformed. The
+Checkers AST includes directional players, diagonal movement and capture,
+promotion, initial setup, and the typed `opponent` end conditions. Capture,
+promotion, and setup rules are already validated and supported by their current
+engine subsets. Semantic validation and runtime evaluation of
+`NoPiecesLeftCondition` and `NoMovesLeftCondition`, plus Connect Four gravity,
+remain future increments.
 
 ## Next steps
 

@@ -17,12 +17,16 @@ from parser.ast_nodes import (
     PlacementType,
     PlayableCells,
     PlayerDefinition,
+    PlayerTarget,
     SetupRule,
     WinCondition,
     CaptureCondition,
     CaptureRule,
     PromotionCondition,
     PromotionRule,
+    NoMovesLeftCondition,
+    NoPiecesLeftCondition,
+    PlayerTarget,
 )
 
 
@@ -257,11 +261,38 @@ class GameAstTransformer(Transformer[Any, GameDefinition]):
             direction=direction,
         )
 
+    def opponent_target(
+        self,
+        children: list[Any],
+    ) -> PlayerTarget:
+        return PlayerTarget.OPPONENT
+
     def board_full_condition(
         self,
         children: list[Any],
     ) -> BoardFullCondition:
         return BoardFullCondition()
+
+    def no_pieces_left_condition(
+        self,
+        children: list[Any],
+    ) -> NoPiecesLeftCondition:
+        target = children[0]
+
+        return NoPiecesLeftCondition(
+            target=target,
+        )
+
+
+    def no_moves_left_condition(
+        self,
+        children: list[Any],
+    ) -> NoMovesLeftCondition:
+        target = children[0]
+
+        return NoMovesLeftCondition(
+            target=target,
+        )
 
     def win_condition_block(
         self,

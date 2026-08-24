@@ -8,6 +8,7 @@ from parser.game_parser import GameParser
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TICTACTOE_PATH = PROJECT_ROOT / "games" / "tictactoe.game"
+CHECKERS_PATH = PROJECT_ROOT / "games" / "checkers.game"
 
 MOVEMENT_GAME_SOURCE = """
 game MovementGame {
@@ -55,6 +56,30 @@ def test_parse_valid_tictactoe(game_parser: GameParser) -> None:
     assert tree.data == "start"
     assert tree.children
 
+def test_parse_checkers_end_condition_syntax(
+    game_parser: GameParser,
+) -> None:
+    tree = game_parser.parse_file(CHECKERS_PATH)
+    rendered_tree = tree.pretty()
+
+    assert tree.data == "start"
+    assert "no_pieces_left_condition" in rendered_tree
+    assert "no_moves_left_condition" in rendered_tree
+    assert rendered_tree.count("opponent_target") == 2
+
+def test_reject_invalid_end_condition_target(
+    game_parser: GameParser,
+) -> None:
+    invalid_source = CHECKERS_PATH.read_text(
+        encoding="utf-8",
+    ).replace(
+        "no_pieces_left: opponent -> win",
+        "no_pieces_left: self -> win",
+        1,
+    )
+
+    with pytest.raises(UnexpectedInput):
+        game_parser.parse(invalid_source)
 
 def test_reject_incomplete_game(game_parser: GameParser) -> None:
     invalid_source = """

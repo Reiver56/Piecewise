@@ -36,6 +36,8 @@ The current increment supports:
 - directional-player and diagonal-movement syntax in the grammar and AST;
 - diagonal-capture syntax and immutable capture rules in the AST;
 - back-rank promotion syntax and immutable promotion rules in the AST;
+- Checkers player-state end-condition syntax and immutable condition nodes in
+  the AST;
 - optional initial-setup syntax and immutable setup rules in the AST;
 - semantic validation with cumulative, structured diagnostics;
 - semantic validation of piece actions and movement rules;
@@ -58,16 +60,17 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- Checkers multiple and mandatory captures, end conditions, and interactive
-  play;
+- Checkers multiple and mandatory captures, semantic validation and runtime
+  evaluation of player-state end conditions, and interactive play;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
 The Checkers and Connect Four files are design examples for future DSL
-increments. The grammar, AST, and semantic validator now support the
-directional-player, basic movement, capture, promotion, and initial-setup
-declarations used by Checkers, but the complete files still contain unsupported
-runtime constructs.
+increments. The grammar and AST now support the directional-player, basic
+movement, capture, promotion, initial-setup, and player-state end-condition
+declarations used by Checkers. Movement, capture, promotion, and setup are also
+validated or executed by their current subsets, while Checkers end-condition
+semantics and runtime evaluation remain future increments.
 
 ## Architecture
 
@@ -272,7 +275,8 @@ capture distance. It validates `diagonal forward` or `diagonal any`, identifies
 the intermediate coordinate, requires an enemy piece there, and returns a new
 snapshot with the moving piece at its destination and the enemy removed. The
 previous `GameState` remains unchanged. Multiple captures, mandatory capture,
-and Checkers-specific end conditions remain future increments.
+and runtime evaluation of Checkers-specific end conditions remain future
+increments.
 
 ## Define promotion rules
 
@@ -325,6 +329,24 @@ validator checks that referenced pieces and players exist, that ownership is
 allowed, that one-based row ranges are ordered and fit the board, and that two
 rules do not overlap. `GameInitializer` converts valid ranges to zero-based
 coordinates and creates a `PlacedPiece` on each selected playable cell.
+
+## Define Checkers end conditions
+
+Checkers may declare victory when the opponent has no pieces or no legal
+moves:
+
+```text
+win_condition {
+    no_pieces_left: opponent -> win
+    no_moves_left: opponent -> win
+}
+```
+
+The grammar accepts only the typed target `opponent`. The transformer maps it
+to `PlayerTarget.OPPONENT` and creates immutable `NoPiecesLeftCondition` and
+`NoMovesLeftCondition` objects with `Outcome.WIN`. ASE-025 covers syntax and
+AST transformation; semantic validation and runtime evaluation of these
+conditions remain separate increments.
 
 ## Initialize a game
 
@@ -445,7 +467,8 @@ cell or a piece owned by the active player makes the move invalid. A successful
 capture removes exactly one enemy, advances the turn, and preserves the
 previous snapshot. When the destination is the active player's back rank, the
 surviving piece is promoted after the enemy is removed. Chained and mandatory
-captures and Checkers-specific end conditions remain future increments.
+captures and runtime evaluation of Checkers-specific end conditions remain
+future increments.
 
 ## Manage a complete game session
 
@@ -526,7 +549,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 156 parser, AST-transformation, semantic-validation,
+The current suite contains 161 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

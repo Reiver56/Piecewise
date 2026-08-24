@@ -86,6 +86,8 @@ setup_rule: "place" ":" NAME "owned_by" NAME "on" "rows" INT ".." INT "playable_
 // win conditions
 ?win_condition: align_condition
               | board_full_condition
+              | no_pieces_left_condition
+              | no_moves_left_condition
 
 // align condition
 align_condition: "align" ":" INT alignment_direction "->" "win"
@@ -95,6 +97,12 @@ alignment_direction: "same_row" -> same_row
 
 // board full condition
 board_full_condition: "board_full" ":" "no_winner" "->" "draw"
+
+// player-state conditions
+no_pieces_left_condition: "no_pieces_left" ":" player_target "->" "win"
+no_moves_left_condition: "no_moves_left" ":" player_target "->" "win"
+
+player_target: "opponent" -> opponent_target
 
 name_list: NAME ("," NAME)*
 

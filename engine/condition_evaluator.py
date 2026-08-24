@@ -7,6 +7,8 @@ from parser.ast_nodes import (
     GameDefinition,
     Outcome,
     PlayableCells,
+    NoPiecesLeftCondition,
+    PlayerTarget,
 )
 
 from engine.game_state import Coordinate, GameState, GameStatus
@@ -33,6 +35,13 @@ class ConditionEvaluator:
     ) -> GameState:
         """Return the state resulting from condition evaluation."""
         if self._has_winning_alignment(state, last_move):
+            return replace(
+                state,
+                status=GameStatus.WON,
+                winner=last_move.player,
+            )
+
+        if self._has_no_pieces_left_win(state, last_move):
             return replace(
                 state,
                 status=GameStatus.WON,
@@ -67,6 +76,7 @@ class ConditionEvaluator:
                 return True
 
         return False
+    
 
     def _matches_alignment(
         self,
@@ -127,6 +137,37 @@ class ConditionEvaluator:
             column += column_step
 
         return count
+
+    def _has_no_pieces_left_win(
+        self,
+        state: GameState,
+        last_move: Move,
+    ) -> bool:
+        has_condition = any(
+            isinstance(condition, NoPiecesLeftCondition)
+            and condition.target is PlayerTarget.OPPONENT
+            and condition.outcome is Outcome.WIN
+            for condition in self._game.win_conditions
+        )
+    
+        if not has_condition:
+            return False
+    
+        opponents = tuple(
+            player.name
+            for player in self._game.players
+            if player.name != last_move.player
+        )
+    
+        if len(opponents) != 1:
+            return False
+    
+        opponent = opponents[0]
+    
+        return not any(
+            piece.owner == opponent
+            for piece in state.pieces
+        )
 
     def _has_board_full_draw(self, state: GameState) -> bool:
         has_draw_condition = any(

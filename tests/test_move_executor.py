@@ -32,6 +32,11 @@ def load_tictactoe():
         GAMES_DIRECTORY / "tictactoe.game"
     )
 
+def load_checkers():
+    return GameParser().parse_game_file(
+        GAMES_DIRECTORY / "checkers.game"
+    )
+
 def create_movement_game(
     direction: MovementDirection = (
         MovementDirection.DIAGONAL_FORWARD
@@ -341,6 +346,47 @@ def test_apply_captures_enemy_piece_forward() -> None:
     assert result.current_player == "Black"
     assert result.turn_number == 2
     assert result.status is GameStatus.ONGOING 
+
+def test_capture_of_last_opponent_piece_ends_game() -> None:
+    game = load_checkers()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=1),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=0),
+        coordinate=Coordinate(row=3, column=2),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="Man",
+            owner="White",
+            coordinate=Coordinate(row=3, column=2),
+        ),
+    )
+    assert result.status is GameStatus.WON
+    assert result.winner == "White"
+    assert result.current_player == "Black"
+    assert result.turn_number == 2
 
 def test_capture_does_not_modify_previous_state() -> None:
     game = create_capture_game()

@@ -46,8 +46,8 @@ The current increment supports:
 - an immutable runtime game-state model with enforced invariants;
 - initialization of runtime state and setup pieces from a valid definition;
 - immutable placement and relocation requests;
-- validated placement, ordinary relocation, and capture execution with turn
-  rotation;
+- validated placement, ordinary relocation, capture, and back-rank promotion
+  execution with turn rotation;
 - automatic evaluation of row, column, and diagonal win conditions;
 - full-board draw detection with victory taking precedence;
 - complete game-session management with sequential state updates;
@@ -58,8 +58,8 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- Checkers multiple and mandatory captures, promotion execution, end
-  conditions, and interactive play;
+- Checkers multiple and mandatory captures, end conditions, and interactive
+  play;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
@@ -272,7 +272,7 @@ capture distance. It validates `diagonal forward` or `diagonal any`, identifies
 the intermediate coordinate, requires an enemy piece there, and returns a new
 snapshot with the moving piece at its destination and the enemy removed. The
 previous `GameState` remains unchanged. Multiple captures, mandatory capture,
-and promotion execution remain future increments.
+and Checkers-specific end conditions remain future increments.
 
 ## Define promotion rules
 
@@ -295,8 +295,13 @@ Promotion rules are validated before reaching the engine. The source must be a
 movement piece, the target must be declared and different from the source, and
 every source owner must also be supported by the target piece. A `back_rank`
 promotion additionally requires every owner to declare `forward: up` or
-`forward: down`. Replacing a runtime `PlacedPiece` with its target type remains
-an engine responsibility for a future increment.
+`forward: down`.
+
+After an ordinary relocation or capture, `MoveExecutor` compares the
+destination row with the active owner's back rank: row `0` for `up` and
+`rows - 1` for `down`. On a match, it immutably replaces the moved
+`PlacedPiece` name with the declared target type. Moves ending before the back
+rank preserve the source type, and the previous `GameState` remains unchanged.
 
 ## Define an initial setup
 
@@ -438,8 +443,9 @@ For a capture relocation, the executor matches `capture.distance`, validates
 the declared direction, and inspects the intermediate diagonal cell. An empty
 cell or a piece owned by the active player makes the move invalid. A successful
 capture removes exactly one enemy, advances the turn, and preserves the
-previous snapshot. Chained and mandatory captures, promotion execution, and
-Checkers-specific end conditions remain future increments.
+previous snapshot. When the destination is the active player's back rank, the
+surviving piece is promoted after the enemy is removed. Chained and mandatory
+captures and Checkers-specific end conditions remain future increments.
 
 ## Manage a complete game session
 
@@ -520,7 +526,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 151 parser, AST-transformation, semantic-validation,
+The current suite contains 156 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

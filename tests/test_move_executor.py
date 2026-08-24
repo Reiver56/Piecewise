@@ -18,6 +18,8 @@ from parser.ast_nodes import (
     PlayerDefinition,
     CaptureCondition,
     CaptureRule,
+    PromotionCondition,
+    PromotionRule,
 )
 from parser.game_parser import GameParser
 
@@ -91,6 +93,39 @@ def create_capture_game(
         ),
     )
 
+def create_promotion_game():
+    game = create_capture_game()
+    man = game.pieces[0]
+
+    king = PieceDefinition(
+        name="King",
+        owners=man.owners,
+        movement=MovementRule(
+            direction=MovementDirection.DIAGONAL_ANY,
+            distance=1,
+            destination_condition=DestinationCondition.EMPTY,
+        ),
+        capture=CaptureRule(
+            direction=MovementDirection.DIAGONAL_ANY,
+            distance=2,
+            condition=CaptureCondition.ENEMY,
+        ),
+    )
+
+    return replace(
+        game,
+        pieces=(
+            replace(
+                man,
+                promotion=PromotionRule(
+                    condition=PromotionCondition.BACK_RANK,
+                    target_piece_name="King",
+                ),
+            ),
+            king,
+        ),
+    )
+
 def create_movement_state(
     *,
     owner: str,
@@ -111,6 +146,161 @@ def create_movement_state(
         current_player=current_player,
         turn_number=turn_number,
     )
+
+def test_relocation_promotes_up_player_on_back_rank() -> None:
+    game = create_promotion_game()
+    state = create_movement_state(
+        owner="White",
+        coordinate=Coordinate(row=1, column=0),
+        current_player="White",
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=1, column=0),
+        coordinate=Coordinate(row=0, column=1),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="King",
+            owner="White",
+            coordinate=Coordinate(row=0, column=1),
+        ),
+    )
+    assert result.current_player == "Black"
+    assert result.turn_number == 2
+
+def test_relocation_promotes_down_player_on_back_rank() -> None:
+    game = create_promotion_game()
+    state = create_movement_state(
+        owner="Black",
+        coordinate=Coordinate(row=6, column=1),
+        current_player="Black",
+        turn_number=2,
+    )
+    move = Move(
+        player="Black",
+        piece_name="Man",
+        source=Coordinate(row=6, column=1),
+        coordinate=Coordinate(row=7, column=0),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="King",
+            owner="Black",
+            coordinate=Coordinate(row=7, column=0),
+        ),
+    )
+    assert result.current_player == "White"
+    assert result.turn_number == 3
+
+def test_relocation_does_not_promote_before_back_rank() -> None:
+    game = create_promotion_game()
+    state = create_movement_state(
+        owner="White",
+        coordinate=Coordinate(row=2, column=1),
+        current_player="White",
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=2, column=1),
+        coordinate=Coordinate(row=1, column=0),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="Man",
+            owner="White",
+            coordinate=Coordinate(row=1, column=0),
+        ),
+    )
+    assert result.current_player == "Black"
+    assert result.turn_number == 2
+
+def test_capture_promotes_piece_on_back_rank() -> None:
+    game = create_promotion_game()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=2, column=1),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=1, column=2),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=2, column=1),
+        coordinate=Coordinate(row=0, column=3),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="King",
+            owner="White",
+            coordinate=Coordinate(row=0, column=3),
+        ),
+    )
+    assert result.current_player == "Black"
+    assert result.turn_number == 2
+
+def test_promotion_does_not_modify_previous_state() -> None:
+    game = create_promotion_game()
+    state = create_movement_state(
+        owner="White",
+        coordinate=Coordinate(row=1, column=0),
+        current_player="White",
+    )
+    original_piece = state.pieces[0]
+
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=1, column=0),
+        coordinate=Coordinate(row=0, column=1),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert state.pieces == (
+        PlacedPiece(
+            piece_name="Man",
+            owner="White",
+            coordinate=Coordinate(row=1, column=0),
+        ),
+    )
+    assert state.pieces[0] is original_piece
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="King",
+            owner="White",
+            coordinate=Coordinate(row=0, column=1),
+        ),
+    )
+    assert result.pieces is not state.pieces
+    assert result.pieces[0] is not original_piece
 
 def test_apply_captures_enemy_piece_forward() -> None:
     game = create_capture_game()

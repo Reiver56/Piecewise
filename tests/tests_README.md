@@ -52,7 +52,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 151 tests.
+The suite currently contains 156 tests.
 
 ### Parser tests
 
@@ -282,7 +282,7 @@ The seven cases in `test_move.py` verify:
 
 ### Move-executor tests
 
-The 36 cases in `test_move_executor.py` verify:
+The 41 cases in `test_move_executor.py` verify:
 
 - piece placement, turn-number advancement, and player rotation;
 - creation of a new state without modifying the previous snapshot;
@@ -310,7 +310,11 @@ The 36 cases in `test_move_executor.py` verify:
 - rejection of an empty intermediate cell or a piece owned by the active
   player;
 - immutable enemy removal and preservation of the previous snapshot;
-- normal turn rotation after a successful capture.
+- normal turn rotation after a successful capture;
+- back-rank promotion for owners oriented both `up` and `down`;
+- preservation of the source type before reaching the back rank;
+- promotion after a capture and removal of the intermediate enemy;
+- immutable preservation of the pre-promotion snapshot.
 
 ### Condition-evaluator tests
 
@@ -433,13 +437,14 @@ players, typed and semantically validated movement rules, immutable and
 semantically validated initial setup rules, capture syntax, immutable capture
 AST rules, semantic capture constraints, ordinary relocation and capture
 execution, promotion syntax and immutable AST rules, runtime setup expansion,
-semantic promotion constraints, turn-rotation, end-condition, rendering, and
+semantic promotion constraints, back-rank promotion execution after ordinary
+movement or capture, turn-rotation, end-condition, rendering, and
 interactive-session tests for Tic-Tac-Toe.
 
 Future coverage will add:
 
 1. multiple and mandatory capture tests for Checkers;
-2. promotion runtime-execution tests for Checkers;
+2. multiple-promotion and complete Checkers scenario tests;
 3. parser, AST, and semantic-validation tests for Connect Four;
 4. complete game-scenario tests for additional supported games.
 

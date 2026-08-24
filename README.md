@@ -35,6 +35,7 @@ The current increment supports:
 - transformation into an immutable, typed AST;
 - directional-player and diagonal-movement syntax in the grammar and AST;
 - diagonal-capture syntax and immutable capture rules in the AST;
+- back-rank promotion syntax and immutable promotion rules in the AST;
 - optional initial-setup syntax and immutable setup rules in the AST;
 - semantic validation with cumulative, structured diagnostics;
 - semantic validation of piece actions and movement rules;
@@ -55,15 +56,15 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- Checkers multiple and mandatory captures, promotion, end conditions, and
-  interactive play;
+- Checkers multiple and mandatory captures, promotion validation and execution,
+  end conditions, and interactive play;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
 The Checkers and Connect Four files are design examples for future DSL
 increments. The grammar and AST now support the directional-player, basic
-movement, capture, and initial-setup declarations used by Checkers, but the
-complete files still contain unsupported constructs.
+movement, capture, promotion, and initial-setup declarations used by Checkers,
+but the complete files still contain unsupported constructs.
 
 ## Architecture
 
@@ -268,7 +269,28 @@ capture distance. It validates `diagonal forward` or `diagonal any`, identifies
 the intermediate coordinate, requires an enemy piece there, and returns a new
 snapshot with the moving piece at its destination and the enemy removed. The
 previous `GameState` remains unchanged. Multiple captures, mandatory capture,
-and promotion remain future increments.
+and promotion execution remain future increments.
+
+## Define promotion rules
+
+A movement piece may declare a target type for promotion on the back rank:
+
+```text
+piece Man {
+    owner: White, Black
+    move: diagonal forward 1 if empty
+    promote: back_rank -> King
+}
+```
+
+The grammar maps `back_rank` to `PromotionCondition.BACK_RANK` and stores the
+target identifier in an immutable `PromotionRule`. The optional
+`PieceDefinition.promotion` field remains `None` for pieces such as `King` that
+do not promote.
+
+ASE-022 covers parsing and AST transformation only. Verifying that the target
+piece exists and replacing a runtime `PlacedPiece` remain separate semantic and
+engine increments.
 
 ## Define an initial setup
 
@@ -410,7 +432,7 @@ For a capture relocation, the executor matches `capture.distance`, validates
 the declared direction, and inspects the intermediate diagonal cell. An empty
 cell or a piece owned by the active player makes the move invalid. A successful
 capture removes exactly one enemy, advances the turn, and preserves the
-previous snapshot. Chained and mandatory captures, promotion, and
+previous snapshot. Chained and mandatory captures, promotion execution, and
 Checkers-specific end conditions remain future increments.
 
 ## Manage a complete game session
@@ -492,7 +514,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 142 parser, AST-transformation, semantic-validation,
+The current suite contains 145 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

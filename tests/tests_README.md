@@ -52,7 +52,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 142 tests.
+The suite currently contains 145 tests.
 
 ### Parser tests
 
@@ -85,6 +85,12 @@ unsupported player-forward and movement directions raise `UnexpectedInput`.
 - adds a capture declaration using the unsupported `friend` condition;
 - verifies that the grammar raises `UnexpectedInput` because only `enemy` is
   accepted.
+
+`test_reject_invalid_promotion_condition`
+
+- adds `promote: center_rank -> King` to an otherwise valid definition;
+- verifies that `UnexpectedInput` is raised because only `back_rank` is
+  supported.
 
 ### AST tests
 
@@ -133,6 +139,16 @@ unsupported player-forward and movement directions raise `UnexpectedInput`.
 `test_capture_rule_is_immutable`
 
 - verifies that a transformed `CaptureRule` cannot be modified.
+
+`test_transform_piece_promotion_rule`
+
+- transforms `promote: back_rank -> King` into a typed `PromotionRule`;
+- verifies `PromotionCondition.BACK_RANK`, the target name, and optional absence
+  on a piece without promotion.
+
+`test_promotion_rule_is_immutable`
+
+- verifies that the promotion target cannot be modified after transformation.
 
 `test_transform_setup_rules`
 
@@ -405,13 +421,14 @@ game-initialization, placement and relocation request modelling, directional
 players, typed and semantically validated movement rules, immutable and
 semantically validated initial setup rules, capture syntax, immutable capture
 AST rules, semantic capture constraints, ordinary relocation and capture
-execution, runtime setup expansion, turn-rotation, end-condition, rendering,
-and interactive-session tests for Tic-Tac-Toe.
+execution, promotion syntax and immutable AST rules, runtime setup expansion,
+turn-rotation, end-condition, rendering, and interactive-session tests for
+Tic-Tac-Toe.
 
 Future coverage will add:
 
 1. multiple and mandatory capture tests for Checkers;
-2. promotion tests for Checkers;
+2. promotion semantic-validation and runtime-execution tests for Checkers;
 3. parser, AST, and semantic-validation tests for Connect Four;
 4. complete game-scenario tests for additional supported games.
 

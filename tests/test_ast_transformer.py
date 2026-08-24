@@ -20,6 +20,8 @@ from parser.ast_nodes import (
     SetupRule,
     CaptureCondition,
     CaptureRule,
+    PromotionCondition,
+    PromotionRule,
 )
 
 from parser.game_parser import GameParser
@@ -129,6 +131,14 @@ game CaptureGame {
 }
 """
 
+PROMOTION_GAME_SOURCE = CAPTURE_GAME_SOURCE.replace(
+    "capture: diagonal forward 2 if enemy",
+    (
+        "capture: diagonal forward 2 if enemy\n"
+        "        promote: back_rank -> King"
+    ),
+    1,
+)
 
 @pytest.fixture(scope="module")
 def tictactoe_game() -> GameDefinition:
@@ -141,6 +151,15 @@ def movement_game() -> GameDefinition:
 @pytest.fixture(scope="module")
 def capture_game() -> GameDefinition:
     return GameParser().parse_game(CAPTURE_GAME_SOURCE)
+
+@pytest.fixture(scope="module")
+def promotion_game() -> GameDefinition:
+    return GameParser().parse_game(PROMOTION_GAME_SOURCE)
+
+@pytest.fixture(scope="module")
+def promotion_game() -> GameDefinition:
+    return GameParser().parse_game(PROMOTION_GAME_SOURCE)
+
 
 @pytest.fixture(scope="module")
 def setup_game() -> GameDefinition:
@@ -265,6 +284,32 @@ def test_transform_piece_capture_rules(
         distance=2,
         condition=CaptureCondition.ENEMY,
     )
+
+def test_transform_piece_promotion_rule(
+    promotion_game: GameDefinition,
+) -> None:
+    man, king = promotion_game.pieces
+
+    assert man.promotion == PromotionRule(
+        condition=PromotionCondition.BACK_RANK,
+        target_piece_name="King",
+    )
+
+    assert king.promotion is None
+
+def test_promotion_rule_is_immutable(
+    promotion_game: GameDefinition,
+) -> None:
+    promotion_rule = promotion_game.pieces[0].promotion
+
+    assert promotion_rule is not None
+
+    with pytest.raises(FrozenInstanceError):
+        setattr(
+            promotion_rule,
+            "target_piece_name",
+            "SuperKing",
+        )
 
 def test_piece_without_capture_has_no_capture(
     movement_game: GameDefinition,

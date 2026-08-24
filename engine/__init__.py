@@ -15,6 +15,7 @@ from engine.game_state import (
 )
 from engine.move import Move
 from engine.move_executor import MoveExecutor
+from engine.legal_move_generator import LegalMoveGenerator
 
 __all__ = [
     "BoardRenderer",
@@ -27,6 +28,7 @@ __all__ = [
     "GameState",
     "GameStatus",
     "InvalidMoveError",
+    "LegalMoveGenerator",
     "Move",
     "MoveExecutor",
     "PlacedPiece",

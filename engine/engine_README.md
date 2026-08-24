@@ -226,4 +226,4 @@ python -m pytest \
 ```
 
 These modules contain 99 engine-focused tests. The complete project suite
-contains 156 tests.
+contains 164 tests.

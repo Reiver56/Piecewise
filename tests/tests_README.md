@@ -52,7 +52,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 161 tests.
+The suite currently contains 164 tests.
 
 ### Parser tests
 
@@ -194,7 +194,7 @@ forward direction and its placement piece has no movement rule.
 
 ### Semantic-validation tests
 
-The 27 cases in `test_semantic_validator.py` verify:
+The 30 cases in `test_semantic_validator.py` verify:
 
 - valid Tic-Tac-Toe and movement-rule definitions;
 - acceptance of valid definitions through `validate_or_raise()`;
@@ -219,7 +219,13 @@ The 27 cases in `test_semantic_validator.py` verify:
 - rejection of unknown setup pieces and owners;
 - rejection of setup owners not allowed for their piece;
 - rejection of non-one-based, reversed, and out-of-bounds row ranges;
-- rejection of overlapping setup ranges.
+- rejection of overlapping setup ranges;
+- acceptance of the two player-state end conditions in the real Checkers
+  definition;
+- indexed `ambiguous_opponent_target` diagnostics for both conditions when
+  `opponent` cannot identify one of exactly two players;
+- rejection of unsupported targets in AST objects constructed directly in
+  Python.
 
 `test_valid_tictactoe_has_no_semantic_issues`
 
@@ -461,14 +467,13 @@ semantically validated initial setup rules, capture syntax, immutable capture
 AST rules, semantic capture constraints, ordinary relocation and capture
 execution, promotion syntax and immutable AST rules, runtime setup expansion,
 semantic promotion constraints, back-rank promotion execution after ordinary
-movement or capture, Checkers player-state end-condition syntax and immutable
-AST nodes, turn-rotation, end-condition, rendering, and interactive-session
-tests for Tic-Tac-Toe.
+movement or capture, Checkers player-state end-condition syntax, immutable AST
+nodes, and semantic target validation, turn-rotation, end-condition, rendering,
+and interactive-session tests for Tic-Tac-Toe.
 
 Future coverage will add:
 
-1. semantic-validation and runtime-evaluation tests for Checkers player-state
-   end conditions;
+1. runtime-evaluation tests for Checkers player-state end conditions;
 2. multiple and mandatory capture tests for Checkers;
 3. complete Checkers scenario tests;
 4. parser, AST, and semantic-validation tests for Connect Four;

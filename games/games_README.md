@@ -4,9 +4,10 @@ Piecewise games are described using declarative `.game` files.
 
 > Piecewise is under development. Tic-Tac-Toe is fully supported. The parser
 > and AST also support the directional movement, capture, promotion, and
-> initial-setup subset used by Checkers. Single captures already execute at
-> runtime; promotion validation/execution, Checkers end conditions, and the
-> Connect Four extensions remain future increments.
+> initial-setup subset used by Checkers. Single captures and back-rank
+> promotion already execute at runtime; Checkers end-condition targets are
+> validated semantically. Their runtime evaluation and the Connect Four
+> extensions remain future increments.
 
 ## Processing pipeline
 
@@ -180,8 +181,10 @@ win_condition {
 
 The only supported target is currently `opponent`. These declarations become
 immutable `NoPiecesLeftCondition` and `NoMovesLeftCondition` objects containing
-`PlayerTarget.OPPONENT`. Parsing and AST transformation are implemented;
-semantic validation and runtime evaluation remain future increments.
+`PlayerTarget.OPPONENT`. Parsing, AST transformation, and semantic validation
+are implemented. The semantic validator requires exactly two declared players
+so that `opponent` is unambiguous; runtime evaluation remains a future
+increment.
 
 ## Complete supported example
 
@@ -230,8 +233,10 @@ game = GameParser().parse_game_file("games/tictactoe.game")
 - supported player directions, diagonal movement, single capture, promotion,
   initial piece placement, and player-state end-condition syntax/AST;
 - supported single-jump capture and back-rank promotion execution;
-- planned semantic validation and runtime evaluation of victory caused by the
-  opponent having no pieces or legal moves;
+- supported semantic validation of the `opponent` target with exactly two
+  declared players;
+- planned runtime evaluation of victory caused by the opponent having no
+  pieces or legal moves;
 - planned multiple- and mandatory-capture behaviour.
 
 ### Connect Four

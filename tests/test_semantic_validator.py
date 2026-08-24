@@ -31,11 +31,16 @@ from validation import (
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TICTACTOE_PATH = PROJECT_ROOT / "games" / "tictactoe.game"
+CHECKERS_PATH = PROJECT_ROOT / "games" / "checkers.game"
 
 
 @pytest.fixture(scope="module")
 def valid_game():
     return GameParser().parse_game_file(TICTACTOE_PATH)
+
+@pytest.fixture(scope="module")
+def valid_checkers_game():
+    return GameParser().parse_game_file(CHECKERS_PATH)
 
 @pytest.fixture(scope="module")
 def valid_movement_game(valid_game):
@@ -793,3 +798,72 @@ def test_back_rank_promotion_requires_forward_direction(
         and issue.path == "players.White.forward"
         for issue in issues
     )
+
+def test_valid_checkers_end_conditions_have_no_semantic_issues(
+    valid_checkers_game,
+    validator: SemanticValidator,
+) -> None:
+    issues = validator.validate(valid_checkers_game)
+
+    assert issues == ()
+
+def test_opponent_end_condition_requires_two_players(
+    valid_checkers_game,
+    validator: SemanticValidator,
+) -> None:
+    invalid_game = replace(
+        valid_checkers_game,
+        players=(
+            *valid_checkers_game.players,
+            PlayerDefinition(
+                name="Red",
+                forward=ForwardDirection.UP,
+            ),
+        ),
+        turn_order=(
+            *valid_checkers_game.turn_order,
+            "Red",
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    ambiguous_target_issues = tuple(
+        issue
+        for issue in issues
+        if issue.code == "ambiguous_opponent_target"
+    )
+    
+    assert tuple(
+        issue.path
+        for issue in ambiguous_target_issues
+    ) == (
+        "win_conditions[0].target",
+        "win_conditions[1].target",
+    )
+
+def test_rejects_unsupported_player_target(
+    valid_checkers_game,
+    validator: SemanticValidator,
+) -> None:
+    first_condition = valid_checkers_game.win_conditions[0]
+
+    invalid_game = replace(
+        valid_checkers_game,
+        win_conditions=(
+            replace(
+                first_condition,
+                target="self",
+            ),
+            *valid_checkers_game.win_conditions[1:],
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "unsupported_player_target"
+        and issue.path == "win_conditions[0].target"
+        for issue in issues
+    )
+

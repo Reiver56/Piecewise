@@ -97,6 +97,8 @@ supported domain:
 - `MovementRule`;
 - `CaptureCondition`;
 - `CaptureRule`;
+- `PromotionCondition`;
+- `PromotionRule`;
 - `SetupRule`;
 - `AlignmentDirection`;
 - `Outcome`.
@@ -118,6 +120,7 @@ forward_property       -> ForwardDirection data
 piece_block            -> PieceDefinition
 move_property          -> MovementRule
 capture_property       -> CaptureRule
+promote_property       -> PromotionRule
 setup_rule             -> SetupRule
 setup_block            -> setup-rule collection
 align_condition        -> AlignCondition
@@ -216,6 +219,16 @@ The optional `PieceDefinition.capture` field contains an immutable
 `2`, and condition `CaptureCondition.ENEMY`. When the declaration is absent,
 the field remains `None`.
 
+Promotion syntax is transformed into an optional immutable rule:
+
+```text
+promote: back_rank -> King
+```
+
+`back_rank` becomes `PromotionCondition.BACK_RANK`, while `King` is preserved
+as `PromotionRule.target_piece_name`. The parser records the reference but does
+not verify that the target piece exists.
+
 Optional setup syntax is transformed into immutable domain data:
 
 ```text
@@ -244,10 +257,12 @@ The current suite verifies:
 - valid directional-player and movement-rule syntax;
 - rejection of unsupported forward and movement directions;
 - valid capture-rule syntax and rejection of unsupported capture conditions;
+- valid promotion syntax and rejection of unsupported promotion conditions;
 - complete AST transformation;
 - typed win conditions;
 - typed movement rules and AST immutability;
 - typed, optional, immutable capture rules;
+- typed, optional, immutable promotion rules;
 - ordered, immutable setup rules and optional-setup compatibility;
 - backward compatibility with the Tic-Tac-Toe AST.
 
@@ -260,14 +275,15 @@ Tic-Tac-Toe is fully transformed. The parser and AST also support the
 directional-player, diagonal-movement, capture-rule, and initial-setup subset
 required for Checkers. Capture rules are represented in the AST, validated by
 `SemanticValidator`, and executed for supported single jumps by `MoveExecutor`.
-Promotion, Checkers end conditions, and Connect Four gravity still require
-additional grammar and AST increments. Setup rules are validated by
+Promotion is represented in the AST but is not yet semantically validated or
+executed by the engine. Checkers end conditions and Connect Four gravity still
+require additional grammar and AST increments. Setup rules are validated by
 `SemanticValidator` and applied to runtime state by `GameInitializer`.
 
 ## Next steps
 
 1. improve user-facing diagnostics;
-2. add promotion syntax;
+2. add promotion semantic validation and runtime execution;
 3. extend the language for Connect Four;
 4. add the remaining Checkers constructs.
 

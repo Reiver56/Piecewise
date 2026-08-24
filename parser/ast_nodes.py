@@ -29,6 +29,9 @@ class DestinationCondition(str, Enum):
 class CaptureCondition(str, Enum):
     ENEMY = "enemy"
 
+class PromotionCondition(str, Enum):
+    BACK_RANK = "back_rank"
+
 class AlignmentDirection(str, Enum):
     SAME_ROW = "same_row"
     SAME_COL = "same_col"
@@ -66,6 +69,10 @@ class CaptureRule:
     distance: int
     condition: CaptureCondition
 
+@dataclass(frozen=True, slots=True)
+class PromotionRule:
+    condition: PromotionCondition
+    target_piece_name: str
 
 @dataclass(frozen=True, slots=True)
 class PieceDefinition:
@@ -74,6 +81,7 @@ class PieceDefinition:
     placement: PlacementType | None = None
     movement: MovementRule | None = None
     capture: CaptureRule | None = None
+    promotion: PromotionRule | None = None
 
 @dataclass(frozen=True, slots=True)
 class SetupRule:

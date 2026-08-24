@@ -3,9 +3,10 @@
 Piecewise games are described using declarative `.game` files.
 
 > Piecewise is under development. Tic-Tac-Toe is fully supported. The parser
-> and AST also support the directional movement and initial-setup subset used
-> by Checkers, while its capture, promotion, and end-condition constructs and
-> the Connect Four extensions remain future increments.
+> and AST also support the directional movement, capture, promotion, and
+> initial-setup subset used by Checkers. Single captures already execute at
+> runtime; promotion validation/execution, Checkers end conditions, and the
+> Connect Four extensions remain future increments.
 
 ## Processing pipeline
 
@@ -111,7 +112,24 @@ The current grammar supports:
 
 - a list of owners;
 - placement on any empty cell;
-- non-capturing `diagonal forward` and `diagonal any` movement rules.
+- non-capturing `diagonal forward` and `diagonal any` movement rules;
+- `diagonal forward` and `diagonal any` capture rules using `if enemy`;
+- back-rank promotion to a named piece type.
+
+For example:
+
+```text
+piece Man {
+    owner: White, Black
+    move: diagonal forward 1 if empty
+    capture: diagonal forward 2 if enemy
+    promote: back_rank -> King
+}
+```
+
+Capture declarations are parsed, validated, and supported for single runtime
+jumps. Promotion declarations are parsed into immutable `PromotionRule`
+objects; target validation and runtime replacement are not implemented yet.
 
 ### Initial setup
 
@@ -189,18 +207,16 @@ from parser.game_parser import GameParser
 game = GameParser().parse_game_file("games/tictactoe.game")
 ```
 
-## Designed future syntax
+## Partially supported and future syntax
 
 ### Checkers
 
-`checkers.game` explores syntax for:
+`checkers.game` combines:
 
-- player directions;
-- diagonal movement;
-- capture;
-- promotion;
-- initial piece placement, which is now supported by the grammar and AST;
-- loss caused by having no pieces or legal moves.
+- supported player directions, diagonal movement, single capture, promotion
+  syntax/AST, and initial piece placement;
+- planned promotion execution;
+- planned loss caused by having no pieces or legal moves.
 
 ### Connect Four
 
@@ -224,11 +240,15 @@ The current semantic validator rejects definitions when:
 - a piece declares neither placement nor movement, or declares both;
 - a movement distance is not positive;
 - a forward-moving owner has no declared forward direction;
+- a capture lacks movement, has a non-positive distance, or needs an undeclared
+  forward direction;
 - a setup rule references an undeclared piece or player;
 - a setup owner is not allowed for the referenced piece;
 - a setup row range is malformed, outside the board, or overlaps another rule;
 - an alignment length cannot fit on the board;
 - declared players are missing from the turn order.
+
+Promotion references are not yet checked semantically.
 
 ## Extension checklist
 

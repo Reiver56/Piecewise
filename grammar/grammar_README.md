@@ -84,7 +84,10 @@ The current piece properties are:
 - `owner`;
 - `place: any_empty_cell`;
 - `move: diagonal forward DISTANCE if empty`;
-- `move: diagonal any DISTANCE if empty`.
+- `move: diagonal any DISTANCE if empty`;
+- `capture: diagonal forward DISTANCE if enemy`;
+- `capture: diagonal any DISTANCE if enemy`;
+- `promote: back_rank -> TARGET`.
 
 For example:
 
@@ -97,6 +100,10 @@ piece Man {
 
 Movement distances use `INT`. Whether a distance or rule is meaningful belongs
 to semantic validation rather than grammar parsing.
+
+Capture reuses the movement directions but accepts only the `enemy` condition.
+Promotion accepts only `back_rank`; its `NAME` target identifies the resulting
+piece type. Whether that target exists belongs to semantic validation.
 
 ### Initial setup
 
@@ -159,6 +166,10 @@ movement_direction: "diagonal" "forward" -> diagonal_forward
                   | "diagonal" "any"     -> diagonal_any
 
 destination_condition: "empty" -> empty_destination
+
+capture_condition: "enemy" -> enemy_capture
+
+promotion_condition: "back_rank" -> back_rank_promotion
 ```
 
 ## Lark notation
@@ -183,7 +194,7 @@ destination_condition: "empty" -> empty_destination
 %ignore WS
 ```
 
-- `NAME` represents identifiers such as `TicTacToe`, `Mark`, and `X`;
+- `NAME` represents identifiers such as `TicTacToe`, `Mark`, `King`, and `X`;
 - `INT` represents dimensions, alignment lengths, movement distances, and
   setup row bounds;
 - whitespace and indentation have no syntactic meaning.
@@ -214,12 +225,11 @@ whether that player was declared belongs to semantic validation.
 
 ## Current limitations
 
-The grammar supports Tic-Tac-Toe plus the directional-player, basic
-non-capturing movement, and initial-setup declarations required by Checkers.
-It does not yet support:
+The grammar supports Tic-Tac-Toe plus the directional-player, movement,
+capture, promotion, and initial-setup declarations required by Checkers. It
+does not yet support:
 
-- capture rules;
-- promotion;
+- Checkers `no_pieces_left` and `no_moves_left` end conditions;
 - gravity;
 - placement by column;
 - complete Checkers or Connect Four definitions.

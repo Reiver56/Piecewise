@@ -21,6 +21,8 @@ from parser.ast_nodes import (
     WinCondition,
     CaptureCondition,
     CaptureRule,
+    PromotionCondition,
+    PromotionRule,
 )
 
 
@@ -188,6 +190,26 @@ class GameAstTransformer(Transformer[Any, GameDefinition]):
             ),
         )
 
+    def back_rank_promotion(
+        self,
+        children: list[Any],
+    ) -> PromotionCondition:
+        return PromotionCondition.BACK_RANK
+
+    def promote_property(
+        self,
+        children: list[Any],
+    ) -> tuple[str, PromotionRule]:
+        condition, target_piece_name = children
+
+        return (
+            "promotion",
+            PromotionRule(
+                condition=condition,
+                target_piece_name=str(target_piece_name),
+            ),
+        )
+
     def move_property(
         self,
         children: list[Any],
@@ -213,6 +235,7 @@ class GameAstTransformer(Transformer[Any, GameDefinition]):
             placement=properties.get("placement"),
             movement=properties.get("movement"),
             capture=properties.get("capture"),
+            promotion=properties.get("promotion"),
         )
 
     # Win conditions

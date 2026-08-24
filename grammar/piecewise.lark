@@ -49,6 +49,7 @@ piece_block: "piece" NAME "{" piece_property+ "}"
                | place_property
                | move_property
                | capture_property
+               | promote_property
 
 // owner property
 owner_property: "owner" ":" name_list
@@ -68,6 +69,11 @@ destination_condition: "empty" -> empty_destination
 capture_property: "capture" ":" movement_direction INT "if" capture_condition
 
 capture_condition: "enemy" -> enemy_capture
+
+// promotion property
+promote_property: "promote" ":" promotion_condition "->" NAME
+
+promotion_condition: "back_rank" -> back_rank_promotion
 
 // win condition block
 win_condition_block: "win_condition" "{" win_condition+ "}"

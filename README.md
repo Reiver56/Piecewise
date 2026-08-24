@@ -40,6 +40,8 @@ The current increment supports:
 - semantic validation with cumulative, structured diagnostics;
 - semantic validation of piece actions and movement rules;
 - semantic validation of capture dependencies, distances, and orientation;
+- semantic validation of promotion targets, movement dependency, ownership,
+  and back-rank orientation;
 - semantic validation of setup references, ownership, row ranges, and overlaps;
 - an immutable runtime game-state model with enforced invariants;
 - initialization of runtime state and setup pieces from a valid definition;
@@ -56,15 +58,16 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- Checkers multiple and mandatory captures, promotion validation and execution,
-  end conditions, and interactive play;
+- Checkers multiple and mandatory captures, promotion execution, end
+  conditions, and interactive play;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
 The Checkers and Connect Four files are design examples for future DSL
-increments. The grammar and AST now support the directional-player, basic
-movement, capture, promotion, and initial-setup declarations used by Checkers,
-but the complete files still contain unsupported constructs.
+increments. The grammar, AST, and semantic validator now support the
+directional-player, basic movement, capture, promotion, and initial-setup
+declarations used by Checkers, but the complete files still contain unsupported
+runtime constructs.
 
 ## Architecture
 
@@ -288,9 +291,12 @@ target identifier in an immutable `PromotionRule`. The optional
 `PieceDefinition.promotion` field remains `None` for pieces such as `King` that
 do not promote.
 
-ASE-022 covers parsing and AST transformation only. Verifying that the target
-piece exists and replacing a runtime `PlacedPiece` remain separate semantic and
-engine increments.
+Promotion rules are validated before reaching the engine. The source must be a
+movement piece, the target must be declared and different from the source, and
+every source owner must also be supported by the target piece. A `back_rank`
+promotion additionally requires every owner to declare `forward: up` or
+`forward: down`. Replacing a runtime `PlacedPiece` with its target type remains
+an engine responsibility for a future increment.
 
 ## Define an initial setup
 
@@ -514,7 +520,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 145 parser, AST-transformation, semantic-validation,
+The current suite contains 151 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

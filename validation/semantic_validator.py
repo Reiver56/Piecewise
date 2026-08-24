@@ -8,6 +8,7 @@ from parser.ast_nodes import (
     MovementDirection,
     PieceDefinition,
     PlayerDefinition,
+    PromotionCondition,
 )
 
 from validation.errors import (
@@ -127,9 +128,15 @@ class SemanticValidator:
         issues: list[ValidationIssue],
     ) -> None:
         piece_names = tuple(piece.name for piece in game.pieces)
+
         players_by_name = {
             player.name: player
             for player in game.players
+        }
+
+        pieces_by_name = {
+            piece.name: piece
+            for piece in game.pieces
         }
 
         for name in self._duplicates(piece_names):
@@ -169,7 +176,12 @@ class SemanticValidator:
                 players_by_name,
                 issues,
             )
-
+            self._validate_promotion_rule(
+                piece,
+                players_by_name,
+                pieces_by_name,
+                issues,
+            )
 
     def _validate_piece_action(
         self,
@@ -289,7 +301,7 @@ class SemanticValidator:
                     ),
                 )
             )
-            
+
         movement_already_requires_forward = (
             piece.movement is not None
             and piece.movement.direction
@@ -307,7 +319,7 @@ class SemanticValidator:
 
             if player is None or player.forward is not None:
                 continue
-            
+
             issues.append(
                 ValidationIssue(
                     code="missing_forward_direction",
@@ -318,7 +330,119 @@ class SemanticValidator:
                         "with a diagonal-forward capture rule."
                     ),
                 )
-            )    
+            )
+
+    def _validate_promotion_rule(
+        self,
+        piece: PieceDefinition,
+        players_by_name: dict[str, PlayerDefinition],
+        pieces_by_name: dict[str, PieceDefinition],
+        issues: list[ValidationIssue],
+    ) -> None:
+        promotion = piece.promotion
+
+        if promotion is None:
+            return
+
+        if piece.movement is None:
+            issues.append(
+                ValidationIssue(
+                    code="promotion_requires_movement",
+                    path=f"pieces.{piece.name}.promotion",
+                    message=(
+                        f"Piece '{piece.name}' cannot declare "
+                        "a promotion rule without a movement rule."
+                    ),
+                )
+            )
+
+        if promotion.condition is PromotionCondition.BACK_RANK:
+            for owner in piece.owners:
+                player = players_by_name.get(owner)
+
+                if player is None or player.forward is not None:
+                    continue
+
+                path = f"players.{owner}.forward"
+
+                issue_already_reported = any(
+                    issue.code == "missing_forward_direction"
+                    and issue.path == path
+                    for issue in issues
+                )
+
+                if issue_already_reported:
+                    continue
+
+                issues.append(
+                    ValidationIssue(
+                        code="missing_forward_direction",
+                        path=path,
+                        message=(
+                            f"Player '{owner}' must declare a forward "
+                            f"direction to own piece '{piece.name}' "
+                            "with a back-rank promotion rule."
+                        ),
+                    )
+                )
+
+        if promotion.target_piece_name not in pieces_by_name:
+            issues.append(
+                ValidationIssue(
+                    code="unknown_promotion_target",
+                    path=(
+                        f"pieces.{piece.name}."
+                        "promotion.target_piece_name"
+                    ),
+                    message=(
+                        f"Promotion target "
+                        f"'{promotion.target_piece_name}' for piece "
+                        f"'{piece.name}' is not declared."
+                    ),
+                )
+            )
+            return
+
+        if promotion.target_piece_name == piece.name:
+            issues.append(
+                ValidationIssue(
+                    code="self_promotion_target",
+                    path=(
+                        f"pieces.{piece.name}."
+                        "promotion.target_piece_name"
+                    ),
+                    message=(
+                        f"Piece '{piece.name}' cannot promote "
+                        "to itself."
+                    ),
+                )
+            )
+            return
+
+        target_piece = pieces_by_name[promotion.target_piece_name]
+
+        unsupported_owners = tuple(
+            owner
+            for owner in piece.owners
+            if owner not in target_piece.owners
+        )
+
+        if unsupported_owners:
+            owners = ", ".join(unsupported_owners)
+
+            issues.append(
+                ValidationIssue(
+                    code="incompatible_promotion_owners",
+                    path=(
+                        f"pieces.{piece.name}."
+                        "promotion.target_piece_name"
+                    ),
+                    message=(
+                        f"Promotion target '{target_piece.name}' "
+                        f"does not support owner(s): {owners}."
+                    ),
+                )
+            )
 
     def _validate_setup(
         self,
@@ -409,7 +533,7 @@ class SemanticValidator:
                         ),
                     )
                 )
-                
+
         valid_setup_rules = tuple(
             (index, rule)
             for index, rule in enumerate(game.setup)
@@ -432,7 +556,7 @@ class SemanticValidator:
 
                 if not ranges_overlap:
                     continue
-                
+
                 issues.append(
                     ValidationIssue(
                         code="overlapping_setup_rules",
@@ -446,7 +570,7 @@ class SemanticValidator:
                     )
                 )
                 break
-    
+
 
     def _validate_win_conditions(
         self,

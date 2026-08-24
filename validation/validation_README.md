@@ -68,6 +68,10 @@ The validator detects:
 - capture rules declared without a movement rule;
 - non-positive capture distances;
 - owners missing a forward direction required by a `diagonal forward` capture;
+- promotion rules declared without a movement rule;
+- promotion targets that are undeclared or equal to the source piece;
+- promotion targets that do not support every source-piece owner;
+- owners missing a forward direction required by a `back_rank` promotion;
 - setup rules referencing undeclared pieces or players;
 - setup owners not allowed by their referenced piece;
 - setup row ranges that are not ordered and one-based;
@@ -89,6 +93,13 @@ piece action. Therefore it requires a normal movement rule. Capture distances
 must be positive, and `diagonal forward` captures use the same player
 orientation requirement as forward movement. When both rules require forward
 orientation, the validator avoids reporting the same missing direction twice.
+
+A promotion is an optional capability of a movement piece. Its target must be
+a different declared piece, and the target must support every owner of the
+source piece. A `back_rank` condition depends on player orientation, so every
+declared owner must provide `forward: up` or `forward: down`. The shared
+`missing_forward_direction` diagnostic is emitted only once when movement,
+capture, and promotion depend on the same missing orientation.
 
 ## Diagnostics
 
@@ -124,6 +135,16 @@ Capture validation adds these diagnostics while reusing
 | `capture_requires_movement` | `pieces.NAME.capture` | Capture is declared without movement |
 | `invalid_capture_distance` | `pieces.NAME.capture.distance` | Distance is not positive |
 
+Promotion validation adds these diagnostics while reusing
+`missing_forward_direction` for back-rank orientation:
+
+| Code | Path | Meaning |
+| --- | --- | --- |
+| `promotion_requires_movement` | `pieces.NAME.promotion` | Promotion is declared without movement |
+| `unknown_promotion_target` | `pieces.NAME.promotion.target_piece_name` | Target piece is undeclared |
+| `self_promotion_target` | `pieces.NAME.promotion.target_piece_name` | Source and target piece are identical |
+| `incompatible_promotion_owners` | `pieces.NAME.promotion.target_piece_name` | Target does not support every source owner |
+
 Setup validation uses indexed paths so diagnostics identify the exact rule:
 
 | Code | Path | Meaning |
@@ -155,17 +176,19 @@ Run the focused tests from the project root:
 python -m pytest tests/test_semantic_validator.py -v
 ```
 
-The 22 focused tests cover valid Tic-Tac-Toe, movement, capture, and setup
-definitions, cumulative diagnostics, stable codes and paths, piece-action
+The 27 focused tests cover valid Tic-Tac-Toe, movement, capture, promotion, and
+setup definitions, cumulative diagnostics, stable codes and paths, piece-action
 exclusivity, movement and capture distances, required player orientation,
-capture-to-movement dependency, setup references, ownership, row ranges,
-overlaps, and `SemanticValidationError` behaviour. The complete project suite
-contains 142 tests.
+capture-to-movement and promotion-to-movement dependencies, promotion targets
+and ownership compatibility, setup references, ownership, row ranges, overlaps,
+and `SemanticValidationError` behaviour. The complete project suite contains
+151 tests.
 
 ## Current limitations
 
-The rules cover Tic-Tac-Toe and the current directional movement, capture, and
-initial-setup subsets. Supported single-jump captures are executed by
-`MoveExecutor`; multiple captures, mandatory capture, promotion, Checkers end
-conditions, and Connect Four gravity still require future increments. Valid
-setup rules are applied to runtime state by `GameInitializer`.
+The rules cover Tic-Tac-Toe and the current directional movement, capture,
+promotion, and initial-setup subsets. Supported single-jump captures are
+executed by `MoveExecutor`; multiple captures, mandatory capture, promotion
+execution, Checkers end conditions, and Connect Four gravity still require
+future increments. Valid setup rules are applied to runtime state by
+`GameInitializer`.

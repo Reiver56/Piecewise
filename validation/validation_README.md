@@ -192,7 +192,7 @@ capture distances, required player orientation, capture-to-movement and
 promotion-to-movement dependencies, promotion targets and ownership
 compatibility, setup references, ownership, row ranges and overlaps, supported
 player targets, unambiguous `opponent` resolution, and
-`SemanticValidationError` behaviour. The complete project suite contains 164
+`SemanticValidationError` behaviour. The complete project suite contains 175
 tests.
 
 ## Current limitations

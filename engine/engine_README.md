@@ -17,6 +17,7 @@ engine/
 ├── game_initializer.py     # GameDefinition to initial GameState
 ├── game_session.py         # Current-session orchestration
 ├── game_state.py           # Immutable runtime domain model
+├── legal_move_generator.py # Current-player legal move discovery
 ├── move.py                 # Immutable placement or relocation request
 └── move_executor.py        # Move validation and execution
 ```
@@ -64,6 +65,29 @@ also exposed through the `destination` property. The `is_placement` and
 
 A move cannot use the same coordinate as both its source and destination.
 `Move` instances remain immutable.
+
+## Generate legal moves
+
+`LegalMoveGenerator` inspects an immutable state and returns an ordered tuple of
+legal `Move` requests for `state.current_player`:
+
+```python
+from engine import LegalMoveGenerator
+
+moves = LegalMoveGenerator(game).generate(state)
+```
+
+For ordinary movement it supports `DIAGONAL_FORWARD` using the owner's
+orientation and `DIAGONAL_ANY` in both vertical directions. It rejects
+out-of-bounds, non-playable, and occupied destinations. For captures it uses
+the declared capture distance, requires an empty landing cell, and includes the
+move only when the intermediate coordinate contains an enemy piece.
+
+Generation is deterministic and does not mutate the supplied state. Ordinary
+moves and single captures are both returned when available; mandatory capture
+selection and chained captures remain outside the current scope. Returning an
+empty tuple provides the engine primitive required for future `no_moves_left`
+evaluation.
 
 ## Initialize setup pieces
 
@@ -208,11 +232,12 @@ The engine consumes the typed AST and has no dependency on Lark or concrete
 DSL syntax. Terminal input and output belong to the separate `cli` package.
 The executor supports `ANY_EMPTY_CELL` placement plus validated ordinary and
 capturing `DIAGONAL_FORWARD` and `DIAGONAL_ANY` relocation, followed by
-validated `BACK_RANK` promotion. Multiple captures, mandatory capture,
-`no_moves_left` evaluation, gravity, and interactive relocation input remain
-future increments. Movement, capture, promotion, setup-rule consistency, and
-Checkers player-state targets are validated before the engine boundary by
-`SemanticValidator`.
+validated `BACK_RANK` promotion. `LegalMoveGenerator` discovers the supported
+ordinary and single-capture moves without applying them. Multiple captures,
+mandatory capture, `no_moves_left` evaluation, gravity, and interactive
+relocation input remain future increments. Movement, capture, promotion,
+setup-rule consistency, and Checkers player-state targets are validated before
+the engine boundary by `SemanticValidator`.
 
 ## Testing
 
@@ -224,10 +249,11 @@ python -m pytest \
   tests/test_game_initializer.py \
   tests/test_game_session.py \
   tests/test_move.py \
+  tests/test_legal_move_generator.py \
   tests/test_condition_evaluator.py \
   tests/test_move_executor.py \
   tests/test_board_renderer.py -v
 ```
 
-These modules contain 102 engine-focused tests. The complete project suite
-contains 167 tests.
+These modules contain 110 engine-focused tests. The complete project suite
+contains 175 tests.

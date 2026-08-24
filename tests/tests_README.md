@@ -17,6 +17,7 @@ tests/
 ├── test_game_initializer.py
 ├── test_game_session.py
 ├── test_game_state.py
+├── test_legal_move_generator.py
 ├── test_move.py
 ├── test_move_executor.py
 └── tests_README.md
@@ -52,7 +53,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 167 tests.
+The suite currently contains 175 tests.
 
 ### Parser tests
 
@@ -346,6 +347,21 @@ The 42 cases in `test_move_executor.py` verify:
 - immutable preservation of the pre-promotion snapshot;
 - integration between a final capture and the `no_pieces_left` victory.
 
+### Legal-move-generator tests
+
+The eight cases in `test_legal_move_generator.py` verify:
+
+- one or both forward diagonal moves for a `Man`;
+- deterministic left-before-right destination ordering;
+- exclusion of opponent pieces as move sources;
+- rejection of occupied, non-playable, and out-of-bounds destinations through
+  the covered edge and blocking scenarios;
+- movement in both vertical directions for `diagonal any`;
+- forward single captures over an enemy piece;
+- backward single captures for a `King` using `diagonal any`;
+- rejection of captures over a piece with the same owner;
+- an empty immutable tuple when the current player has no legal moves.
+
 ### Condition-evaluator tests
 
 The 12 cases in `test_condition_evaluator.py` verify:
@@ -471,9 +487,9 @@ AST rules, semantic capture constraints, ordinary relocation and capture
 execution, promotion syntax and immutable AST rules, runtime setup expansion,
 semantic promotion constraints, back-rank promotion execution after ordinary
 movement or capture, Checkers player-state end-condition syntax, immutable AST
-nodes, semantic target validation, and runtime `no_pieces_left` evaluation,
-turn-rotation, end-condition, rendering, and interactive-session tests for
-Tic-Tac-Toe.
+nodes, semantic target validation, runtime `no_pieces_left` evaluation, and
+deterministic legal movement and capture generation, turn-rotation,
+end-condition, rendering, and interactive-session tests for Tic-Tac-Toe.
 
 Future coverage will add:
 

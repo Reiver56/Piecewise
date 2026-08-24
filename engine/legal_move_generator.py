@@ -21,7 +21,7 @@ class LegalMoveGenerator:
         self._game = game
 
     def generate(self, state: GameState) -> tuple[Move, ...]:
-        """Return ordinary legal moves for the current player."""
+        """Return legal movement and capture moves for the current player."""
         occupied_coordinates = {
             piece.coordinate
             for piece in state.pieces
@@ -112,15 +112,15 @@ class LegalMoveGenerator:
         occupied_coordinates: set[Coordinate],
     ) -> tuple[Move, ...]:
         capture = piece_definition.capture
-    
+
         if (
             capture is None
             or capture.condition is not CaptureCondition.ENEMY
         ):
             return ()
-    
+
         moves: list[Move] = []
-    
+
         for row_step in self._row_steps(
             capture,
             placed_piece.owner,
@@ -134,25 +134,25 @@ class LegalMoveGenerator:
                     placed_piece.coordinate.column
                     + column_step
                 )
-    
+
                 if not self._is_inside_board(
                     state,
                     row,
                     column,
                 ):
                     continue
-                
+
                 destination = Coordinate(
                     row=row,
                     column=column,
                 )
-    
+
                 if destination in occupied_coordinates:
                     continue
-                
+
                 if not self._is_playable(destination):
                     continue
-                
+
                 captured_coordinate = Coordinate(
                     row=(
                         placed_piece.coordinate.row
@@ -163,7 +163,7 @@ class LegalMoveGenerator:
                         + destination.column
                     ) // 2,
                 )
-    
+
                 captured_piece = next(
                     (
                         piece
@@ -173,14 +173,14 @@ class LegalMoveGenerator:
                     ),
                     None,
                 )
-    
+
                 if (
                     captured_piece is None
                     or captured_piece.owner
                     == placed_piece.owner
                 ):
                     continue
-                
+
                 moves.append(
                     Move(
                         player=placed_piece.owner,
@@ -189,7 +189,7 @@ class LegalMoveGenerator:
                         coordinate=destination,
                     )
                 )
-    
+
         return tuple(moves)
 
     def _piece_definition(
@@ -207,7 +207,7 @@ class LegalMoveGenerator:
 
     def _row_steps(
         self,
-        movement: MovementRule,
+        movement: MovementRule | CaptureRule,
         owner: str,
     ) -> tuple[int, ...]:
         if (

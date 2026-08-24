@@ -16,6 +16,10 @@ def load_tictactoe():
         GAMES_DIRECTORY / "tictactoe.game"
     )
 
+def load_checkers():
+    return GameParser().parse_game_file(
+        GAMES_DIRECTORY / "checkers.game"
+    )
 
 def placed_piece(
     owner: str,
@@ -241,3 +245,71 @@ def test_full_board_remains_ongoing_without_draw_condition() -> None:
 
     assert result is state
     assert result.status is GameStatus.ONGOING
+
+def test_evaluate_detects_no_pieces_left_win() -> None:
+    game = load_checkers()
+
+    state_after_capture = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=2, column=3),
+            ),
+        ),
+        current_player="Black",
+        turn_number=2,
+    )
+    last_move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=4, column=1),
+        coordinate=Coordinate(row=2, column=3),
+    )
+
+    result = ConditionEvaluator(game).evaluate(
+        state_after_capture,
+        last_move,
+    )
+
+    assert result.status is GameStatus.WON
+    assert result.winner == "White"
+
+def test_no_pieces_left_remains_ongoing_while_opponent_has_piece() -> None:
+    game = load_checkers()
+
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=2, column=3),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+        ),
+        current_player="Black",
+        turn_number=2,
+    )
+    last_move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=4, column=1),
+        coordinate=Coordinate(row=2, column=3),
+    )
+
+    result = ConditionEvaluator(game).evaluate(
+        state,
+        last_move,
+    )
+
+    assert result is state
+    assert result.status is GameStatus.ONGOING
+    assert result.winner is None

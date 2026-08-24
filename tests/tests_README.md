@@ -52,7 +52,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 164 tests.
+The suite currently contains 167 tests.
 
 ### Parser tests
 
@@ -311,7 +311,7 @@ The seven cases in `test_move.py` verify:
 
 ### Move-executor tests
 
-The 41 cases in `test_move_executor.py` verify:
+The 42 cases in `test_move_executor.py` verify:
 
 - piece placement, turn-number advancement, and player rotation;
 - creation of a new state without modifying the previous snapshot;
@@ -343,11 +343,12 @@ The 41 cases in `test_move_executor.py` verify:
 - back-rank promotion for owners oriented both `up` and `down`;
 - preservation of the source type before reaching the back rank;
 - promotion after a capture and removal of the intermediate enemy;
-- immutable preservation of the pre-promotion snapshot.
+- immutable preservation of the pre-promotion snapshot;
+- integration between a final capture and the `no_pieces_left` victory.
 
 ### Condition-evaluator tests
 
-The 10 cases in `test_condition_evaluator.py` verify:
+The 12 cases in `test_condition_evaluator.py` verify:
 
 - row and column victories;
 - victories across both diagonal directions;
@@ -355,7 +356,9 @@ The 10 cases in `test_condition_evaluator.py` verify:
 - full-board draw detection;
 - victory precedence when the last move also fills the board;
 - board-full evaluation using only playable cells;
-- continued play when no board-full draw condition is declared.
+- continued play when no board-full draw condition is declared;
+- a Checkers victory when the opponent has no pieces left;
+- continued play while the opponent still owns at least one piece.
 
 ### Board-renderer tests
 
@@ -468,12 +471,13 @@ AST rules, semantic capture constraints, ordinary relocation and capture
 execution, promotion syntax and immutable AST rules, runtime setup expansion,
 semantic promotion constraints, back-rank promotion execution after ordinary
 movement or capture, Checkers player-state end-condition syntax, immutable AST
-nodes, and semantic target validation, turn-rotation, end-condition, rendering,
-and interactive-session tests for Tic-Tac-Toe.
+nodes, semantic target validation, and runtime `no_pieces_left` evaluation,
+turn-rotation, end-condition, rendering, and interactive-session tests for
+Tic-Tac-Toe.
 
 Future coverage will add:
 
-1. runtime-evaluation tests for Checkers player-state end conditions;
+1. runtime-evaluation tests for Checkers `no_moves_left`;
 2. multiple and mandatory capture tests for Checkers;
 3. complete Checkers scenario tests;
 4. parser, AST, and semantic-validation tests for Connect Four;

@@ -168,9 +168,12 @@ type, and the previous `GameState` remains unchanged.
 ## End conditions
 
 `ConditionEvaluator` supports consecutive same-owner alignments across rows,
-columns, and both diagonal directions, plus full-board draws. Only playable
-cells count toward a full board. A win takes precedence when the last move also
-fills the board.
+columns, and both diagonal directions, full-board draws, and Checkers
+`no_pieces_left` victories. For the latter, it resolves the single declared
+opponent of the player who made the last move and checks whether that owner has
+any remaining pieces. Only playable cells count toward a full board. A win
+takes precedence when the last move also fills the board. Runtime evaluation of
+`no_moves_left` is not implemented yet.
 
 ## Render a board
 
@@ -205,10 +208,11 @@ The engine consumes the typed AST and has no dependency on Lark or concrete
 DSL syntax. Terminal input and output belong to the separate `cli` package.
 The executor supports `ANY_EMPTY_CELL` placement plus validated ordinary and
 capturing `DIAGONAL_FORWARD` and `DIAGONAL_ANY` relocation, followed by
-validated `BACK_RANK` promotion. Multiple captures, mandatory capture, gravity,
-and interactive relocation input remain future increments. Movement, capture,
-promotion, and setup-rule consistency is validated before the engine boundary
-by `SemanticValidator`.
+validated `BACK_RANK` promotion. Multiple captures, mandatory capture,
+`no_moves_left` evaluation, gravity, and interactive relocation input remain
+future increments. Movement, capture, promotion, setup-rule consistency, and
+Checkers player-state targets are validated before the engine boundary by
+`SemanticValidator`.
 
 ## Testing
 
@@ -225,5 +229,5 @@ python -m pytest \
   tests/test_board_renderer.py -v
 ```
 
-These modules contain 99 engine-focused tests. The complete project suite
-contains 164 tests.
+These modules contain 102 engine-focused tests. The complete project suite
+contains 167 tests.

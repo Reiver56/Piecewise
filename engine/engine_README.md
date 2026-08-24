@@ -2,8 +2,9 @@
 
 The `engine` package turns a validated `GameDefinition` into immutable runtime
 snapshots, represents placement and relocation requests, executes supported
-placement, ordinary relocation, and capture moves, evaluates terminal conditions,
-manages a complete session, and renders the board as plain text.
+placement, ordinary relocation, capture, and back-rank promotion moves,
+evaluates terminal conditions, manages a complete session, and renders the
+board as plain text.
 
 ## Files
 
@@ -149,6 +150,21 @@ The same logic supports players oriented both `up` and `down`. One move captures
 exactly one enemy; chained captures and mandatory-capture selection are outside
 the current increment.
 
+## Execute a promotion
+
+After every successful relocation, `MoveExecutor` checks the optional
+`PromotionRule` of the moved piece. For `BACK_RANK`, the destination must be:
+
+- row `0` when the owner declares `forward: up`;
+- row `state.rows - 1` when the owner declares `forward: down`.
+
+If the destination matches, the moved `PlacedPiece` is immutably replaced with
+a copy whose `piece_name` is the declared promotion target. Its owner and
+destination remain unchanged. The same post-relocation step runs after a
+capture, so the intermediate enemy is removed before the surviving piece is
+promoted. A move ending before the back rank preserves the original piece
+type, and the previous `GameState` remains unchanged.
+
 ## End conditions
 
 `ConditionEvaluator` supports consecutive same-owner alignments across rows,
@@ -188,10 +204,11 @@ and does not modify the supplied state.
 The engine consumes the typed AST and has no dependency on Lark or concrete
 DSL syntax. Terminal input and output belong to the separate `cli` package.
 The executor supports `ANY_EMPTY_CELL` placement plus validated ordinary and
-capturing `DIAGONAL_FORWARD` and `DIAGONAL_ANY` relocation. Multiple captures,
-mandatory capture, promotion, gravity, and interactive relocation input remain
-future increments. Movement, capture, and setup-rule consistency is validated
-before the engine boundary by `SemanticValidator`.
+capturing `DIAGONAL_FORWARD` and `DIAGONAL_ANY` relocation, followed by
+validated `BACK_RANK` promotion. Multiple captures, mandatory capture, gravity,
+and interactive relocation input remain future increments. Movement, capture,
+promotion, and setup-rule consistency is validated before the engine boundary
+by `SemanticValidator`.
 
 ## Testing
 
@@ -208,5 +225,5 @@ python -m pytest \
   tests/test_board_renderer.py -v
 ```
 
-These modules contain 94 engine-focused tests. The complete project suite
-contains 142 tests.
+These modules contain 99 engine-focused tests. The complete project suite
+contains 156 tests.

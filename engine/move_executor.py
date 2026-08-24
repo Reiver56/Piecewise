@@ -6,6 +6,7 @@ from parser.ast_nodes import (
     MovementDirection,
     PieceDefinition,
     PlayableCells,
+    PromotionCondition,
 )
 
 from engine.condition_evaluator import ConditionEvaluator
@@ -51,6 +52,13 @@ class MoveExecutor:
         else:
             updated_pieces = self._apply_relocation(
                 state,
+                move,
+                piece_definition,
+            )
+            
+            updated_pieces = self._apply_promotion(
+                state,
+                updated_pieces,
                 move,
                 piece_definition,
             )
@@ -167,6 +175,47 @@ class MoveExecutor:
             if piece is source_piece
             else piece
             for piece in state.pieces
+        )
+
+    def _apply_promotion(
+        self,
+        state: GameState,
+        pieces: tuple[PlacedPiece, ...],
+        move: Move,
+        piece_definition: PieceDefinition,
+    ) -> tuple[PlacedPiece, ...]:
+        promotion = piece_definition.promotion
+
+        if (
+            promotion is None
+            or promotion.condition
+            is not PromotionCondition.BACK_RANK
+        ):
+            return pieces
+
+        forward = self._forward_direction(move.player)
+
+        back_rank = (
+            0
+            if forward is ForwardDirection.UP
+            else state.rows - 1
+        )
+
+        if move.destination.row != back_rank:
+            return pieces
+
+        return tuple(
+            replace(
+                piece,
+                piece_name=promotion.target_piece_name,
+            )
+            if (
+                piece.coordinate == move.destination
+                and piece.owner == move.player
+                and piece.piece_name == piece_definition.name
+            )
+            else piece
+            for piece in pieces
         )
 
     def _matches_capture_distance(

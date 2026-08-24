@@ -52,6 +52,8 @@ The current increment supports:
 - immutable placement and relocation requests;
 - validated placement, ordinary relocation, capture, and back-rank promotion
   execution with turn rotation;
+- deterministic generation of legal ordinary and single-capture moves for the
+  current player;
 - automatic evaluation of row, column, and diagonal win conditions;
 - automatic Checkers victory when the opponent has no pieces left;
 - full-board draw detection with victory taking precedence;
@@ -86,6 +88,7 @@ move, while `no_moves_left` remains a future increment.
     -> GameDefinition
     -> Semantic validator
     -> Initial GameState
+    -> Legal move generation
     -> Move validation
     -> Next GameState
     -> Win/draw evaluation
@@ -114,6 +117,7 @@ Piecewise/
 │   ├── game_initializer.py      # Validated AST to initial runtime state
 │   ├── game_session.py          # Complete game-session orchestration
 │   ├── game_state.py            # Immutable runtime domain model
+│   ├── legal_move_generator.py  # Current-player legal move discovery
 │   ├── move.py                  # Immutable placement or relocation request
 │   └── move_executor.py         # Placement validation and execution
 ├── cli/
@@ -145,6 +149,7 @@ Piecewise/
 │   ├── test_game_initializer.py
 │   ├── test_game_session.py
 │   ├── test_game_state.py
+│   ├── test_legal_move_generator.py
 │   ├── test_move.py
 │   └── test_move_executor.py
 ├── validation/
@@ -252,6 +257,25 @@ Each piece must declare exactly one action: `place` or `move`. Movement
 distances must be positive, and every owner of a `diagonal forward` piece must
 declare a forward direction. Violations are returned as cumulative,
 machine-readable diagnostics.
+
+## Generate legal moves
+
+`LegalMoveGenerator` derives the current player's available movement and
+single-capture requests from an immutable `GameState`:
+
+```python
+from engine import LegalMoveGenerator
+
+moves = LegalMoveGenerator(game).generate(state)
+```
+
+It supports `diagonal forward` and `diagonal any`, respects player orientation,
+board limits, playable cells, occupied destinations, and enemy-only capture
+targets. Results are returned as an immutable tuple in deterministic piece,
+direction, and destination order. Ordinary moves and captures may coexist;
+mandatory and chained captures remain future increments. An empty tuple means
+the current player has no generated move and will support `no_moves_left`
+evaluation in the next increment.
 
 ## Define capture rules
 
@@ -556,7 +580,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 167 parser, AST-transformation, semantic-validation,
+The current suite contains 175 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

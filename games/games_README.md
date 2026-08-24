@@ -6,9 +6,9 @@ Piecewise games are described using declarative `.game` files.
 > and AST also support the directional movement, capture, promotion, and
 > initial-setup subset used by Checkers. Single captures and back-rank
 > promotion already execute at runtime; Checkers end-condition targets are
-> validated semantically, and `no_pieces_left` is evaluated at runtime. Runtime
-> evaluation of `no_moves_left` and the Connect Four extensions remain future
-> increments.
+> validated semantically, `no_pieces_left` is evaluated at runtime, and legal
+> ordinary and single-capture moves can be generated. Runtime evaluation of
+> `no_moves_left` and the Connect Four extensions remain future increments.
 
 ## Processing pipeline
 
@@ -237,6 +237,8 @@ game = GameParser().parse_game_file("games/tictactoe.game")
 - supported semantic validation of the `opponent` target with exactly two
   declared players;
 - supported runtime victory when the opponent has no pieces;
+- supported deterministic generation of ordinary diagonal moves and
+  single-capture moves for the current player;
 - planned runtime evaluation of victory when the opponent has no legal moves;
 - planned multiple- and mandatory-capture behaviour.
 

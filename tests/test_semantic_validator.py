@@ -18,6 +18,8 @@ from parser.ast_nodes import (
     SetupRule,
     CaptureCondition,
     CaptureRule,
+    PromotionCondition,
+    PromotionRule,
 )
 
 from parser.game_parser import GameParser
@@ -78,6 +80,34 @@ def valid_capture_game(valid_movement_game):
                     condition=CaptureCondition.ENEMY,
                 ),
             ),
+        ),
+    )
+
+@pytest.fixture(scope="module")
+def valid_promotion_game(valid_capture_game):
+    man = valid_capture_game.pieces[0]
+
+    king = PieceDefinition(
+        name="King",
+        owners=man.owners,
+        movement=MovementRule(
+            direction=MovementDirection.DIAGONAL_ANY,
+            distance=1,
+            destination_condition=DestinationCondition.EMPTY,
+        ),
+    )
+
+    return replace(
+        valid_capture_game,
+        pieces=(
+            replace(
+                man,
+                promotion=PromotionRule(
+                    condition=PromotionCondition.BACK_RANK,
+                    target_piece_name="King",
+                ),
+            ),
+            king,
         ),
     )
 
@@ -607,5 +637,159 @@ def test_rejects_overlapping_setup_rules(
     assert any(
         issue.code == "overlapping_setup_rules"
         and issue.path == "setup[1].rows"
+        for issue in issues
+    )
+
+def test_valid_promotion_rule_has_no_semantic_issues(
+    valid_promotion_game,
+    validator: SemanticValidator,
+) -> None:
+    assert validator.validate(valid_promotion_game) == ()
+
+def test_rejects_unknown_promotion_target(
+    valid_promotion_game,
+    validator: SemanticValidator,
+) -> None:
+    man, king = valid_promotion_game.pieces
+
+    invalid_game = replace(
+        valid_promotion_game,
+        pieces=(
+            replace(
+                man,
+                promotion=replace(
+                    man.promotion,
+                    target_piece_name="Ghost",
+                ),
+            ),
+            king,
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "unknown_promotion_target"
+        and issue.path
+        == "pieces.Man.promotion.target_piece_name"
+        for issue in issues
+    )
+
+def test_rejects_self_promotion_target(
+    valid_promotion_game,
+    validator: SemanticValidator,
+) -> None:
+    man, king = valid_promotion_game.pieces
+
+    invalid_game = replace(
+        valid_promotion_game,
+        pieces=(
+            replace(
+                man,
+                promotion=replace(
+                    man.promotion,
+                    target_piece_name="Man",
+                ),
+            ),
+            king,
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "self_promotion_target"
+        and issue.path
+        == "pieces.Man.promotion.target_piece_name"
+        for issue in issues
+    )
+
+def test_rejects_promotion_without_movement(
+    valid_promotion_game,
+    validator: SemanticValidator,
+) -> None:
+    man, king = valid_promotion_game.pieces
+
+    invalid_game = replace(
+        valid_promotion_game,
+        pieces=(
+            replace(
+                man,
+                placement=PlacementType.ANY_EMPTY_CELL,
+                movement=None,
+                capture=None,
+            ),
+            king,
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "promotion_requires_movement"
+        and issue.path == "pieces.Man.promotion"
+        for issue in issues
+    )
+
+def test_rejects_incompatible_promotion_owners(
+    valid_promotion_game,
+    validator: SemanticValidator,
+) -> None:
+    man, king = valid_promotion_game.pieces
+
+    invalid_game = replace(
+        valid_promotion_game,
+        pieces=(
+            man,
+            replace(
+                king,
+                owners=("White",),
+            ),
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "incompatible_promotion_owners"
+        and issue.path
+        == "pieces.Man.promotion.target_piece_name"
+        for issue in issues
+    )
+
+def test_back_rank_promotion_requires_forward_direction(
+    valid_promotion_game,
+    validator: SemanticValidator,
+) -> None:
+    white, black = valid_promotion_game.players
+    man, king = valid_promotion_game.pieces
+
+    invalid_game = replace(
+        valid_promotion_game,
+        players=(
+            replace(
+                white,
+                forward=None,
+            ),
+            black,
+        ),
+        pieces=(
+            replace(
+                man,
+                movement=replace(
+                    man.movement,
+                    direction=MovementDirection.DIAGONAL_ANY,
+                ),
+                capture=None,
+            ),
+            king,
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "missing_forward_direction"
+        and issue.path == "players.White.forward"
         for issue in issues
     )

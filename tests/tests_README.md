@@ -52,7 +52,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 156 tests.
+The suite currently contains 161 tests.
 
 ### Parser tests
 
@@ -61,6 +61,18 @@ The suite currently contains 156 tests.
 - parses `games/tictactoe.game`;
 - verifies that the root node is `start`;
 - verifies that the parse tree is not empty.
+
+`test_parse_checkers_end_condition_syntax`
+
+- parses the complete `games/checkers.game` source;
+- verifies distinct `no_pieces_left_condition` and
+  `no_moves_left_condition` nodes;
+- verifies two typed `opponent_target` aliases.
+
+`test_reject_invalid_end_condition_target`
+
+- replaces `opponent` with unsupported `self`;
+- verifies that the grammar raises `UnexpectedInput`.
 
 `test_reject_incomplete_game`
 
@@ -105,6 +117,17 @@ unsupported player-forward and movement directions raise `UnexpectedInput`.
 - verifies the three alignment conditions;
 - verifies the full-board draw condition;
 - checks the complete immutable tuple of typed conditions.
+
+`test_transform_checkers_end_conditions`
+
+- transforms the real Checkers file through the complete parser pipeline;
+- verifies `NoPiecesLeftCondition` and `NoMovesLeftCondition`;
+- verifies `PlayerTarget.OPPONENT` and `Outcome.WIN`.
+
+`test_checkers_end_condition_is_immutable`
+
+- runs once for each new condition type;
+- verifies that frozen AST nodes reject target reassignment.
 
 `test_ast_is_immutable`
 
@@ -438,15 +461,18 @@ semantically validated initial setup rules, capture syntax, immutable capture
 AST rules, semantic capture constraints, ordinary relocation and capture
 execution, promotion syntax and immutable AST rules, runtime setup expansion,
 semantic promotion constraints, back-rank promotion execution after ordinary
-movement or capture, turn-rotation, end-condition, rendering, and
-interactive-session tests for Tic-Tac-Toe.
+movement or capture, Checkers player-state end-condition syntax and immutable
+AST nodes, turn-rotation, end-condition, rendering, and interactive-session
+tests for Tic-Tac-Toe.
 
 Future coverage will add:
 
-1. multiple and mandatory capture tests for Checkers;
-2. multiple-promotion and complete Checkers scenario tests;
-3. parser, AST, and semantic-validation tests for Connect Four;
-4. complete game-scenario tests for additional supported games.
+1. semantic-validation and runtime-evaluation tests for Checkers player-state
+   end conditions;
+2. multiple and mandatory capture tests for Checkers;
+3. complete Checkers scenario tests;
+4. parser, AST, and semantic-validation tests for Connect Four;
+5. complete game-scenario tests for additional supported games.
 
 Every new DSL construct should include:
 

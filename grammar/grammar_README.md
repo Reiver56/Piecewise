@@ -133,7 +133,12 @@ rules belong to semantic validation.
 The grammar supports:
 
 - `align` with `same_row`, `same_col`, or `diagonal`;
-- `board_full: no_winner -> draw`.
+- `board_full: no_winner -> draw`;
+- `no_pieces_left: opponent -> win`;
+- `no_moves_left: opponent -> win`.
+
+The two player-state conditions share a typed `player_target` rule. Its only
+current value is `opponent`; unsupported targets are rejected syntactically.
 
 ## Transformer-oriented aliases
 
@@ -151,6 +156,12 @@ and:
 alignment_direction: "same_row" -> same_row
                    | "same_col" -> same_col
                    | "diagonal" -> diagonal
+```
+
+The Checkers target uses the same alias pattern:
+
+```lark
+player_target: "opponent" -> opponent_target
 ```
 
 These aliases preserve which literal was selected in the parse tree, allowing
@@ -225,14 +236,13 @@ whether that player was declared belongs to semantic validation.
 
 ## Current limitations
 
-The grammar supports Tic-Tac-Toe plus the directional-player, movement,
-capture, promotion, and initial-setup declarations required by Checkers. It
-does not yet support:
+The grammar supports complete parsing of the current Tic-Tac-Toe and Checkers
+example files. It does not yet support:
 
-- Checkers `no_pieces_left` and `no_moves_left` end conditions;
+- explicit multiple- or mandatory-capture declarations;
 - gravity;
 - placement by column;
-- complete Checkers or Connect Four definitions.
+- complete Connect Four definitions.
 
 ## Extension workflow
 

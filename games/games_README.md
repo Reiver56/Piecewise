@@ -169,6 +169,20 @@ Supported alignment directions are:
 The parser records these conditions in the AST, and the engine evaluates the
 currently supported alignment and full-board conditions.
 
+Checkers also uses player-state victory conditions:
+
+```text
+win_condition {
+    no_pieces_left: opponent -> win
+    no_moves_left: opponent -> win
+}
+```
+
+The only supported target is currently `opponent`. These declarations become
+immutable `NoPiecesLeftCondition` and `NoMovesLeftCondition` objects containing
+`PlayerTarget.OPPONENT`. Parsing and AST transformation are implemented;
+semantic validation and runtime evaluation remain future increments.
+
 ## Complete supported example
 
 ```text
@@ -213,10 +227,12 @@ game = GameParser().parse_game_file("games/tictactoe.game")
 
 `checkers.game` combines:
 
-- supported player directions, diagonal movement, single capture, promotion
-  syntax/AST, and initial piece placement;
-- planned promotion execution;
-- planned loss caused by having no pieces or legal moves.
+- supported player directions, diagonal movement, single capture, promotion,
+  initial piece placement, and player-state end-condition syntax/AST;
+- supported single-jump capture and back-rank promotion execution;
+- planned semantic validation and runtime evaluation of victory caused by the
+  opponent having no pieces or legal moves;
+- planned multiple- and mandatory-capture behaviour.
 
 ### Connect Four
 

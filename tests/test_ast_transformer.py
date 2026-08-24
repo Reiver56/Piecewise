@@ -22,6 +22,12 @@ from parser.ast_nodes import (
     CaptureRule,
     PromotionCondition,
     PromotionRule,
+    NoMovesLeftCondition,
+    NoPiecesLeftCondition,
+    PlayerTarget,
+    NoMovesLeftCondition,
+    NoPiecesLeftCondition,
+    PlayerTarget,
 )
 
 from parser.game_parser import GameParser
@@ -29,6 +35,7 @@ from parser.game_parser import GameParser
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TICTACTOE_PATH = PROJECT_ROOT / "games" / "tictactoe.game"
+CHECKERS_PATH = PROJECT_ROOT / "games" / "checkers.game"
 
 MOVEMENT_GAME_SOURCE = """
 game MovementGame {
@@ -145,6 +152,10 @@ def tictactoe_game() -> GameDefinition:
     return GameParser().parse_game_file(TICTACTOE_PATH)
 
 @pytest.fixture(scope="module")
+def checkers_game() -> GameDefinition:
+    return GameParser().parse_game_file(CHECKERS_PATH)
+
+@pytest.fixture(scope="module")
 def movement_game() -> GameDefinition:
     return GameParser().parse_game(MOVEMENT_GAME_SOURCE)
 
@@ -157,14 +168,8 @@ def promotion_game() -> GameDefinition:
     return GameParser().parse_game(PROMOTION_GAME_SOURCE)
 
 @pytest.fixture(scope="module")
-def promotion_game() -> GameDefinition:
-    return GameParser().parse_game(PROMOTION_GAME_SOURCE)
-
-
-@pytest.fixture(scope="module")
 def setup_game() -> GameDefinition:
     return GameParser().parse_game(SETUP_GAME_SOURCE)
-
 
 def test_transform_tictactoe_definition(
     tictactoe_game: GameDefinition,
@@ -217,6 +222,47 @@ def test_transform_win_conditions(
         BoardFullCondition(outcome=Outcome.DRAW),
     )
 
+def test_transform_checkers_end_conditions(
+    checkers_game: GameDefinition,
+) -> None:
+    assert checkers_game.win_conditions == (
+        NoPiecesLeftCondition(
+            target=PlayerTarget.OPPONENT,
+            outcome=Outcome.WIN,
+        ),
+        NoMovesLeftCondition(
+            target=PlayerTarget.OPPONENT,
+            outcome=Outcome.WIN,
+        ),
+    )
+
+@pytest.mark.parametrize(
+    "condition",
+    (
+        NoPiecesLeftCondition(
+            target=PlayerTarget.OPPONENT,
+        ),
+        NoMovesLeftCondition(
+            target=PlayerTarget.OPPONENT,
+        ),
+    ),
+    ids=(
+        "no_pieces_left",
+        "no_moves_left",
+    ),
+)
+def test_checkers_end_condition_is_immutable(
+    condition: (
+        NoPiecesLeftCondition
+        | NoMovesLeftCondition
+    ),
+) -> None:
+    with pytest.raises(FrozenInstanceError):
+        setattr(
+            condition,
+            "target",
+            PlayerTarget.OPPONENT,
+        )
 
 def test_ast_is_immutable(
     tictactoe_game: GameDefinition,

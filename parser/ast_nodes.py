@@ -42,6 +42,8 @@ class Outcome(str, Enum):
     WIN = "win"
     DRAW = "draw"
 
+class PlayerTarget(str, Enum):
+    OPPONENT = "opponent"
 
 @dataclass(frozen=True, slots=True)
 class BoardDefinition:
@@ -103,9 +105,22 @@ class AlignCondition:
 class BoardFullCondition:
     outcome: Outcome = Outcome.DRAW
 
+@dataclass(frozen=True, slots=True)
+class NoPiecesLeftCondition:
+    target: PlayerTarget
+    outcome: Outcome = Outcome.WIN
 
-WinCondition: TypeAlias = AlignCondition | BoardFullCondition
+@dataclass(frozen=True, slots=True)
+class NoMovesLeftCondition:
+    target: PlayerTarget
+    outcome: Outcome = Outcome.WIN
 
+WinCondition: TypeAlias = (
+    AlignCondition
+    | BoardFullCondition
+    | NoPiecesLeftCondition
+    | NoMovesLeftCondition
+)
 @dataclass(frozen=True, slots=True)
 class GameDefinition:
     name: str

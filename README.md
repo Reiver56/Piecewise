@@ -45,6 +45,8 @@ The current increment supports:
 - semantic validation of promotion targets, movement dependency, ownership,
   and back-rank orientation;
 - semantic validation of setup references, ownership, row ranges, and overlaps;
+- semantic validation of Checkers player-state end-condition targets, including
+  the requirement that `opponent` refers to exactly one of two players;
 - an immutable runtime game-state model with enforced invariants;
 - initialization of runtime state and setup pieces from a valid definition;
 - immutable placement and relocation requests;
@@ -60,8 +62,8 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- Checkers multiple and mandatory captures, semantic validation and runtime
-  evaluation of player-state end conditions, and interactive play;
+- Checkers multiple and mandatory captures, runtime evaluation of player-state
+  end conditions, and interactive play;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
@@ -69,8 +71,9 @@ The Checkers and Connect Four files are design examples for future DSL
 increments. The grammar and AST now support the directional-player, basic
 movement, capture, promotion, initial-setup, and player-state end-condition
 declarations used by Checkers. Movement, capture, promotion, and setup are also
-validated or executed by their current subsets, while Checkers end-condition
-semantics and runtime evaluation remain future increments.
+validated or executed by their current subsets. Checkers end-condition targets
+are also validated semantically, while their runtime evaluation remains a
+future increment.
 
 ## Architecture
 
@@ -344,9 +347,10 @@ win_condition {
 
 The grammar accepts only the typed target `opponent`. The transformer maps it
 to `PlayerTarget.OPPONENT` and creates immutable `NoPiecesLeftCondition` and
-`NoMovesLeftCondition` objects with `Outcome.WIN`. ASE-025 covers syntax and
-AST transformation; semantic validation and runtime evaluation of these
-conditions remain separate increments.
+`NoMovesLeftCondition` objects with `Outcome.WIN`. The semantic validator
+requires exactly two declared players so `opponent` identifies one unambiguous
+player. It also rejects unsupported targets in AST objects constructed directly
+in Python. Runtime evaluation of these conditions remains a separate increment.
 
 ## Initialize a game
 
@@ -549,7 +553,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 161 parser, AST-transformation, semantic-validation,
+The current suite contains 164 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

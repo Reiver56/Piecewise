@@ -9,6 +9,9 @@ from parser.ast_nodes import (
     PieceDefinition,
     PlayerDefinition,
     PromotionCondition,
+    NoMovesLeftCondition,
+    NoPiecesLeftCondition,
+    PlayerTarget,
 )
 
 from validation.errors import (
@@ -577,11 +580,46 @@ class SemanticValidator:
         game: GameDefinition,
         issues: list[ValidationIssue],
     ) -> None:
+        
         for index, condition in enumerate(game.win_conditions):
+            path = f"win_conditions[{index}]"
+
+            if isinstance(
+                condition,
+                (
+                    NoPiecesLeftCondition,
+                    NoMovesLeftCondition,
+                ),
+            ):
+                if condition.target is not PlayerTarget.OPPONENT:
+                    issues.append(
+                        ValidationIssue(
+                            code="unsupported_player_target",
+                            path=f"{path}.target",
+                            message=(
+                                f"Player target '{condition.target}' "
+                                "is not supported."
+                            ),
+                        )
+                    )
+                    continue
+                
+                if len(game.players) != 2:
+                    issues.append(
+                        ValidationIssue(
+                            code="ambiguous_opponent_target",
+                            path=f"{path}.target",
+                            message=(
+                                "The opponent target requires exactly "
+                                f"two players, but {len(game.players)} "
+                                "are declared."
+                            ),
+                        )
+                    )
+            
+                continue
             if not isinstance(condition, AlignCondition):
                 continue
-
-            path = f"win_conditions[{index}]"
 
             if condition.length <= 0:
                 issues.append(

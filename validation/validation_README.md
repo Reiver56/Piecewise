@@ -77,6 +77,8 @@ The validator detects:
 - setup row ranges that are not ordered and one-based;
 - setup row ranges extending beyond the board;
 - setup rules whose playable row ranges overlap;
+- unsupported targets in Checkers player-state end conditions;
+- `opponent` targets used by games that do not declare exactly two players;
 - non-positive alignment lengths;
 - alignments that do not fit the board in their specified direction.
 
@@ -156,6 +158,13 @@ Setup validation uses indexed paths so diagnostics identify the exact rule:
 | `setup_rows_out_of_bounds` | `setup[N].rows` | Range exceeds the board |
 | `overlapping_setup_rules` | `setup[N].rows` | Range overlaps an earlier setup rule |
 
+Checkers player-state end-condition validation uses indexed condition paths:
+
+| Code | Path | Meaning |
+| --- | --- | --- |
+| `unsupported_player_target` | `win_conditions[N].target` | Target is not supported by the current DSL subset |
+| `ambiguous_opponent_target` | `win_conditions[N].target` | `opponent` cannot identify one player because the game does not declare exactly two players |
+
 ## Architectural boundary
 
 The parser verifies syntax and constructs the AST. This package validates
@@ -176,19 +185,22 @@ Run the focused tests from the project root:
 python -m pytest tests/test_semantic_validator.py -v
 ```
 
-The 27 focused tests cover valid Tic-Tac-Toe, movement, capture, promotion, and
-setup definitions, cumulative diagnostics, stable codes and paths, piece-action
-exclusivity, movement and capture distances, required player orientation,
-capture-to-movement and promotion-to-movement dependencies, promotion targets
-and ownership compatibility, setup references, ownership, row ranges, overlaps,
-and `SemanticValidationError` behaviour. The complete project suite contains
-151 tests.
+The 30 focused tests cover valid Tic-Tac-Toe and Checkers definitions, movement,
+capture, promotion, setup, and player-state end-condition rules, cumulative
+diagnostics, stable codes and paths, piece-action exclusivity, movement and
+capture distances, required player orientation, capture-to-movement and
+promotion-to-movement dependencies, promotion targets and ownership
+compatibility, setup references, ownership, row ranges and overlaps, supported
+player targets, unambiguous `opponent` resolution, and
+`SemanticValidationError` behaviour. The complete project suite contains 164
+tests.
 
 ## Current limitations
 
 The rules cover Tic-Tac-Toe and the current directional movement, capture,
-promotion, and initial-setup subsets. Supported single-jump captures are
-executed by `MoveExecutor`; multiple captures, mandatory capture, promotion
-execution, Checkers end conditions, and Connect Four gravity still require
-future increments. Valid setup rules are applied to runtime state by
+promotion, initial-setup, and Checkers player-state end-condition subsets.
+Supported single-jump captures and back-rank promotion are executed by
+`MoveExecutor`; multiple captures, mandatory capture, runtime evaluation of
+Checkers end conditions, and Connect Four gravity still require future
+increments. Valid setup rules are applied to runtime state by
 `GameInitializer`.

@@ -55,7 +55,8 @@ The current increment supports:
 - deterministic generation of legal ordinary and single-capture moves for the
   current player;
 - automatic evaluation of row, column, and diagonal win conditions;
-- automatic Checkers victory when the opponent has no pieces left;
+- automatic Checkers victory when the opponent has no pieces or no legal moves
+  left;
 - full-board draw detection with victory taking precedence;
 - complete game-session management with sequential state updates;
 - text rendering for rectangular boards and non-playable cells;
@@ -65,8 +66,7 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- Checkers multiple and mandatory captures, runtime evaluation of
-  `no_moves_left`, and interactive play;
+- Checkers multiple and mandatory captures and interactive play;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
@@ -75,8 +75,8 @@ increments. The grammar and AST now support the directional-player, basic
 movement, capture, promotion, initial-setup, and player-state end-condition
 declarations used by Checkers. Movement, capture, promotion, and setup are also
 validated or executed by their current subsets. Checkers end-condition targets
-are also validated semantically. The engine evaluates `no_pieces_left` after a
-move, while `no_moves_left` remains a future increment.
+are also validated semantically. After each move, the engine evaluates both
+`no_pieces_left` and `no_moves_left` against the next player.
 
 ## Architecture
 
@@ -274,8 +274,8 @@ board limits, playable cells, occupied destinations, and enemy-only capture
 targets. Results are returned as an immutable tuple in deterministic piece,
 direction, and destination order. Ordinary moves and captures may coexist;
 mandatory and chained captures remain future increments. An empty tuple means
-the current player has no generated move and will support `no_moves_left`
-evaluation in the next increment.
+the current player has no generated move and is used directly by
+`ConditionEvaluator` for `no_moves_left`.
 
 ## Define capture rules
 
@@ -303,8 +303,8 @@ capture distance. It validates `diagonal forward` or `diagonal any`, identifies
 the intermediate coordinate, requires an enemy piece there, and returns a new
 snapshot with the moving piece at its destination and the enemy removed. The
 previous `GameState` remains unchanged. Capturing the opponent's last remaining
-piece now produces a won state. Multiple captures, mandatory capture, and
-runtime evaluation of `no_moves_left` remain future increments.
+piece now produces a won state. Multiple captures and mandatory capture remain
+future increments.
 
 ## Define promotion rules
 
@@ -376,8 +376,8 @@ to `PlayerTarget.OPPONENT` and creates immutable `NoPiecesLeftCondition` and
 requires exactly two declared players so `opponent` identifies one unambiguous
 player. It also rejects unsupported targets in AST objects constructed directly
 in Python. At runtime, `ConditionEvaluator` awards the active player a victory
-when a move leaves the declared opponent without pieces. Evaluation of
-`no_moves_left` remains a separate increment.
+when a move leaves the declared opponent without pieces or without any legal
+ordinary or single-capture move.
 
 ## Initialize a game
 
@@ -498,8 +498,9 @@ cell or a piece owned by the active player makes the move invalid. A successful
 capture removes exactly one enemy, advances the turn, and preserves the
 previous snapshot. When the destination is the active player's back rank, the
 surviving piece is promoted after the enemy is removed. Capturing the final
-opponent piece immediately produces a won state. Chained and mandatory captures
-and runtime evaluation of `no_moves_left` remain future increments.
+opponent piece immediately produces a won state. If the next player still owns
+pieces but has no generated legal move, `no_moves_left` also produces a victory.
+Chained and mandatory captures remain future increments.
 
 ## Manage a complete game session
 
@@ -580,7 +581,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 175 parser, AST-transformation, semantic-validation,
+The current suite contains 179 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

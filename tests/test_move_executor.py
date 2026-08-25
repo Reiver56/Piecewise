@@ -388,6 +388,52 @@ def test_capture_of_last_opponent_piece_ends_game() -> None:
     assert result.current_player == "Black"
     assert result.turn_number == 2
 
+def test_move_ends_game_when_opponent_has_no_legal_moves() -> None:
+    game = load_checkers()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=3, column=2),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=7, column=0),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=3, column=2),
+        coordinate=Coordinate(row=2, column=3),
+    )
+
+    result = MoveExecutor(game).apply(state, move)
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="Man",
+            owner="White",
+            coordinate=Coordinate(row=2, column=3),
+        ),
+        PlacedPiece(
+            piece_name="Man",
+            owner="Black",
+            coordinate=Coordinate(row=7, column=0),
+        ),
+    )
+    assert result.current_player == "Black"
+    assert result.turn_number == 2
+    assert result.status is GameStatus.WON
+    assert result.winner == "White"
+
 def test_capture_does_not_modify_previous_state() -> None:
     game = create_capture_game()
     state = GameState(

@@ -313,3 +313,113 @@ def test_no_pieces_left_remains_ongoing_while_opponent_has_piece() -> None:
     assert result is state
     assert result.status is GameStatus.ONGOING
     assert result.winner is None
+
+def test_evaluate_detects_no_moves_left_win() -> None:
+    game = load_checkers()
+
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=2, column=3),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=7, column=0),
+            ),
+        ),
+        current_player="Black",
+        turn_number=2,
+    )
+    last_move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=3, column=2),
+        coordinate=Coordinate(row=2, column=3),
+    )
+
+    result = ConditionEvaluator(game).evaluate(
+        state,
+        last_move,
+    )
+
+    assert result.status is GameStatus.WON
+    assert result.winner == "White"
+
+def test_no_moves_left_remains_ongoing_when_opponent_can_move() -> None:
+    game = load_checkers()
+
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=2, column=3),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=6, column=1),
+            ),
+        ),
+        current_player="Black",
+        turn_number=2,
+    )
+    last_move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=3, column=2),
+        coordinate=Coordinate(row=2, column=3),
+    )
+
+    result = ConditionEvaluator(game).evaluate(
+        state,
+        last_move,
+    )
+
+    assert result is state
+    assert result.status is GameStatus.ONGOING
+    assert result.winner is None
+
+def test_no_moves_left_remains_ongoing_when_opponent_can_capture() -> None:
+    game = load_checkers()
+
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="King",
+                owner="White",
+                coordinate=Coordinate(row=6, column=1),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+        ),
+        current_player="Black",
+        turn_number=2,
+    )
+    last_move = Move(
+        player="White",
+        piece_name="King",
+        source=Coordinate(row=5, column=2),
+        coordinate=Coordinate(row=6, column=1),
+    )
+
+    result = ConditionEvaluator(game).evaluate(
+        state,
+        last_move,
+    )
+
+    assert result is state
+    assert result.status is GameStatus.ONGOING
+    assert result.winner is None

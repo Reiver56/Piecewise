@@ -53,7 +53,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 175 tests.
+The suite currently contains 179 tests.
 
 ### Parser tests
 
@@ -312,7 +312,7 @@ The seven cases in `test_move.py` verify:
 
 ### Move-executor tests
 
-The 42 cases in `test_move_executor.py` verify:
+The 43 cases in `test_move_executor.py` verify:
 
 - piece placement, turn-number advancement, and player rotation;
 - creation of a new state without modifying the previous snapshot;
@@ -345,7 +345,9 @@ The 42 cases in `test_move_executor.py` verify:
 - preservation of the source type before reaching the back rank;
 - promotion after a capture and removal of the intermediate enemy;
 - immutable preservation of the pre-promotion snapshot;
-- integration between a final capture and the `no_pieces_left` victory.
+- integration between a final capture and the `no_pieces_left` victory;
+- integration between turn rotation, legal-move generation, and a
+  `no_moves_left` victory.
 
 ### Legal-move-generator tests
 
@@ -364,7 +366,7 @@ The eight cases in `test_legal_move_generator.py` verify:
 
 ### Condition-evaluator tests
 
-The 12 cases in `test_condition_evaluator.py` verify:
+The 15 cases in `test_condition_evaluator.py` verify:
 
 - row and column victories;
 - victories across both diagonal directions;
@@ -374,7 +376,9 @@ The 12 cases in `test_condition_evaluator.py` verify:
 - board-full evaluation using only playable cells;
 - continued play when no board-full draw condition is declared;
 - a Checkers victory when the opponent has no pieces left;
-- continued play while the opponent still owns at least one piece.
+- continued play while the opponent still owns at least one piece;
+- a Checkers victory when the next player has no generated legal moves;
+- continued play when that player has an ordinary move or a capture.
 
 ### Board-renderer tests
 
@@ -487,17 +491,17 @@ AST rules, semantic capture constraints, ordinary relocation and capture
 execution, promotion syntax and immutable AST rules, runtime setup expansion,
 semantic promotion constraints, back-rank promotion execution after ordinary
 movement or capture, Checkers player-state end-condition syntax, immutable AST
-nodes, semantic target validation, runtime `no_pieces_left` evaluation, and
-deterministic legal movement and capture generation, turn-rotation,
-end-condition, rendering, and interactive-session tests for Tic-Tac-Toe.
+nodes, semantic target validation, runtime `no_pieces_left` and `no_moves_left`
+evaluation, and deterministic legal movement and capture generation,
+turn-rotation, end-condition, rendering, and interactive-session tests for
+Tic-Tac-Toe.
 
 Future coverage will add:
 
-1. runtime-evaluation tests for Checkers `no_moves_left`;
-2. multiple and mandatory capture tests for Checkers;
-3. complete Checkers scenario tests;
-4. parser, AST, and semantic-validation tests for Connect Four;
-5. complete game-scenario tests for additional supported games.
+1. multiple and mandatory capture tests for Checkers;
+2. complete Checkers scenario tests;
+3. parser, AST, and semantic-validation tests for Connect Four;
+4. complete game-scenario tests for additional supported games.
 
 Every new DSL construct should include:
 

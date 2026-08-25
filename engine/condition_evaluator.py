@@ -9,9 +9,11 @@ from parser.ast_nodes import (
     PlayableCells,
     NoPiecesLeftCondition,
     PlayerTarget,
+    NoMovesLeftCondition,
 )
 
 from engine.game_state import Coordinate, GameState, GameStatus
+from engine.legal_move_generator import LegalMoveGenerator
 from engine.move import Move
 
 
@@ -42,6 +44,13 @@ class ConditionEvaluator:
             )
 
         if self._has_no_pieces_left_win(state, last_move):
+            return replace(
+                state,
+                status=GameStatus.WON,
+                winner=last_move.player,
+            )
+
+        if self._has_no_moves_left_win(state):
             return replace(
                 state,
                 status=GameStatus.WON,
@@ -191,6 +200,22 @@ class ConditionEvaluator:
             for column in range(state.columns)
             if self._is_playable_cell(row, column)
         )
+
+    def _has_no_moves_left_win(
+        self,
+        state: GameState,
+    ) -> bool:
+        has_condition = any(
+            isinstance(condition, NoMovesLeftCondition)
+            and condition.target is PlayerTarget.OPPONENT
+            and condition.outcome is Outcome.WIN
+            for condition in self._game.win_conditions
+        )
+    
+        if not has_condition:
+            return False
+    
+        return LegalMoveGenerator(self._game).generate(state) == ()
 
     def _is_playable_cell(
         self,

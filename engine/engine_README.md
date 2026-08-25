@@ -86,8 +86,8 @@ move only when the intermediate coordinate contains an enemy piece.
 Generation is deterministic and does not mutate the supplied state. Ordinary
 moves and single captures are both returned when available; mandatory capture
 selection and chained captures remain outside the current scope. Returning an
-empty tuple provides the engine primitive required for future `no_moves_left`
-evaluation.
+empty tuple is the engine primitive used by `ConditionEvaluator` for
+`no_moves_left`.
 
 ## Initialize setup pieces
 
@@ -195,9 +195,10 @@ type, and the previous `GameState` remains unchanged.
 columns, and both diagonal directions, full-board draws, and Checkers
 `no_pieces_left` victories. For the latter, it resolves the single declared
 opponent of the player who made the last move and checks whether that owner has
-any remaining pieces. Only playable cells count toward a full board. A win
-takes precedence when the last move also fills the board. Runtime evaluation of
-`no_moves_left` is not implemented yet.
+any remaining pieces. For `no_moves_left`, it generates the next player's legal
+ordinary and single-capture moves and detects an empty result. In both cases the
+winner is the player who made the last move. Only playable cells count toward a
+full board, and a win takes precedence when the last move also fills the board.
 
 ## Render a board
 
@@ -234,10 +235,10 @@ The executor supports `ANY_EMPTY_CELL` placement plus validated ordinary and
 capturing `DIAGONAL_FORWARD` and `DIAGONAL_ANY` relocation, followed by
 validated `BACK_RANK` promotion. `LegalMoveGenerator` discovers the supported
 ordinary and single-capture moves without applying them. Multiple captures,
-mandatory capture, `no_moves_left` evaluation, gravity, and interactive
-relocation input remain future increments. Movement, capture, promotion,
-setup-rule consistency, and Checkers player-state targets are validated before
-the engine boundary by `SemanticValidator`.
+mandatory capture, gravity, and interactive relocation input remain future
+increments. Movement, capture, promotion, setup-rule consistency, and Checkers
+player-state targets are validated before the engine boundary by
+`SemanticValidator`.
 
 ## Testing
 
@@ -255,5 +256,5 @@ python -m pytest \
   tests/test_board_renderer.py -v
 ```
 
-These modules contain 110 engine-focused tests. The complete project suite
-contains 175 tests.
+These modules contain 114 engine-focused tests. The complete project suite
+contains 179 tests.

@@ -192,7 +192,7 @@ capture distances, required player orientation, capture-to-movement and
 promotion-to-movement dependencies, promotion targets and ownership
 compatibility, setup references, ownership, row ranges and overlaps, supported
 player targets, unambiguous `opponent` resolution, and
-`SemanticValidationError` behaviour. The complete project suite contains 175
+`SemanticValidationError` behaviour. The complete project suite contains 179
 tests.
 
 ## Current limitations
@@ -200,7 +200,7 @@ tests.
 The rules cover Tic-Tac-Toe and the current directional movement, capture,
 promotion, initial-setup, and Checkers player-state end-condition subsets.
 Supported single-jump captures and back-rank promotion are executed by
-`MoveExecutor`; multiple captures, mandatory capture, runtime evaluation of
-Checkers end conditions, and Connect Four gravity still require future
-increments. Valid setup rules are applied to runtime state by
+`MoveExecutor`, and both Checkers player-state end conditions are evaluated at
+runtime. Multiple captures, mandatory capture, and Connect Four gravity still
+require future increments. Valid setup rules are applied to runtime state by
 `GameInitializer`.

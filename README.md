@@ -50,10 +50,10 @@ The current increment supports:
 - an immutable runtime game-state model with enforced invariants;
 - initialization of runtime state and setup pieces from a valid definition;
 - immutable placement and relocation requests;
-- validated placement, ordinary relocation, capture, and back-rank promotion
-  execution with turn rotation;
-- deterministic generation of legal ordinary and single-capture moves for the
-  current player, with mandatory captures taking global precedence;
+- validated placement, ordinary relocation, capture, chained capture, and
+  back-rank promotion execution with controlled turn rotation;
+- deterministic generation of legal ordinary and capture moves for the current
+  player, with mandatory captures and forced chain sources taking precedence;
 - automatic evaluation of row, column, and diagonal win conditions;
 - automatic Checkers victory when the opponent has no pieces or no legal moves
   left;
@@ -66,7 +66,7 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- Checkers chained captures and interactive play;
+- interactive Checkers play and piece-specific rendering;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
@@ -261,7 +261,7 @@ machine-readable diagnostics.
 ## Generate legal moves
 
 `LegalMoveGenerator` derives the current player's available movement and
-single-capture requests from an immutable `GameState`:
+capture requests from an immutable `GameState`:
 
 ```python
 from engine import LegalMoveGenerator
@@ -274,9 +274,11 @@ board limits, playable cells, occupied destinations, and enemy-only capture
 targets. Results are returned as an immutable tuple in deterministic piece,
 direction, and destination order. When at least one current-player piece can
 capture, the generator returns only captures and suppresses every ordinary
-move, including moves belonging to other pieces. Chained captures remain a
-future increment. An empty tuple means the current player has no generated
-move and is used directly by `ConditionEvaluator` for `no_moves_left`.
+move, including moves belonging to other pieces. During a chained capture,
+`GameState.forced_capture_source` further restricts generation to the piece
+that started the sequence. An empty tuple means the current player has no
+generated move and is used directly by `ConditionEvaluator` for
+`no_moves_left`.
 
 ## Define capture rules
 
@@ -306,7 +308,10 @@ snapshot with the moving piece at its destination and the enemy removed. The
 previous `GameState` remains unchanged. Capturing the opponent's last remaining
 piece now produces a won state. When any capture is available, `MoveExecutor`
 rejects otherwise valid ordinary relocations and accepts the required capture.
-Chained captures remain a future increment.
+If the moved piece can capture again, the immutable continuation state keeps
+the same player and turn number and records the piece's destination as the
+forced source. Turn rotation and terminal evaluation occur only when the chain
+ends.
 
 ## Define promotion rules
 
@@ -379,7 +384,7 @@ requires exactly two declared players so `opponent` identifies one unambiguous
 player. It also rejects unsupported targets in AST objects constructed directly
 in Python. At runtime, `ConditionEvaluator` awards the active player a victory
 when a move leaves the declared opponent without pieces or without any legal
-ordinary or single-capture move.
+ordinary or capture move.
 
 ## Initialize a game
 
@@ -502,8 +507,11 @@ previous snapshot. When the destination is the active player's back rank, the
 surviving piece is promoted after the enemy is removed. Capturing the final
 opponent piece immediately produces a won state. If the next player still owns
 pieces but has no generated legal move, `no_moves_left` also produces a victory.
-Mandatory capture is enforced across all pieces owned by the active player;
-chained captures remain a future increment.
+Mandatory capture is enforced across all pieces owned by the active player. A
+chained capture must continue from `forced_capture_source`; completing the
+sequence clears that field, advances the turn once, and then evaluates terminal
+conditions. Promotion remains immediate, so a newly promoted `King` may continue
+the same chain using `diagonal any`.
 
 ## Manage a complete game session
 
@@ -584,7 +592,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 183 parser, AST-transformation, semantic-validation,
+The current suite contains 192 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

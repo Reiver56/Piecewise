@@ -32,7 +32,9 @@ engine/
 - `GameState`: an immutable snapshot of a running game.
 
 `GameState` enforces positive board dimensions and turn numbers, valid winner
-and status combinations, in-bounds pieces, and unique occupied coordinates.
+and status combinations, in-bounds pieces, and unique occupied coordinates. Its
+optional `forced_capture_source` records an unfinished capture chain. When set,
+the coordinate must contain a piece owned by `current_player`.
 
 ## Move requests
 
@@ -86,8 +88,9 @@ move only when the intermediate coordinate contains an enemy piece.
 Generation is deterministic and does not mutate the supplied state. Captures
 have global precedence: when any current-player piece can capture, the result
 contains only captures and suppresses ordinary moves from every owned piece.
-Chained captures remain outside the current scope. Returning an empty tuple is
-the engine primitive used by `ConditionEvaluator` for `no_moves_left`.
+When `state.forced_capture_source` is set, only moves originating from that
+piece are generated. Returning an empty tuple is the engine primitive used by
+`ConditionEvaluator` for `no_moves_left`.
 
 ## Initialize setup pieces
 
@@ -170,11 +173,16 @@ For a valid capture, the executor:
 - moves the active piece and removes the enemy in a new immutable tuple;
 - advances the turn without modifying the previous `GameState`.
 
-The same logic supports players oriented both `up` and `down`. One move captures
-exactly one enemy. If the generator detects an available capture,
+The same logic supports players oriented both `up` and `down`. Each atomic move
+captures exactly one enemy. If the generator detects an available capture,
 `MoveExecutor` rejects an otherwise valid ordinary relocation with
-`InvalidMoveError`; the required capture remains executable. Chained captures
-are outside the current increment.
+`InvalidMoveError`; the required capture remains executable.
+
+If the moved piece can capture again, `MoveExecutor` returns a continuation
+state that retains the current player and turn number and stores the landing
+coordinate in `forced_capture_source`. Subsequent requests must use that same
+piece. When no follow-up capture exists, the field returns to `None`, the turn
+advances once, and terminal conditions are evaluated.
 
 ## Execute a promotion
 
@@ -189,7 +197,9 @@ a copy whose `piece_name` is the declared promotion target. Its owner and
 destination remain unchanged. The same post-relocation step runs after a
 capture, so the intermediate enemy is removed before the surviving piece is
 promoted. A move ending before the back rank preserves the original piece
-type, and the previous `GameState` remains unchanged.
+type, and the previous `GameState` remains unchanged. Promotion is immediate:
+if the promoted `King` has another capture, it continues the current chain with
+its `DIAGONAL_ANY` capture rule.
 
 ## End conditions
 
@@ -198,9 +208,11 @@ columns, and both diagonal directions, full-board draws, and Checkers
 `no_pieces_left` victories. For the latter, it resolves the single declared
 opponent of the player who made the last move and checks whether that owner has
 any remaining pieces. For `no_moves_left`, it generates the next player's legal
-ordinary and single-capture moves and detects an empty result. In both cases the
-winner is the player who made the last move. Only playable cells count toward a
-full board, and a win takes precedence when the last move also fills the board.
+ordinary and capture moves and detects an empty result. Capture continuation
+states remain ongoing; terminal evaluation runs after the chain finishes. In
+both cases the winner is the player who made the last move. Only playable cells
+count toward a full board, and a win takes precedence when the last move also
+fills the board.
 
 ## Render a board
 
@@ -236,8 +248,9 @@ DSL syntax. Terminal input and output belong to the separate `cli` package.
 The executor supports `ANY_EMPTY_CELL` placement plus validated ordinary and
 capturing `DIAGONAL_FORWARD` and `DIAGONAL_ANY` relocation, followed by
 validated `BACK_RANK` promotion. `LegalMoveGenerator` discovers the supported
-ordinary and single-capture moves without applying them and gives captures
-global precedence over ordinary moves. Chained captures, gravity, and
+ordinary and capture moves without applying them and gives captures
+global precedence over ordinary moves. `GameState` and `MoveExecutor` coordinate
+forced chained captures without making the executor stateful. Gravity and
 interactive relocation input remain future increments. Movement, capture,
 promotion, setup-rule consistency, and Checkers
 player-state targets are validated before the engine boundary by
@@ -259,5 +272,5 @@ python -m pytest \
   tests/test_board_renderer.py -v
 ```
 
-These modules contain 118 engine-focused tests. The complete project suite
-contains 183 tests.
+These modules contain 127 engine-focused tests. The complete project suite
+contains 192 tests.

@@ -347,6 +347,336 @@ def test_apply_captures_enemy_piece_forward() -> None:
     assert result.turn_number == 2
     assert result.status is GameStatus.ONGOING 
 
+def test_capture_keeps_turn_when_same_piece_can_capture_again() -> None:
+    game = load_checkers()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=1),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=2, column=3),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    first_capture = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=0),
+        coordinate=Coordinate(row=3, column=2),
+    )
+
+    result = MoveExecutor(game).apply(
+        state,
+        first_capture,
+    )
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="Man",
+            owner="White",
+            coordinate=Coordinate(row=3, column=2),
+        ),
+        PlacedPiece(
+            piece_name="Man",
+            owner="Black",
+            coordinate=Coordinate(row=2, column=3),
+        ),
+    )
+    assert result.current_player == "White"
+    assert result.turn_number == 1
+    assert result.forced_capture_source == Coordinate(
+        row=3,
+        column=2,
+    )
+    assert result.status is GameStatus.ONGOING
+
+def test_capture_chain_rejects_different_source() -> None:
+    game = load_checkers()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=6),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=1),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=2, column=3),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=5),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    first_capture = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=0),
+        coordinate=Coordinate(row=3, column=2),
+    )
+
+    continuation_state = MoveExecutor(game).apply(
+        state,
+        first_capture,
+    )
+
+    other_piece_capture = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=6),
+        coordinate=Coordinate(row=3, column=4),
+    )
+
+    with pytest.raises(
+        InvalidMoveError,
+        match="must continue with the same piece",
+    ):
+        MoveExecutor(game).apply(
+            continuation_state,
+            other_piece_capture,
+        )
+
+def test_capture_chain_passes_turn_after_final_capture() -> None:
+    game = load_checkers()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=1),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=2, column=3),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=6, column=7),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    executor = MoveExecutor(game)
+
+    continuation_state = executor.apply(
+        state,
+        Move(
+            player="White",
+            piece_name="Man",
+            source=Coordinate(row=5, column=0),
+            coordinate=Coordinate(row=3, column=2),
+        ),
+    )
+
+    result = executor.apply(
+        continuation_state,
+        Move(
+            player="White",
+            piece_name="Man",
+            source=Coordinate(row=3, column=2),
+            coordinate=Coordinate(row=1, column=4),
+        ),
+    )
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="Man",
+            owner="White",
+            coordinate=Coordinate(row=1, column=4),
+        ),
+        PlacedPiece(
+            piece_name="Man",
+            owner="Black",
+            coordinate=Coordinate(row=6, column=7),
+        ),
+    )
+    assert result.current_player == "Black"
+    assert result.turn_number == 2
+    assert result.forced_capture_source is None
+    assert result.status is GameStatus.ONGOING
+
+def test_capture_chain_evaluates_win_after_final_capture() -> None:
+    game = load_checkers()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=1),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=2, column=3),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    executor = MoveExecutor(game)
+
+    continuation_state = executor.apply(
+        state,
+        Move(
+            player="White",
+            piece_name="Man",
+            source=Coordinate(row=5, column=0),
+            coordinate=Coordinate(row=3, column=2),
+        ),
+    )
+
+    result = executor.apply(
+        continuation_state,
+        Move(
+            player="White",
+            piece_name="Man",
+            source=Coordinate(row=3, column=2),
+            coordinate=Coordinate(row=1, column=4),
+        ),
+    )
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="Man",
+            owner="White",
+            coordinate=Coordinate(row=1, column=4),
+        ),
+    )
+    assert result.current_player == "Black"
+    assert result.turn_number == 2
+    assert result.forced_capture_source is None
+    assert result.status is GameStatus.WON
+    assert result.winner == "White"
+
+def test_promoted_piece_continues_capture_chain_as_king() -> None:
+    game = load_checkers()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=2, column=1),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=1, column=2),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=1, column=4),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=6, column=7),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    executor = MoveExecutor(game)
+
+    continuation_state = executor.apply(
+        state,
+        Move(
+            player="White",
+            piece_name="Man",
+            source=Coordinate(row=2, column=1),
+            coordinate=Coordinate(row=0, column=3),
+        ),
+    )
+
+    assert continuation_state.pieces[0] == PlacedPiece(
+        piece_name="King",
+        owner="White",
+        coordinate=Coordinate(row=0, column=3),
+    )
+    assert continuation_state.current_player == "White"
+    assert continuation_state.turn_number == 1
+    assert continuation_state.forced_capture_source == Coordinate(
+        row=0,
+        column=3,
+    )
+
+    result = executor.apply(
+        continuation_state,
+        Move(
+            player="White",
+            piece_name="King",
+            source=Coordinate(row=0, column=3),
+            coordinate=Coordinate(row=2, column=5),
+        ),
+    )
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="King",
+            owner="White",
+            coordinate=Coordinate(row=2, column=5),
+        ),
+        PlacedPiece(
+            piece_name="Man",
+            owner="Black",
+            coordinate=Coordinate(row=6, column=7),
+        ),
+    )
+    assert result.current_player == "Black"
+    assert result.turn_number == 2
+    assert result.forced_capture_source is None
+    assert result.status is GameStatus.ONGOING
+
 def test_capture_of_last_opponent_piece_ends_game() -> None:
     game = load_checkers()
     state = GameState(

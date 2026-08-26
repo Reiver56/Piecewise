@@ -621,3 +621,4 @@ increment should:
 The initial scope covers deterministic, turn-based games on rectangular grids.
 Card games, hidden information, random events, and real-time mechanics are
 outside the current project scope.
+

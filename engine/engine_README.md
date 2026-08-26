@@ -270,8 +270,9 @@ python -m pytest \
   tests/test_legal_move_generator.py \
   tests/test_condition_evaluator.py \
   tests/test_move_executor.py \
+  tests/test_checkers_scenarios.py \
   tests/test_board_renderer.py -v
 ```
 
-These modules contain 127 engine-focused tests. The complete project suite
-contains 198 tests.
+These modules contain 133 engine-focused and end-to-end scenario tests. The
+complete project suite contains 204 tests.

@@ -11,6 +11,7 @@ tests/
 ├── test_parser.py
 ├── test_ast_transformer.py
 ├── test_board_renderer.py
+├── test_checkers_scenarios.py
 ├── test_game_cli.py
 ├── test_semantic_validator.py
 ├── test_condition_evaluator.py
@@ -53,7 +54,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 198 tests.
+The suite currently contains 204 tests.
 
 ### Parser tests
 
@@ -422,6 +423,19 @@ The 13 cases in `test_game_cli.py` verify:
 - recovery from empty and opponent-owned source coordinates;
 - completion of a mandatory chained capture through consecutive CLI inputs.
 
+### Checkers scenario tests
+
+The six cases in `test_checkers_scenarios.py` exercise the complete integration
+path using the real `games/checkers.game` definition and reduced variants of
+its valid setup:
+
+- initialization of the complete 8x8 setup with 12 `Man` pieces per player;
+- sequential ordinary moves with turn rotation and immutable snapshots;
+- mandatory chained capture with its intermediate forced source;
+- back-rank promotion from `Man` to `King`;
+- terminal victory after capturing the opponent's final piece;
+- terminal victory while the opponent still has pieces but no legal moves.
+
 ## Test levels
 
 ### Unit tests
@@ -463,7 +477,9 @@ ordinary relocation, and immutable single-enemy capture transitions. The game-se
 suite exercises a complete deterministic game from initialization through
 sequential moves to a terminal result. The CLI suite covers the full path from
 simulated user input to moves, state transitions, final board rendering, and
-the result message.
+the result message. The Checkers scenario suite crosses parsing, semantic
+validation, initialization, session orchestration, move execution, promotion,
+and terminal evaluation in complete runtime flows.
 
 ## Fixtures
 
@@ -517,13 +533,13 @@ nodes, semantic target validation, runtime `no_pieces_left` and `no_moves_left`
 evaluation, deterministic legal movement and capture generation, global
 mandatory-capture enforcement, forced same-piece capture chains, delayed turn
 rotation and terminal evaluation, rendering, placement input for Tic-Tac-Toe,
-and interactive relocation and chained-capture input for Checkers.
+interactive relocation and chained-capture input for Checkers, and complete
+Checkers runtime scenarios from setup through terminal victory.
 
 Future coverage will add:
 
-1. complete Checkers scenario tests;
-2. parser, AST, and semantic-validation tests for Connect Four;
-3. complete game-scenario tests for additional supported games.
+1. parser, AST, and semantic-validation tests for Connect Four;
+2. complete game-scenario tests for additional supported games.
 
 Every new DSL construct should include:
 

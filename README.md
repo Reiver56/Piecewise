@@ -57,6 +57,8 @@ The current increment supports:
 - automatic evaluation of row, column, and diagonal win conditions;
 - automatic Checkers victory when the opponent has no pieces or no legal moves
   left;
+- complete Checkers scenarios covering real setup, sequential turns, chained
+  captures, promotion, immutable snapshots, and both victory conditions;
 - full-board draw detection with victory taking precedence;
 - complete game-session management with sequential state updates;
 - text rendering for rectangular boards and non-playable cells;
@@ -67,7 +69,7 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- piece-specific Checkers rendering and complete scenario coverage;
+- piece-specific Checkers rendering;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
@@ -143,6 +145,7 @@ Piecewise/
 │   ├── test_parser.py
 │   ├── test_ast_transformer.py
 │   ├── test_board_renderer.py
+│   ├── test_checkers_scenarios.py
 │   ├── test_game_cli.py
 │   ├── test_semantic_validator.py
 │   ├── test_condition_evaluator.py
@@ -604,7 +607,7 @@ the engine.
 python -m pytest -v
 ```
 
-The current suite contains 198 parser, AST-transformation, semantic-validation,
+The current suite contains 204 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

@@ -26,7 +26,8 @@ class LegalMoveGenerator:
             piece.coordinate
             for piece in state.pieces
         }
-        moves: list[Move] = []
+        ordinary_moves: list[Move] = []
+        capture_moves: list[Move] = []
 
         for placed_piece in state.pieces:
             if placed_piece.owner != state.current_player:
@@ -85,7 +86,7 @@ class LegalMoveGenerator:
                     if not self._is_playable(destination):
                         continue
 
-                    moves.append(
+                    ordinary_moves.append(
                         Move(
                             player=placed_piece.owner,
                             piece_name=placed_piece.piece_name,
@@ -94,7 +95,7 @@ class LegalMoveGenerator:
                         )
                     )
 
-            moves.extend(
+            capture_moves.extend(
                 self._capture_moves(
                     state,
                     placed_piece,
@@ -102,7 +103,7 @@ class LegalMoveGenerator:
                     occupied_coordinates,
                 )
             )
-        return tuple(moves)
+        return tuple(capture_moves or ordinary_moves)
 
     def _capture_moves(
         self,

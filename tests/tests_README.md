@@ -53,7 +53,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 179 tests.
+The suite currently contains 183 tests.
 
 ### Parser tests
 
@@ -347,11 +347,14 @@ The 43 cases in `test_move_executor.py` verify:
 - immutable preservation of the pre-promotion snapshot;
 - integration between a final capture and the `no_pieces_left` victory;
 - integration between turn rotation, legal-move generation, and a
-  `no_moves_left` victory.
+  `no_moves_left` victory;
+- rejection of an ordinary relocation when another owned piece can capture;
+- successful execution of the mandatory capture while other ordinary moves
+  are available.
 
 ### Legal-move-generator tests
 
-The eight cases in `test_legal_move_generator.py` verify:
+The ten cases in `test_legal_move_generator.py` verify:
 
 - one or both forward diagonal moves for a `Man`;
 - deterministic left-before-right destination ordering;
@@ -362,6 +365,9 @@ The eight cases in `test_legal_move_generator.py` verify:
 - forward single captures over an enemy piece;
 - backward single captures for a `King` using `diagonal any`;
 - rejection of captures over a piece with the same owner;
+- global capture precedence over an ordinary move of the capturing piece;
+- suppression of ordinary moves belonging to other owned pieces when any
+  capture is available;
 - an empty immutable tuple when the current player has no legal moves.
 
 ### Condition-evaluator tests
@@ -492,13 +498,14 @@ execution, promotion syntax and immutable AST rules, runtime setup expansion,
 semantic promotion constraints, back-rank promotion execution after ordinary
 movement or capture, Checkers player-state end-condition syntax, immutable AST
 nodes, semantic target validation, runtime `no_pieces_left` and `no_moves_left`
-evaluation, and deterministic legal movement and capture generation,
+evaluation, deterministic legal movement and capture generation, global
+mandatory-capture enforcement,
 turn-rotation, end-condition, rendering, and interactive-session tests for
 Tic-Tac-Toe.
 
 Future coverage will add:
 
-1. multiple and mandatory capture tests for Checkers;
+1. chained-capture tests for Checkers;
 2. complete Checkers scenario tests;
 3. parser, AST, and semantic-validation tests for Connect Four;
 4. complete game-scenario tests for additional supported games.

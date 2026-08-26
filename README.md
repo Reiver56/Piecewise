@@ -53,7 +53,7 @@ The current increment supports:
 - validated placement, ordinary relocation, capture, and back-rank promotion
   execution with turn rotation;
 - deterministic generation of legal ordinary and single-capture moves for the
-  current player;
+  current player, with mandatory captures taking global precedence;
 - automatic evaluation of row, column, and diagonal win conditions;
 - automatic Checkers victory when the opponent has no pieces or no legal moves
   left;
@@ -66,7 +66,7 @@ The current increment supports:
 
 The following features are designed but not implemented yet:
 
-- Checkers multiple and mandatory captures and interactive play;
+- Checkers chained captures and interactive play;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
@@ -272,10 +272,11 @@ moves = LegalMoveGenerator(game).generate(state)
 It supports `diagonal forward` and `diagonal any`, respects player orientation,
 board limits, playable cells, occupied destinations, and enemy-only capture
 targets. Results are returned as an immutable tuple in deterministic piece,
-direction, and destination order. Ordinary moves and captures may coexist;
-mandatory and chained captures remain future increments. An empty tuple means
-the current player has no generated move and is used directly by
-`ConditionEvaluator` for `no_moves_left`.
+direction, and destination order. When at least one current-player piece can
+capture, the generator returns only captures and suppresses every ordinary
+move, including moves belonging to other pieces. Chained captures remain a
+future increment. An empty tuple means the current player has no generated
+move and is used directly by `ConditionEvaluator` for `no_moves_left`.
 
 ## Define capture rules
 
@@ -303,8 +304,9 @@ capture distance. It validates `diagonal forward` or `diagonal any`, identifies
 the intermediate coordinate, requires an enemy piece there, and returns a new
 snapshot with the moving piece at its destination and the enemy removed. The
 previous `GameState` remains unchanged. Capturing the opponent's last remaining
-piece now produces a won state. Multiple captures and mandatory capture remain
-future increments.
+piece now produces a won state. When any capture is available, `MoveExecutor`
+rejects otherwise valid ordinary relocations and accepts the required capture.
+Chained captures remain a future increment.
 
 ## Define promotion rules
 
@@ -500,7 +502,8 @@ previous snapshot. When the destination is the active player's back rank, the
 surviving piece is promoted after the enemy is removed. Capturing the final
 opponent piece immediately produces a won state. If the next player still owns
 pieces but has no generated legal move, `no_moves_left` also produces a victory.
-Chained and mandatory captures remain future increments.
+Mandatory capture is enforced across all pieces owned by the active player;
+chained captures remain a future increment.
 
 ## Manage a complete game session
 
@@ -581,7 +584,7 @@ current game.
 python -m pytest -v
 ```
 
-The current suite contains 179 parser, AST-transformation, semantic-validation,
+The current suite contains 183 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 
@@ -590,8 +593,8 @@ automatically.
 - [`games/README.md`](games/games_README.md): user-facing DSL guide and examples;
 - [`grammar/README.md`](grammar/grammar_README.md): grammar structure and Lark notation;
 - [`parser/README.md`](parser/parser_README.md): parsing API, AST, and transformation;
-- [`engine/README.md`](engine/README.md): runtime model, initialization, and move execution;
-- [`cli/README.md`](cli/README.md): interactive play and command-line entry point;
+- [`engine/README.md`](engine/engine_README.md): runtime model, initialization, and move execution;
+- [`cli/README.md`](cli/cli_README.md): interactive play and command-line entry point;
 - [`tests/README.md`](tests/tests_README.md): test strategy and conventions;
 - [`validation/README.md`](validation/validation_README.md): semantic rules and diagnostics.
 

@@ -83,11 +83,11 @@ out-of-bounds, non-playable, and occupied destinations. For captures it uses
 the declared capture distance, requires an empty landing cell, and includes the
 move only when the intermediate coordinate contains an enemy piece.
 
-Generation is deterministic and does not mutate the supplied state. Ordinary
-moves and single captures are both returned when available; mandatory capture
-selection and chained captures remain outside the current scope. Returning an
-empty tuple is the engine primitive used by `ConditionEvaluator` for
-`no_moves_left`.
+Generation is deterministic and does not mutate the supplied state. Captures
+have global precedence: when any current-player piece can capture, the result
+contains only captures and suppresses ordinary moves from every owned piece.
+Chained captures remain outside the current scope. Returning an empty tuple is
+the engine primitive used by `ConditionEvaluator` for `no_moves_left`.
 
 ## Initialize setup pieces
 
@@ -171,8 +171,10 @@ For a valid capture, the executor:
 - advances the turn without modifying the previous `GameState`.
 
 The same logic supports players oriented both `up` and `down`. One move captures
-exactly one enemy; chained captures and mandatory-capture selection are outside
-the current increment.
+exactly one enemy. If the generator detects an available capture,
+`MoveExecutor` rejects an otherwise valid ordinary relocation with
+`InvalidMoveError`; the required capture remains executable. Chained captures
+are outside the current increment.
 
 ## Execute a promotion
 
@@ -234,9 +236,10 @@ DSL syntax. Terminal input and output belong to the separate `cli` package.
 The executor supports `ANY_EMPTY_CELL` placement plus validated ordinary and
 capturing `DIAGONAL_FORWARD` and `DIAGONAL_ANY` relocation, followed by
 validated `BACK_RANK` promotion. `LegalMoveGenerator` discovers the supported
-ordinary and single-capture moves without applying them. Multiple captures,
-mandatory capture, gravity, and interactive relocation input remain future
-increments. Movement, capture, promotion, setup-rule consistency, and Checkers
+ordinary and single-capture moves without applying them and gives captures
+global precedence over ordinary moves. Chained captures, gravity, and
+interactive relocation input remain future increments. Movement, capture,
+promotion, setup-rule consistency, and Checkers
 player-state targets are validated before the engine boundary by
 `SemanticValidator`.
 
@@ -256,5 +259,5 @@ python -m pytest \
   tests/test_board_renderer.py -v
 ```
 
-These modules contain 114 engine-focused tests. The complete project suite
-contains 179 tests.
+These modules contain 118 engine-focused tests. The complete project suite
+contains 183 tests.

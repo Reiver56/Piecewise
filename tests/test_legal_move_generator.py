@@ -282,3 +282,77 @@ def test_generate_returns_empty_tuple_when_player_has_no_moves() -> None:
     moves = LegalMoveGenerator(game).generate(state)
 
     assert moves == ()
+
+def test_generate_returns_only_captures_when_capture_is_available() -> None:
+    game = load_checkers()
+    source = Coordinate(row=5, column=2)
+
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=source,
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=1),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+
+    moves = LegalMoveGenerator(game).generate(state)
+
+    assert moves == (
+        Move(
+            player="White",
+            piece_name="Man",
+            source=source,
+            coordinate=Coordinate(row=3, column=0),
+        ),
+    )
+
+def test_generate_suppresses_other_pieces_ordinary_moves() -> None:
+    game = load_checkers()
+    ordinary_source = Coordinate(row=5, column=6)
+    capturing_source = Coordinate(row=5, column=0)
+
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=ordinary_source,
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=capturing_source,
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=1),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+
+    moves = LegalMoveGenerator(game).generate(state)
+
+    assert moves == (
+        Move(
+            player="White",
+            piece_name="Man",
+            source=capturing_source,
+            coordinate=Coordinate(row=3, column=2),
+        ),
+    )

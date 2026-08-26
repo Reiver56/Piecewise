@@ -250,9 +250,10 @@ capturing `DIAGONAL_FORWARD` and `DIAGONAL_ANY` relocation, followed by
 validated `BACK_RANK` promotion. `LegalMoveGenerator` discovers the supported
 ordinary and capture moves without applying them and gives captures
 global precedence over ordinary moves. `GameState` and `MoveExecutor` coordinate
-forced chained captures without making the executor stateful. Gravity and
-interactive relocation input remain future increments. Movement, capture,
-promotion, setup-rule consistency, and Checkers
+forced chained captures without making the executor stateful. The separate CLI
+now converts four-coordinate user input into relocation requests without adding
+terminal concerns to the engine. Gravity remains a future increment. Movement,
+capture, promotion, setup-rule consistency, and Checkers
 player-state targets are validated before the engine boundary by
 `SemanticValidator`.
 
@@ -273,4 +274,4 @@ python -m pytest \
 ```
 
 These modules contain 127 engine-focused tests. The complete project suite
-contains 192 tests.
+contains 198 tests.

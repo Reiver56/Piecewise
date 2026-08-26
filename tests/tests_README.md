@@ -53,7 +53,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 192 tests.
+The suite currently contains 198 tests.
 
 ### Parser tests
 
@@ -410,13 +410,17 @@ The eight cases in `test_board_renderer.py` verify:
 
 ### Interactive-CLI tests
 
-The seven cases in `test_game_cli.py` verify:
+The 13 cases in `test_game_cli.py` verify:
 
 - normal and case-insensitive `quit` handling;
 - recovery from malformed and non-integer coordinates;
 - recovery from a move rejected by the engine;
 - a complete winning game with its final board and message;
-- a complete drawn game with its final board and message.
+- a complete drawn game with its final board and message;
+- four-coordinate relocation input for Checkers;
+- relocation-specific format and integer diagnostics;
+- recovery from empty and opponent-owned source coordinates;
+- completion of a mandatory chained capture through consecutive CLI inputs.
 
 ## Test levels
 
@@ -512,15 +516,14 @@ movement or capture, Checkers player-state end-condition syntax, immutable AST
 nodes, semantic target validation, runtime `no_pieces_left` and `no_moves_left`
 evaluation, deterministic legal movement and capture generation, global
 mandatory-capture enforcement, forced same-piece capture chains, delayed turn
-rotation and terminal evaluation, rendering, and interactive-session tests for
-Tic-Tac-Toe.
+rotation and terminal evaluation, rendering, placement input for Tic-Tac-Toe,
+and interactive relocation and chained-capture input for Checkers.
 
 Future coverage will add:
 
-1. interactive relocation support for Checkers;
-2. complete Checkers scenario tests;
-3. parser, AST, and semantic-validation tests for Connect Four;
-4. complete game-scenario tests for additional supported games.
+1. complete Checkers scenario tests;
+2. parser, AST, and semantic-validation tests for Connect Four;
+3. complete game-scenario tests for additional supported games.
 
 Every new DSL construct should include:
 

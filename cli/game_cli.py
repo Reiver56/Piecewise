@@ -63,29 +63,95 @@ class GameCLI:
 
     def _parse_move(self, raw_input: str) -> Move:
         parts = raw_input.split()
+        uses_relocation_format = self._uses_relocation_format()
+        expected_values = (
+            4
+            if uses_relocation_format
+            else 2
+        )
 
-        if len(parts) != 2:
+        if len(parts) != expected_values:
+            if uses_relocation_format:
+                raise ValueError(
+                    "Enter a relocation using the format: "
+                    "source_row source_column "
+                    "destination_row destination_column."
+                )
+
             raise ValueError(
                 "Enter a move using the format: row column."
             )
-
+    
         try:
-            row, column = (
+            coordinates = tuple(
                 int(value)
                 for value in parts
             )
         except ValueError as error:
+            if uses_relocation_format:
+                raise ValueError(
+                    "Source and destination coordinates "
+                    "must be integers."
+                ) from error
+        
             raise ValueError(
                 "Row and column must be integers."
             ) from error
-
+    
+        if not uses_relocation_format:
+            row, column = coordinates
+    
+            return Move(
+                player=self.state.current_player,
+                piece_name=self._piece_name_for_current_player(),
+                coordinate=Coordinate(
+                    row=row,
+                    column=column,
+                ),
+            )
+    
+        (
+            source_row,
+            source_column,
+            destination_row,
+            destination_column,
+        ) = coordinates
+    
+        source = Coordinate(
+            row=source_row,
+            column=source_column,
+        )
+    
+        source_piece = next(
+            (
+                piece
+                for piece in self.state.pieces
+                if piece.coordinate == source
+            ),
+            None,
+        )
+    
+        if source_piece is None:
+            raise ValueError(
+                f"Source coordinate {source} "
+                "does not contain a piece."
+            )
+    
         return Move(
             player=self.state.current_player,
-            piece_name=self._piece_name_for_current_player(),
+            piece_name=source_piece.piece_name,
+            source=source,
             coordinate=Coordinate(
-                row=row,
-                column=column,
+                row=destination_row,
+                column=destination_column,
             ),
+        )
+
+    def _uses_relocation_format(self) -> bool:
+        return any(
+            piece.movement is not None
+            and self.state.current_player in piece.owners
+            for piece in self._game.pieces
         )
 
     def _piece_name_for_current_player(self) -> str:

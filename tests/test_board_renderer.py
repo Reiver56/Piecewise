@@ -202,3 +202,19 @@ def test_render_does_not_modify_game_state() -> None:
     assert state.pieces is pieces_before_render
     assert state.turn_number == 3
     assert state.current_player == "X"
+
+def test_render_uses_compact_owner_symbols() -> None:
+    renderer = BoardRenderer(load_tictactoe())
+    state = create_state(
+        placed_piece("White", 0, 0),
+        placed_piece("Black", 0, 1),
+    )
+
+    result = renderer.render(state)
+
+    assert result == (
+        "    0   1   2\n"
+        "0   W | B | .\n"
+        "1   . | . | .\n"
+        "2   . | . | ."
+    )

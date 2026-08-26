@@ -236,10 +236,12 @@ The renderer uses:
 
 - `.` for an empty playable cell;
 - `#` for a non-playable cell;
-- the owner name for a placed piece.
+- the uppercase initial of the owner for a placed piece, such as `W`, `B`, `X`,
+  or `O`.
 
 Placed pieces take visual precedence over cell markers. Rendering is read-only
-and does not modify the supplied state.
+and does not modify the supplied state. Compact one-character symbols preserve
+the column alignment even when player names contain multiple characters.
 
 ## Architectural boundary
 
@@ -274,5 +276,5 @@ python -m pytest \
   tests/test_board_renderer.py -v
 ```
 
-These modules contain 133 engine-focused and end-to-end scenario tests. The
-complete project suite contains 204 tests.
+These modules contain 134 engine-focused and end-to-end scenario tests. The
+complete project suite contains 205 tests.

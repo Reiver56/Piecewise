@@ -1379,3 +1379,96 @@ def test_forward_relocation_requires_player_direction() -> None:
         match="has no forward direction",
     ):
         MoveExecutor(invalid_game).apply(state, move)
+
+def test_relocation_rejects_ordinary_move_when_capture_is_available() -> None:
+    game = create_capture_game()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=6),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=1),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    ordinary_move = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=6),
+        coordinate=Coordinate(row=4, column=7),
+    )
+
+    with pytest.raises(
+        InvalidMoveError,
+        match="A capture is mandatory when available",
+    ):
+        MoveExecutor(game).apply(
+            state,
+            ordinary_move,
+        )
+
+def test_relocation_allows_mandatory_capture() -> None:
+    game = create_capture_game()
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=6),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=1),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+    )
+    capture = Move(
+        player="White",
+        piece_name="Man",
+        source=Coordinate(row=5, column=0),
+        coordinate=Coordinate(row=3, column=2),
+    )
+
+    result = MoveExecutor(game).apply(
+        state,
+        capture,
+    )
+
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="Man",
+            owner="White",
+            coordinate=Coordinate(row=5, column=6),
+        ),
+        PlacedPiece(
+            piece_name="Man",
+            owner="White",
+            coordinate=Coordinate(row=3, column=2),
+        ),
+    )
+    assert result.current_player == "Black"
+    assert result.turn_number == 2

@@ -17,6 +17,7 @@ from engine.game_state import (
     GameStatus,
     PlacedPiece,
 )
+from engine.legal_move_generator import LegalMoveGenerator
 from engine.move import Move
 
 
@@ -166,6 +167,11 @@ class MoveExecutor:
             move,
             piece_definition,
         )
+
+        self._validate_mandatory_capture(
+            state,
+            move,
+        )
         
         return tuple(
             replace(
@@ -216,6 +222,22 @@ class MoveExecutor:
             )
             else piece
             for piece in pieces
+        )
+
+    def _validate_mandatory_capture(
+        self,
+        state: GameState,
+        move: Move,
+    ) -> None:
+        legal_moves = LegalMoveGenerator(
+            self._game
+        ).generate(state)
+    
+        if move in legal_moves:
+            return
+    
+        raise InvalidMoveError(
+            "A capture is mandatory when available."
         )
 
     def _matches_capture_distance(

@@ -30,7 +30,15 @@ class LegalMoveGenerator:
         capture_moves: list[Move] = []
 
         for placed_piece in state.pieces:
+            
             if placed_piece.owner != state.current_player:
+                continue
+
+            if (
+                state.forced_capture_source is not None
+                and placed_piece.coordinate
+                != state.forced_capture_source
+            ):
                 continue
 
             piece_definition = self._piece_definition(

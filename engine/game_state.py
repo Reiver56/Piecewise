@@ -45,6 +45,7 @@ class GameState:
     turn_number: int
     status: GameStatus = GameStatus.ONGOING
     winner: str | None = None
+    forced_capture_source: Coordinate | None = None
 
     def __post_init__(self) -> None:
         if self.rows <= 0:
@@ -88,3 +89,27 @@ class GameState:
                 )
 
             occupied_coordinates.add(coordinate)
+
+        if self.forced_capture_source is None:
+            return
+
+        forced_piece = next(
+            (
+                piece
+                for piece in self.pieces
+                if piece.coordinate
+                == self.forced_capture_source
+            ),
+            None,
+        )
+
+        if forced_piece is None:
+            raise ValueError(
+                "Forced capture source must contain a piece."
+            )
+
+        if forced_piece.owner != self.current_player:
+            raise ValueError(
+                "Forced capture source must belong "
+                "to the current player."
+            )

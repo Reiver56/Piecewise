@@ -204,3 +204,60 @@ def test_game_state_rejects_overlapping_pieces() -> None:
             current_player="X",
             turn_number=3,
         )
+
+def test_game_state_stores_forced_capture_source() -> None:
+    source = Coordinate(row=1, column=1)
+    piece = PlacedPiece(
+        piece_name="Man",
+        owner="White",
+        coordinate=source,
+    )
+
+    state = GameState(
+        rows=3,
+        columns=3,
+        pieces=(piece,),
+        current_player="White",
+        turn_number=2,
+        forced_capture_source=source,
+    )
+
+    assert state.forced_capture_source == source
+
+def test_game_state_rejects_empty_forced_capture_source() -> None:
+    with pytest.raises(
+        ValueError,
+        match="Forced capture source must contain a piece",
+    ):
+        GameState(
+            rows=3,
+            columns=3,
+            pieces=(),
+            current_player="X",
+            turn_number=1,
+            forced_capture_source=Coordinate(
+                row=1,
+                column=1,
+            ),
+        )
+
+def test_game_state_rejects_opponent_forced_capture_source() -> None:
+    source = Coordinate(row=1, column=1)
+    opponent_piece = PlacedPiece(
+        piece_name="Man",
+        owner="O",
+        coordinate=source,
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="Forced capture source must belong to the current player",
+    ):
+        GameState(
+            rows=3,
+            columns=3,
+            pieces=(opponent_piece,),
+            current_player="X",
+            turn_number=1,
+            forced_capture_source=source,
+        )

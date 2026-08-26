@@ -31,6 +31,10 @@ class MoveExecutor:
         """Apply a valid move and return the resulting state."""
         self._validate_game_is_ongoing(state)
         self._validate_player_turn(state, move)
+        self._validate_forced_capture_source(
+            state,
+            move,
+        )
         self._validate_coordinate(
             state,
             move.destination,
@@ -63,6 +67,29 @@ class MoveExecutor:
                 move,
                 piece_definition,
             )
+
+            continuation_state = GameState(
+                rows=state.rows,
+                columns=state.columns,
+                pieces=updated_pieces,
+                current_player=move.player,
+                turn_number=state.turn_number,
+                forced_capture_source=move.destination,
+            )
+
+            if (
+                move.is_relocation
+                and self._matches_capture_distance(
+                    move,
+                    piece_definition,
+                )
+                and self._has_follow_up_capture(
+                    continuation_state,
+                    move.destination,
+                )
+            ):
+                return continuation_state
+
 
         updated_state = GameState(
             rows=state.rows,
@@ -239,6 +266,49 @@ class MoveExecutor:
         raise InvalidMoveError(
             "A capture is mandatory when available."
         )
+
+    def _validate_forced_capture_source(
+        self,
+        state: GameState,
+        move: Move,
+    ) -> None:
+        forced_source = state.forced_capture_source
+    
+        if forced_source is None:
+            return
+    
+        if move.source == forced_source:
+            return
+    
+        raise InvalidMoveError(
+            "A capture chain must continue with the same piece "
+            f"at coordinate {forced_source}."
+        )
+
+    def _has_follow_up_capture(
+        self,
+        state: GameState,
+        source: Coordinate,
+    ) -> bool:
+        legal_moves = LegalMoveGenerator(
+            self._game
+        ).generate(state)
+
+        for candidate in legal_moves:
+            if candidate.source != source:
+                continue
+
+            candidate_piece = self._validate_piece(
+                candidate
+            )
+
+            if self._matches_capture_distance(
+                candidate,
+                candidate_piece,
+            ):
+                return True
+
+        return False
 
     def _matches_capture_distance(
         self,

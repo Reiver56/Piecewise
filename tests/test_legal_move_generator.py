@@ -356,3 +356,48 @@ def test_generate_suppresses_other_pieces_ordinary_moves() -> None:
             coordinate=Coordinate(row=3, column=2),
         ),
     )
+
+def test_generate_limits_capture_chain_to_forced_piece() -> None:
+    game = load_checkers()
+    forced_source = Coordinate(row=3, column=2)
+
+    state = GameState(
+        rows=8,
+        columns=8,
+        pieces=(
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=forced_source,
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="White",
+                coordinate=Coordinate(row=5, column=6),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=2, column=3),
+            ),
+            PlacedPiece(
+                piece_name="Man",
+                owner="Black",
+                coordinate=Coordinate(row=4, column=5),
+            ),
+        ),
+        current_player="White",
+        turn_number=1,
+        forced_capture_source=forced_source,
+    )
+
+    moves = LegalMoveGenerator(game).generate(state)
+
+    assert moves == (
+        Move(
+            player="White",
+            piece_name="Man",
+            source=forced_source,
+            coordinate=Coordinate(row=1, column=4),
+        ),
+    )

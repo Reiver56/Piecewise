@@ -53,7 +53,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 183 tests.
+The suite currently contains 192 tests.
 
 ### Parser tests
 
@@ -278,14 +278,17 @@ The nine tests in `test_game_initializer.py` verify that:
 
 ### Game-state tests
 
-The 18 cases in `test_game_state.py` verify:
+The 21 cases in `test_game_state.py` verify:
 
 - zero-based coordinates and rejection of negative indices;
 - immutable runtime state and placed-piece representation;
 - positive board dimensions and turn numbers starting at one;
 - the winner and game status relationship;
 - board-boundary checks for placed pieces;
-- rejection of overlapping pieces.
+- rejection of overlapping pieces;
+- storage of an optional forced capture source;
+- rejection of forced sources without a piece or owned by a player other than
+  `current_player`.
 
 ### Game-session tests
 
@@ -312,7 +315,7 @@ The seven cases in `test_move.py` verify:
 
 ### Move-executor tests
 
-The 43 cases in `test_move_executor.py` verify:
+The 48 cases in `test_move_executor.py` verify:
 
 - piece placement, turn-number advancement, and player rotation;
 - creation of a new state without modifying the previous snapshot;
@@ -350,11 +353,18 @@ The 43 cases in `test_move_executor.py` verify:
   `no_moves_left` victory;
 - rejection of an ordinary relocation when another owned piece can capture;
 - successful execution of the mandatory capture while other ordinary moves
-  are available.
+  are available;
+- preservation of player and turn number while the same piece can capture
+  again;
+- rejection of attempts to continue a chain with another owned piece;
+- clearing of the forced source and one-time turn advancement after the final
+  capture;
+- terminal evaluation after a chain removes the opponent's final piece;
+- immediate promotion and continued capture using the new `King` rules.
 
 ### Legal-move-generator tests
 
-The ten cases in `test_legal_move_generator.py` verify:
+The eleven cases in `test_legal_move_generator.py` verify:
 
 - one or both forward diagonal moves for a `Man`;
 - deterministic left-before-right destination ordering;
@@ -368,6 +378,8 @@ The ten cases in `test_legal_move_generator.py` verify:
 - global capture precedence over an ordinary move of the capturing piece;
 - suppression of ordinary moves belonging to other owned pieces when any
   capture is available;
+- restriction of a capture chain to `forced_capture_source` even when another
+  owned piece could capture;
 - an empty immutable tuple when the current player has no legal moves.
 
 ### Condition-evaluator tests
@@ -499,13 +511,13 @@ semantic promotion constraints, back-rank promotion execution after ordinary
 movement or capture, Checkers player-state end-condition syntax, immutable AST
 nodes, semantic target validation, runtime `no_pieces_left` and `no_moves_left`
 evaluation, deterministic legal movement and capture generation, global
-mandatory-capture enforcement,
-turn-rotation, end-condition, rendering, and interactive-session tests for
+mandatory-capture enforcement, forced same-piece capture chains, delayed turn
+rotation and terminal evaluation, rendering, and interactive-session tests for
 Tic-Tac-Toe.
 
 Future coverage will add:
 
-1. chained-capture tests for Checkers;
+1. interactive relocation support for Checkers;
 2. complete Checkers scenario tests;
 3. parser, AST, and semantic-validation tests for Connect Four;
 4. complete game-scenario tests for additional supported games.

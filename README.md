@@ -61,7 +61,8 @@ The current increment supports:
   captures, promotion, immutable snapshots, and both victory conditions;
 - full-board draw detection with victory taking precedence;
 - complete game-session management with sequential state updates;
-- text rendering for rectangular boards and non-playable cells;
+- text rendering for rectangular boards, non-playable cells, and compact
+  uppercase owner symbols;
 - an interactive CLI for placement and relocation games, including Tic-Tac-Toe
   and Checkers, with recoverable input errors;
 - parser, AST, semantic-validation, engine, renderer, and CLI tests with pytest;
@@ -569,7 +570,9 @@ print(BoardRenderer(game).render(session.state))
 ```
 
 The renderer uses `.` for an empty playable cell, `#` for a non-playable cell,
-and the piece owner as the placement symbol.
+and the uppercase initial of the piece owner as its compact symbol. This keeps
+boards aligned for owners such as `White` (`W`) and `Black` (`B`) while
+preserving existing symbols such as `X` and `O`.
 
 ## Play from the terminal
 
@@ -607,7 +610,7 @@ the engine.
 python -m pytest -v
 ```
 
-The current suite contains 204 parser, AST-transformation, semantic-validation,
+The current suite contains 205 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

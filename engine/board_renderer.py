@@ -58,13 +58,18 @@ class BoardRenderer:
         )
 
         if piece is not None:
-            return piece.owner
+            return self._piece_symbol(piece.owner)
 
         if not self._is_playable(coordinate):
             return self.NON_PLAYABLE_CELL
 
         return self.EMPTY_CELL
 
+    @staticmethod
+    def _piece_symbol(owner: str) -> str:
+        """Return the compact uppercase symbol for a piece owner."""
+        return owner[0].upper()
+    
     def _is_playable(self, coordinate: Coordinate) -> bool:
         playable_cells = self._game.board.playable_cells
 

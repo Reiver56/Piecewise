@@ -54,7 +54,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 204 tests.
+The suite currently contains 205 tests.
 
 ### Parser tests
 
@@ -401,13 +401,15 @@ The 15 cases in `test_condition_evaluator.py` verify:
 
 ### Board-renderer tests
 
-The eight cases in `test_board_renderer.py` verify:
+The nine cases in `test_board_renderer.py` verify:
 
 - rendering of an empty board and placed pieces;
 - support for different dimensions and a single-cell board;
 - `#` markers for non-playable light or dark cells;
 - piece precedence over a non-playable-cell marker;
-- preservation of the immutable state during rendering.
+- preservation of the immutable state during rendering;
+- compact uppercase symbols for multi-character owner names, including
+  `White` (`W`) and `Black` (`B`).
 
 ### Interactive-CLI tests
 

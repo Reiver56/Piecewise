@@ -60,23 +60,23 @@ The current increment supports:
 - full-board draw detection with victory taking precedence;
 - complete game-session management with sequential state updates;
 - text rendering for rectangular boards and non-playable cells;
-- an interactive Tic-Tac-Toe CLI with recoverable input errors;
+- an interactive CLI for placement and relocation games, including Tic-Tac-Toe
+  and Checkers, with recoverable input errors;
 - parser, AST, semantic-validation, engine, renderer, and CLI tests with pytest;
 - automatic test execution on pull requests through GitHub Actions.
 
 The following features are designed but not implemented yet:
 
-- interactive Checkers play and piece-specific rendering;
+- piece-specific Checkers rendering and complete scenario coverage;
 - Connect Four gravity and column placement;
 - graphical interaction.
 
-The Checkers and Connect Four files are design examples for future DSL
-increments. The grammar and AST now support the directional-player, basic
-movement, capture, promotion, initial-setup, and player-state end-condition
-declarations used by Checkers. Movement, capture, promotion, and setup are also
-validated or executed by their current subsets. Checkers end-condition targets
-are also validated semantically. After each move, the engine evaluates both
-`no_pieces_left` and `no_moves_left` against the next player.
+The Checkers definition is playable from the CLI with its currently supported
+movement, capture, mandatory-chain, promotion, setup, and player-state
+end-condition rules. The grammar and AST model these declarations, semantic
+validation checks their references and dependencies, and the engine evaluates
+both `no_pieces_left` and `no_moves_left` against the next player. Connect Four
+remains a design example for the future gravity increment.
 
 ## Architecture
 
@@ -127,8 +127,8 @@ Piecewise/
 │   └── game_cli.py              # Testable interactive game loop
 ├── games/
 │   ├── README.md                # Guide to Piecewise game definitions
-│   ├── tictactoe.game           # Currently supported example
-│   ├── checkers.game            # Planned DSL extension
+│   ├── tictactoe.game           # Placement-game example
+│   ├── checkers.game            # Relocation-game example
 │   └── connectfour.game         # Planned DSL extension
 ├── grammar/
 │   ├── README.md                # Lark grammar documentation
@@ -586,13 +586,25 @@ Enter moves as zero-based `row column` coordinates, such as `1 2`. Invalid
 input is reported without ending the session. Enter `quit` to abandon the
 current game.
 
+Checkers can be started explicitly:
+
+```bash
+python -m cli games/checkers.game
+```
+
+Relocation games accept four zero-based coordinates in the order
+`source_row source_column destination_row destination_column`, for example
+`5 0 4 1`. The CLI identifies the piece at the source coordinate and delegates
+movement, mandatory-capture, chained-capture, promotion, and turn validation to
+the engine.
+
 ## Run the tests
 
 ```bash
 python -m pytest -v
 ```
 
-The current suite contains 192 parser, AST-transformation, semantic-validation,
+The current suite contains 198 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 

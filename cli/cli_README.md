@@ -27,6 +27,12 @@ Or select a `.game` definition explicitly:
 python -m cli games/tictactoe.game
 ```
 
+The supported Checkers definition can be started with:
+
+```bash
+python -m cli games/checkers.game
+```
+
 Use `--help` to display the launcher options:
 
 ```bash
@@ -35,14 +41,25 @@ python -m cli --help
 
 ## Controls
 
-Enter a move as two zero-based integers:
+Placement games accept two zero-based integers:
 
 ```text
 Player X > 1 2
 ```
 
-The first value is the row and the second is the column. Enter `quit` in any
-letter case to abandon the game.
+The first value is the destination row and the second is the destination
+column.
+
+Relocation games accept source and destination coordinates:
+
+```text
+Player White > 5 0 4 1
+```
+
+The four values follow the order
+`source_row source_column destination_row destination_column`. The CLI locates
+the runtime piece at the source coordinate and uses its declared piece name in
+the generated `Move`. Enter `quit` in any letter case to abandon the game.
 
 The CLI redraws the board before every turn and after the terminal move. It
 reports malformed coordinates and invalid game moves without terminating the
@@ -78,19 +95,26 @@ state = cli.run()
 
 ## Current scope
 
-The CLI automatically selects the first piece owned by the current player and
-accepts `row column` placement moves. This matches the currently executable
-Tic-Tac-Toe DSL. Movement, capture, promotion, gravity, and piece-selection
-syntax will require later CLI increments.
+The CLI selects the input format from the actions available to the current
+player. Placement games use `row column`; relocation games use source and
+destination coordinates. Invalid formats, non-integer coordinates, empty
+sources, opponent-owned sources, and moves rejected by the engine are reported
+without terminating the session.
+
+For Checkers, consecutive CLI inputs can complete a mandatory capture chain.
+The engine keeps the same player active while another capture is required and
+the CLI naturally requests the next relocation. Gravity and piece-specific
+rendering remain future increments.
 
 ## Testing
 
-Run the seven CLI tests from the project root:
+Run the 13 CLI tests from the project root:
 
 ```bash
 python -m pytest tests/test_game_cli.py -v
 ```
 
-They cover case-insensitive `quit`, malformed and non-integer input, invalid
-game moves, complete victories, complete draws, final rendering, and result
-messages.
+They cover case-insensitive `quit`, placement and relocation formats, malformed
+and non-integer input, empty and opponent-owned sources, invalid game moves,
+complete victories and draws, chained Checkers captures, final rendering, and
+result messages.

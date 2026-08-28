@@ -163,11 +163,23 @@ class GameAstTransformer(Transformer[Any, GameDefinition]):
     ) -> tuple[str, tuple[str, ...]]:
         return "owners", children[0]
 
+    def any_empty_cell_placement(
+        self,
+        children: list[Any],
+    ) -> PlacementType:
+        return PlacementType.ANY_EMPTY_CELL
+    
+    def any_non_full_column_placement(
+        self,
+        children: list[Any],
+    ) -> PlacementType:
+        return PlacementType.ANY_NON_FULL_COLUMN
+    
     def place_property(
         self,
         children: list[Any],
     ) -> tuple[str, PlacementType]:
-        return "placement", PlacementType.ANY_EMPTY_CELL
+        return "placement", children[0]
 
     def diagonal_forward(
         self,

@@ -37,6 +37,7 @@ from parser.game_parser import GameParser
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TICTACTOE_PATH = PROJECT_ROOT / "games" / "tictactoe.game"
 CHECKERS_PATH = PROJECT_ROOT / "games" / "checkers.game"
+CONNECTFOUR_PATH = PROJECT_ROOT / "games" / "connectfour.game"
 
 MOVEMENT_GAME_SOURCE = """
 game MovementGame {
@@ -153,6 +154,10 @@ def tictactoe_game() -> GameDefinition:
     return GameParser().parse_game_file(TICTACTOE_PATH)
 
 @pytest.fixture(scope="module")
+def connectfour_game() -> GameDefinition:
+    return GameParser().parse_game_file(CONNECTFOUR_PATH)
+
+@pytest.fixture(scope="module")
 def gravity_game() -> GameDefinition:
     source = TICTACTOE_PATH.read_text(
         encoding="utf-8",
@@ -216,6 +221,74 @@ def test_transform_tictactoe_definition(
         for player in tictactoe_game.players
     )
 
+def test_transform_connect_four_definition(
+    connectfour_game: GameDefinition,
+) -> None:
+    assert connectfour_game.name == "ConnectFour"
+
+    assert connectfour_game.board.rows == 6
+    assert connectfour_game.board.columns == 7
+    assert (
+        connectfour_game.board.playable_cells
+        is PlayableCells.ALL
+    )
+    assert (
+        connectfour_game.board.gravity
+        is GravityDirection.DOWN
+    )
+
+    assert connectfour_game.players == (
+        PlayerDefinition(name="Red"),
+        PlayerDefinition(name="Yellow"),
+    )
+    assert connectfour_game.turn_order == (
+        "Red",
+        "Yellow",
+    )
+
+    assert len(connectfour_game.pieces) == 1
+
+    disc = connectfour_game.pieces[0]
+
+    assert disc.name == "Disc"
+    assert disc.owners == ("Red", "Yellow")
+    assert (
+        disc.placement
+        is PlacementType.ANY_NON_FULL_COLUMN
+    )
+    assert disc.movement is None
+    assert disc.capture is None
+    assert disc.promotion is None
+
+    assert connectfour_game.setup == ()
+
+    assert connectfour_game.win_conditions == (
+        AlignCondition(
+            length=4,
+            direction=AlignmentDirection.SAME_ROW,
+        ),
+        AlignCondition(
+            length=4,
+            direction=AlignmentDirection.SAME_COL,
+        ),
+        AlignCondition(
+            length=4,
+            direction=AlignmentDirection.DIAGONAL,
+        ),
+        BoardFullCondition(),
+    )
+
+def test_connect_four_placement_is_immutable(
+    connectfour_game: GameDefinition,
+) -> None:
+    disc = connectfour_game.pieces[0]
+
+    with pytest.raises(FrozenInstanceError):
+        setattr(
+            disc,
+            "placement",
+            PlacementType.ANY_EMPTY_CELL,
+        )
 
 def test_transform_board_gravity(
     gravity_game: GameDefinition,

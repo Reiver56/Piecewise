@@ -1,9 +1,12 @@
 from pathlib import Path
 
+from engine.game_initializer import GameInitializer
 from engine.game_state import Coordinate, GameState, PlacedPiece
 from engine.legal_move_generator import LegalMoveGenerator
 from engine.move import Move
 from parser.game_parser import GameParser
+from engine.move_executor import MoveExecutor
+
 
 
 GAMES_DIRECTORY = Path(__file__).parent.parent / "games"
@@ -12,6 +15,11 @@ GAMES_DIRECTORY = Path(__file__).parent.parent / "games"
 def load_checkers():
     return GameParser().parse_game_file(
         GAMES_DIRECTORY / "checkers.game"
+    )
+
+def load_connectfour():
+    return GameParser().parse_game_file(
+        GAMES_DIRECTORY / "connectfour.game"
     )
 
 
@@ -401,3 +409,135 @@ def test_generate_limits_capture_chain_to_forced_piece() -> None:
             coordinate=Coordinate(row=1, column=4),
         ),
     )
+
+def test_generate_column_moves_for_empty_board() -> None:
+    game = load_connectfour()
+    state = GameInitializer().initialize(game)
+
+    moves = LegalMoveGenerator(game).generate(state)
+
+    assert moves == tuple(
+        Move(
+            player="Red",
+            piece_name="Disc",
+            coordinate=Coordinate(
+                row=0,
+                column=column,
+            ),
+        )
+        for column in range(7)
+    )
+
+def test_generate_excludes_full_connect_four_column() -> None:
+    game = load_connectfour()
+
+    pieces = tuple(
+        PlacedPiece(
+            piece_name="Disc",
+            owner=(
+                "Red"
+                if row % 2 == 0
+                else "Yellow"
+            ),
+            coordinate=Coordinate(
+                row=row,
+                column=2,
+            ),
+        )
+        for row in range(6)
+    )
+
+    state = GameState(
+        rows=6,
+        columns=7,
+        pieces=pieces,
+        current_player="Red",
+        turn_number=7,
+    )
+
+    moves = LegalMoveGenerator(game).generate(state)
+
+    assert tuple(
+        move.coordinate.column
+        for move in moves
+    ) == (
+        0,
+        1,
+        3,
+        4,
+        5,
+        6,
+    )
+
+    assert all(
+        move.player == "Red"
+        and move.piece_name == "Disc"
+        and move.source is None
+        and move.coordinate.row == 0
+        for move in moves
+    )
+
+def test_generate_column_moves_for_next_player() -> None:
+    game = load_connectfour()
+    initial_state = GameInitializer().initialize(game)
+
+    state = MoveExecutor(game).apply(
+        initial_state,
+        Move(
+            player="Red",
+            piece_name="Disc",
+            coordinate=Coordinate(
+                row=0,
+                column=3,
+            ),
+        ),
+    )
+
+    moves = LegalMoveGenerator(game).generate(state)
+
+    assert len(moves) == 7
+
+    assert tuple(
+        move.coordinate.column
+        for move in moves
+    ) == tuple(range(7))
+
+    assert all(
+        move.player == "Yellow"
+        and move.piece_name == "Disc"
+        and move.source is None
+        and move.coordinate.row == 0
+        for move in moves
+    )
+
+def test_generate_returns_no_moves_when_board_is_full() -> None:
+    game = load_connectfour()
+
+    pieces = tuple(
+        PlacedPiece(
+            piece_name="Disc",
+            owner=(
+                "Red"
+                if (row + column) % 2 == 0
+                else "Yellow"
+            ),
+            coordinate=Coordinate(
+                row=row,
+                column=column,
+            ),
+        )
+        for row in range(6)
+        for column in range(7)
+    )
+
+    state = GameState(
+        rows=6,
+        columns=7,
+        pieces=pieces,
+        current_player="Red",
+        turn_number=43,
+    )
+
+    moves = LegalMoveGenerator(game).generate(state)
+
+    assert moves == ()

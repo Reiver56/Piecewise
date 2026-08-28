@@ -26,8 +26,15 @@ from gui.theme import (
     SURFACE,
     SURFACE_HOVER,
     TEXT,
+    SELECTED_CELL,
+    LEGAL_CELL,
+    SUCCESS,
 )
-from parser.ast_nodes import PlayableCells
+
+from parser.ast_nodes import (
+    PlacementType,
+    PlayableCells,
+)
 
 
 class GameView(tk.Frame):
@@ -218,9 +225,21 @@ class GameView(tk.Frame):
             for piece in state.pieces
         }
 
+        legal_destinations = set(
+            self._controller.legal_destinations
+        )
+
         for coordinate, button in self._buttons.items():
             piece = piece_by_coordinate.get(coordinate)
             playable = self._is_playable(coordinate)
+
+            selected = (
+                coordinate
+                == self._controller.selected_source
+            )
+            legal_destination = (
+                coordinate in legal_destinations
+            )
 
             if not playable:
                 button.configure(
@@ -229,32 +248,58 @@ class GameView(tk.Frame):
                     activebackground=NON_PLAYABLE_CELL,
                     state=tk.DISABLED,
                     cursor="arrow",
+                    highlightthickness=0,
                 )
                 continue
 
             symbol = self._piece_symbol(piece)
+
             symbol_color = (
                 OWNER_COLORS.get(piece.owner, TEXT)
                 if piece is not None
                 else TEXT
             )
 
+            if selected:
+                cell_background = SELECTED_CELL
+                border_color = PRIMARY
+            elif legal_destination:
+                cell_background = LEGAL_CELL
+                border_color = SUCCESS
+            else:
+                cell_background = CELL
+                border_color = BORDER
+
             button.configure(
                 text=symbol,
-                background=CELL,
-                activebackground=CELL_HOVER,
+                background=cell_background,
+                activebackground=cell_background,
                 foreground=symbol_color,
                 activeforeground=symbol_color,
                 disabledforeground=symbol_color,
                 state=(
                     tk.DISABLED
-                    if state.status is not GameStatus.ONGOING
+                    if state.status
+                    is not GameStatus.ONGOING
                     else tk.NORMAL
                 ),
                 cursor=(
                     "arrow"
-                    if state.status is not GameStatus.ONGOING
+                    if state.status
+                    is not GameStatus.ONGOING
                     else "hand2"
+                ),
+                relief=(
+                    tk.SUNKEN
+                    if selected
+                    else tk.FLAT
+                ),
+                highlightbackground=border_color,
+                highlightcolor=border_color,
+                highlightthickness=(
+                    3
+                    if selected or legal_destination
+                    else 0
                 ),
             )
 
@@ -262,7 +307,7 @@ class GameView(tk.Frame):
 
     def _refresh_status(self) -> None:
         state = self._controller.state
-
+    
         if state.status is GameStatus.WON:
             self._status_label.configure(
                 text=f"Player {state.winner} wins!",
@@ -275,7 +320,7 @@ class GameView(tk.Frame):
                 text="Restart or choose another game."
             )
             return
-
+    
         if state.status is GameStatus.DRAWN:
             self._status_label.configure(
                 text="The game ended in a draw.",
@@ -285,7 +330,7 @@ class GameView(tk.Frame):
                 text="Restart or choose another game."
             )
             return
-
+    
         self._status_label.configure(
             text=(
                 "Current player: "
@@ -297,8 +342,49 @@ class GameView(tk.Frame):
             ),
         )
         self._help_label.configure(
-            text="Select a cell to play."
+            text=self._ongoing_help_text()
         )
+    
+    def _ongoing_help_text(self) -> str:
+        selected_source = (
+            self._controller.selected_source
+        )
+    
+        if selected_source is not None:
+            return (
+                "Selected source: "
+                f"({selected_source.row}, "
+                f"{selected_source.column}). "
+                "Green cells are legal destinations; "
+                "click the source again to cancel."
+            )
+    
+        current_player = (
+            self._controller.state.current_player
+        )
+    
+        uses_relocation = any(
+            piece.movement is not None
+            and current_player in piece.owners
+            for piece in self._controller.game.pieces
+        )
+    
+        if uses_relocation:
+            return (
+                f"Select one of {current_player}'s pieces."
+            )
+    
+        uses_column_placement = any(
+            piece.placement
+            is PlacementType.ANY_NON_FULL_COLUMN
+            and current_player in piece.owners
+            for piece in self._controller.game.pieces
+        )
+    
+        if uses_column_placement:
+            return "Select a column to drop a piece."
+    
+        return "Select an empty cell to place a piece."
 
     def _is_playable(
         self,

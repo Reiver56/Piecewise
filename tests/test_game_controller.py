@@ -1,3 +1,4 @@
+from dataclasses import replace
 from pathlib import Path
 import pytest
 
@@ -9,6 +10,7 @@ from engine.game_state import (
 )
 from engine.game_state import GameStatus
 from parser.game_parser import GameParser
+from parser.ast_nodes import SetupRule
 
 
 GAMES_DIRECTORY = Path(__file__).parent.parent / "games"
@@ -22,6 +24,11 @@ def load_tictactoe():
 def load_connectfour():
     return GameParser().parse_game_file(
         GAMES_DIRECTORY / "connectfour.game"
+    )
+
+def load_checkers():
+    return GameParser().parse_game_file(
+        GAMES_DIRECTORY / "checkers.game"
     )
 
 def test_controller_initializes_game_session() -> None:
@@ -152,3 +159,222 @@ def test_handle_cell_completes_connect_four_vertical_win() -> None:
         Coordinate(row=3, column=0),
         Coordinate(row=2, column=0),
     }
+
+def test_handle_cell_selects_owned_checkers_piece() -> None:
+    controller = GameController(load_checkers())
+    initial_state = controller.state
+
+    result = controller.handle_cell(
+        row=5,
+        column=0,
+    )
+
+    assert result is initial_state
+    assert controller.state is initial_state
+    assert controller.selected_source == Coordinate(
+        row=5,
+        column=0,
+    )
+    assert controller.state.current_player == "White"
+    assert controller.state.turn_number == 1
+    assert len(controller.state.pieces) == 24
+
+def test_handle_cell_executes_checkers_relocation() -> None:
+    controller = GameController(load_checkers())
+    initial_state = controller.state
+
+    selection_result = controller.handle_cell(
+        row=5,
+        column=0,
+    )
+    result = controller.handle_cell(
+        row=4,
+        column=1,
+    )
+
+    assert selection_result is initial_state
+    assert controller.selected_source is None
+
+    assert not any(
+        piece.coordinate == Coordinate(
+            row=5,
+            column=0,
+        )
+        for piece in result.pieces
+    )
+
+    assert any(
+        piece.piece_name == "Man"
+        and piece.owner == "White"
+        and piece.coordinate == Coordinate(
+            row=4,
+            column=1,
+        )
+        for piece in result.pieces
+    )
+
+    assert result.current_player == "Black"
+    assert result.turn_number == 2
+    assert result.status is GameStatus.ONGOING
+
+    assert any(
+        piece.owner == "White"
+        and piece.coordinate == Coordinate(
+            row=5,
+            column=0,
+        )
+        for piece in initial_state.pieces
+    )
+
+def test_controller_preserves_chained_capture_selection() -> None:
+    game = load_checkers()
+
+    chain_game = replace(
+        game,
+        setup=(
+            SetupRule(
+                piece_name="Man",
+                owner="White",
+                first_row=6,
+                last_row=6,
+                playable_cells_only=True,
+            ),
+            SetupRule(
+                piece_name="Man",
+                owner="Black",
+                first_row=3,
+                last_row=3,
+                playable_cells_only=True,
+            ),
+            SetupRule(
+                piece_name="Man",
+                owner="Black",
+                first_row=5,
+                last_row=5,
+                playable_cells_only=True,
+            ),
+        ),
+    )
+
+    controller = GameController(chain_game)
+
+    controller.handle_cell(
+        row=5,
+        column=0,
+    )
+    continuation_state = controller.handle_cell(
+        row=3,
+        column=2,
+    )
+
+    assert continuation_state.current_player == "White"
+    assert continuation_state.turn_number == 1
+    assert continuation_state.forced_capture_source == Coordinate(
+        row=3,
+        column=2,
+    )
+    assert controller.selected_source == Coordinate(
+        row=3,
+        column=2,
+    )
+
+    result = controller.handle_cell(
+        row=1,
+        column=4,
+    )
+
+    assert result.current_player == "Black"
+    assert result.turn_number == 2
+    assert result.forced_capture_source is None
+    assert controller.selected_source is None
+
+    assert any(
+        piece.piece_name == "Man"
+        and piece.owner == "White"
+        and piece.coordinate == Coordinate(
+            row=1,
+            column=4,
+        )
+        for piece in result.pieces
+    )
+
+    assert not any(
+        piece.owner == "Black"
+        and piece.coordinate in {
+            Coordinate(row=4, column=1),
+            Coordinate(row=2, column=3),
+        }
+        for piece in result.pieces
+    )
+
+def test_controller_exposes_selected_piece_destinations() -> None:
+    controller = GameController(load_checkers())
+
+    assert controller.legal_destinations == ()
+
+    controller.handle_cell(
+        row=5,
+        column=0,
+    )
+
+    assert controller.selected_source == Coordinate(
+        row=5,
+        column=0,
+    )
+    assert controller.legal_destinations == (
+        Coordinate(
+            row=4,
+            column=1,
+        ),
+    )
+
+def test_clicking_selected_source_cancels_selection() -> None:
+    controller = GameController(load_checkers())
+    initial_state = controller.state
+
+    controller.handle_cell(
+        row=5,
+        column=0,
+    )
+
+    assert controller.selected_source == Coordinate(
+        row=5,
+        column=0,
+    )
+    assert controller.legal_destinations == (
+        Coordinate(row=4, column=1),
+    )
+
+    result = controller.handle_cell(
+        row=5,
+        column=0,
+    )
+
+    assert result is initial_state
+    assert controller.state is initial_state
+    assert controller.selected_source is None
+    assert controller.legal_destinations == ()
+    assert controller.state.turn_number == 1
+
+
+def test_controller_rejects_opponent_piece_selection() -> None:
+    controller = GameController(load_checkers())
+    initial_state = controller.state
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            "Player 'White' cannot select "
+            "a piece owned by 'Black'"
+        ),
+    ):
+        controller.handle_cell(
+            row=2,
+            column=1,
+        )
+
+    assert controller.state is initial_state
+    assert controller.selected_source is None
+    assert controller.legal_destinations == ()
+    assert controller.state.current_player == "White"
+    assert controller.state.turn_number == 1

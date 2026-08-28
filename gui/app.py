@@ -18,6 +18,7 @@ from gui.theme import (
     TEXT,
     TITLE_FONT,
 )
+from gui.game_view import GameView
 from parser.game_parser import GameParser
 
 
@@ -191,68 +192,23 @@ class PiecewiseApp(tk.Tk):
             )
             return
 
-        self._show_game_placeholder(controller)
+        self._show_game(controller)
 
-    def _show_game_placeholder(
+    def _show_game(
         self,
         controller: GameController,
     ) -> None:
         self._clear_content()
-
-        tk.Label(
+    
+        game_view = GameView(
             self._content,
-            text=controller.game.name,
-            background=BACKGROUND,
-            foreground=TEXT,
-            font=TITLE_FONT,
-        ).pack(pady=(80, 12))
-
-        tk.Label(
-            self._content,
-            text=(
-                f"{controller.state.rows} × "
-                f"{controller.state.columns} board"
-            ),
-            background=BACKGROUND,
-            foreground=MUTED_TEXT,
-            font=SUBTITLE_FONT,
-        ).pack()
-
-        tk.Label(
-            self._content,
-            text=(
-                "Current player: "
-                f"{controller.state.current_player}"
-            ),
-            background=BACKGROUND,
-            foreground=TEXT,
-            font=CARD_TITLE_FONT,
-        ).pack(pady=28)
-
-        tk.Label(
-            self._content,
-            text="The interactive board comes next.",
-            background=BACKGROUND,
-            foreground=MUTED_TEXT,
-            font=BODY_FONT,
-        ).pack(pady=(0, 30))
-
-        back_button = tk.Button(
-            self._content,
-            text="← Back to games",
-            command=self.show_game_selector,
-            background=SURFACE,
-            activebackground=SURFACE_HOVER,
-            foreground=TEXT,
-            activeforeground=TEXT,
-            font=BUTTON_FONT,
-            relief=tk.FLAT,
-            borderwidth=0,
-            cursor="hand2",
-            padx=20,
-            pady=10,
+            controller,
+            on_back=self.show_game_selector,
         )
-        back_button.pack()
+        game_view.pack(
+            fill=tk.BOTH,
+            expand=True,
+        )
 
     def _clear_content(self) -> None:
         for widget in self._content.winfo_children():

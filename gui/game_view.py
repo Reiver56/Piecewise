@@ -1,0 +1,330 @@
+from collections.abc import Callable
+import tkinter as tk
+
+from engine.errors import InvalidMoveError
+from engine.game_state import (
+    Coordinate,
+    GameStatus,
+    PlacedPiece,
+)
+from gui.game_controller import GameController
+from gui.theme import (
+    BACKGROUND,
+    BOARD_FONT,
+    BORDER,
+    BUTTON_FONT,
+    CARD_TITLE_FONT,
+    CELL,
+    CELL_HOVER,
+    ERROR,
+    MUTED_TEXT,
+    NON_PLAYABLE_CELL,
+    OWNER_COLORS,
+    PRIMARY,
+    PRIMARY_HOVER,
+    STATUS_FONT,
+    SURFACE,
+    SURFACE_HOVER,
+    TEXT,
+)
+from parser.ast_nodes import PlayableCells
+
+
+class GameView(tk.Frame):
+    """Displays and controls one graphical game session."""
+
+    def __init__(
+        self,
+        parent: tk.Misc,
+        controller: GameController,
+        *,
+        on_back: Callable[[], None],
+    ) -> None:
+        super().__init__(
+            parent,
+            background=BACKGROUND,
+        )
+
+        self._controller = controller
+        self._on_back = on_back
+        self._buttons: dict[Coordinate, tk.Button] = {}
+
+        self._build_header()
+        self._build_status()
+        self._build_board()
+        self._build_actions()
+        self._refresh()
+
+    def _build_header(self) -> None:
+        header = tk.Frame(
+            self,
+            background=BACKGROUND,
+        )
+        header.pack(
+            fill=tk.X,
+            pady=(0, 20),
+        )
+
+        back_button = tk.Button(
+            header,
+            text="← Games",
+            command=self._on_back,
+            background=SURFACE,
+            activebackground=SURFACE_HOVER,
+            foreground=TEXT,
+            activeforeground=TEXT,
+            font=BUTTON_FONT,
+            relief=tk.FLAT,
+            borderwidth=0,
+            cursor="hand2",
+            padx=16,
+            pady=8,
+        )
+        back_button.pack(side=tk.LEFT)
+
+        tk.Label(
+            header,
+            text=self._controller.game.name,
+            background=BACKGROUND,
+            foreground=TEXT,
+            font=CARD_TITLE_FONT,
+        ).pack(
+            side=tk.LEFT,
+            expand=True,
+        )
+
+        restart_button = tk.Button(
+            header,
+            text="Restart",
+            command=self._restart,
+            background=PRIMARY,
+            activebackground=PRIMARY_HOVER,
+            foreground=TEXT,
+            activeforeground=TEXT,
+            font=BUTTON_FONT,
+            relief=tk.FLAT,
+            borderwidth=0,
+            cursor="hand2",
+            padx=16,
+            pady=8,
+        )
+        restart_button.pack(side=tk.RIGHT)
+
+    def _build_status(self) -> None:
+        self._status_label = tk.Label(
+            self,
+            background=BACKGROUND,
+            foreground=TEXT,
+            font=STATUS_FONT,
+        )
+        self._status_label.pack(
+            pady=(0, 18),
+        )
+
+    def _build_board(self) -> None:
+        board_container = tk.Frame(
+            self,
+            background=SURFACE,
+            highlightbackground=BORDER,
+            highlightthickness=1,
+            padx=10,
+            pady=10,
+        )
+        board_container.pack(
+            expand=True,
+        )
+
+        for row in range(self._controller.state.rows):
+            board_container.grid_rowconfigure(
+                row,
+                weight=1,
+            )
+
+            for column in range(
+                self._controller.state.columns
+            ):
+                board_container.grid_columnconfigure(
+                    column,
+                    weight=1,
+                )
+
+                coordinate = Coordinate(
+                    row=row,
+                    column=column,
+                )
+
+                button = tk.Button(
+                    board_container,
+                    text="",
+                    command=lambda selected=coordinate: (
+                        self._handle_cell(selected)
+                    ),
+                    font=BOARD_FONT,
+                    relief=tk.FLAT,
+                    borderwidth=1,
+                    cursor="hand2",
+                    width=4,
+                    height=2,
+                )
+                button.grid(
+                    row=row,
+                    column=column,
+                    padx=2,
+                    pady=2,
+                    sticky=tk.NSEW,
+                )
+
+                self._buttons[coordinate] = button
+
+    def _build_actions(self) -> None:
+        self._help_label = tk.Label(
+            self,
+            text="Select a cell to play.",
+            background=BACKGROUND,
+            foreground=MUTED_TEXT,
+            font=BUTTON_FONT,
+        )
+        self._help_label.pack(
+            pady=(18, 0),
+        )
+
+    def _handle_cell(
+        self,
+        coordinate: Coordinate,
+    ) -> None:
+        try:
+            self._controller.handle_cell(
+                coordinate.row,
+                coordinate.column,
+            )
+        except (InvalidMoveError, ValueError) as error:
+            self._status_label.configure(
+                text=f"Invalid move: {error}",
+                foreground=ERROR,
+            )
+            return
+
+        self._refresh()
+
+    def _restart(self) -> None:
+        self._controller.restart()
+        self._refresh()
+
+    def _refresh(self) -> None:
+        state = self._controller.state
+
+        piece_by_coordinate = {
+            piece.coordinate: piece
+            for piece in state.pieces
+        }
+
+        for coordinate, button in self._buttons.items():
+            piece = piece_by_coordinate.get(coordinate)
+            playable = self._is_playable(coordinate)
+
+            if not playable:
+                button.configure(
+                    text="",
+                    background=NON_PLAYABLE_CELL,
+                    activebackground=NON_PLAYABLE_CELL,
+                    state=tk.DISABLED,
+                    cursor="arrow",
+                )
+                continue
+
+            symbol = self._piece_symbol(piece)
+            symbol_color = (
+                OWNER_COLORS.get(piece.owner, TEXT)
+                if piece is not None
+                else TEXT
+            )
+
+            button.configure(
+                text=symbol,
+                background=CELL,
+                activebackground=CELL_HOVER,
+                foreground=symbol_color,
+                activeforeground=symbol_color,
+                disabledforeground=symbol_color,
+                state=(
+                    tk.DISABLED
+                    if state.status is not GameStatus.ONGOING
+                    else tk.NORMAL
+                ),
+                cursor=(
+                    "arrow"
+                    if state.status is not GameStatus.ONGOING
+                    else "hand2"
+                ),
+            )
+
+        self._refresh_status()
+
+    def _refresh_status(self) -> None:
+        state = self._controller.state
+
+        if state.status is GameStatus.WON:
+            self._status_label.configure(
+                text=f"Player {state.winner} wins!",
+                foreground=OWNER_COLORS.get(
+                    state.winner,
+                    TEXT,
+                ),
+            )
+            self._help_label.configure(
+                text="Restart or choose another game."
+            )
+            return
+
+        if state.status is GameStatus.DRAWN:
+            self._status_label.configure(
+                text="The game ended in a draw.",
+                foreground=MUTED_TEXT,
+            )
+            self._help_label.configure(
+                text="Restart or choose another game."
+            )
+            return
+
+        self._status_label.configure(
+            text=(
+                "Current player: "
+                f"{state.current_player}"
+            ),
+            foreground=OWNER_COLORS.get(
+                state.current_player,
+                TEXT,
+            ),
+        )
+        self._help_label.configure(
+            text="Select a cell to play."
+        )
+
+    def _is_playable(
+        self,
+        coordinate: Coordinate,
+    ) -> bool:
+        playable_cells = (
+            self._controller.game.board.playable_cells
+        )
+
+        if playable_cells is PlayableCells.ALL:
+            return True
+
+        is_dark = (
+            coordinate.row + coordinate.column
+        ) % 2 == 1
+
+        if playable_cells is PlayableCells.DARK:
+            return is_dark
+
+        return not is_dark
+
+    @staticmethod
+    def _piece_symbol(
+        piece: PlacedPiece | None,
+    ) -> str:
+        if piece is None:
+            return ""
+
+        return piece.owner[0].upper()

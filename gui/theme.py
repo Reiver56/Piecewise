@@ -12,3 +12,22 @@ SUBTITLE_FONT = ("Segoe UI", 12)
 CARD_TITLE_FONT = ("Segoe UI", 16, "bold")
 BODY_FONT = ("Segoe UI", 11)
 BUTTON_FONT = ("Segoe UI", 11, "bold")
+
+SUCCESS = "#22C55E"
+ERROR = "#F87171"
+
+CELL = "#E2E8F0"
+CELL_HOVER = "#CBD5E1"
+NON_PLAYABLE_CELL = "#334155"
+
+OWNER_COLORS = {
+    "X": "#A78BFA",
+    "O": "#22D3EE",
+    "Red": "#EF4444",
+    "Yellow": "#FACC15",
+    "White": "#F8FAFC",
+    "Black": "#111827",
+}
+
+BOARD_FONT = ("Segoe UI", 20, "bold")
+STATUS_FONT = ("Segoe UI", 13, "bold")

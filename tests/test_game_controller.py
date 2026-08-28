@@ -1,6 +1,8 @@
 from pathlib import Path
+import pytest
 
 from gui import GameController
+from engine.errors import InvalidMoveError
 from engine.game_state import (
     Coordinate,
     GameStatus,
@@ -92,3 +94,61 @@ def test_handle_cell_selects_connect_four_column() -> None:
     assert result.current_player == "Yellow"
     assert result.turn_number == 2
     assert result.status is GameStatus.ONGOING
+
+def test_rejected_cell_does_not_change_controller_state() -> None:
+    controller = GameController(load_tictactoe())
+
+    controller.handle_cell(
+        row=0,
+        column=0,
+    )
+    state_before_invalid_click = controller.state
+
+    with pytest.raises(
+        InvalidMoveError,
+        match="already occupied",
+    ):
+        controller.handle_cell(
+            row=0,
+            column=0,
+        )
+
+    assert controller.state is state_before_invalid_click
+    assert len(controller.state.pieces) == 1
+    assert controller.state.current_player == "O"
+    assert controller.state.turn_number == 2
+
+
+def test_handle_cell_completes_connect_four_vertical_win() -> None:
+    controller = GameController(load_connectfour())
+
+    for column in (
+        0,  # Red
+        1,  # Yellow
+        0,  # Red
+        1,  # Yellow
+        0,  # Red
+        1,  # Yellow
+        0,  # Red wins
+    ):
+        result = controller.handle_cell(
+            row=3,
+            column=column,
+        )
+
+    assert result is controller.state
+    assert result.status is GameStatus.WON
+    assert result.winner == "Red"
+    assert result.turn_number == 8
+    assert len(result.pieces) == 7
+
+    assert {
+        piece.coordinate
+        for piece in result.pieces
+        if piece.owner == "Red"
+    } == {
+        Coordinate(row=5, column=0),
+        Coordinate(row=4, column=0),
+        Coordinate(row=3, column=0),
+        Coordinate(row=2, column=0),
+    }

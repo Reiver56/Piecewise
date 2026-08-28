@@ -28,6 +28,7 @@ from parser.ast_nodes import (
     NoMovesLeftCondition,
     NoPiecesLeftCondition,
     PlayerTarget,
+    GravityDirection,
 )
 
 from parser.game_parser import GameParser
@@ -152,6 +153,21 @@ def tictactoe_game() -> GameDefinition:
     return GameParser().parse_game_file(TICTACTOE_PATH)
 
 @pytest.fixture(scope="module")
+def gravity_game() -> GameDefinition:
+    source = TICTACTOE_PATH.read_text(
+        encoding="utf-8",
+    ).replace(
+        "playable_cells: all",
+        (
+            "playable_cells: all\n"
+            "        gravity: down"
+        ),
+        1,
+    )
+
+    return GameParser().parse_game(source)
+
+@pytest.fixture(scope="module")
 def checkers_game() -> GameDefinition:
     return GameParser().parse_game_file(CHECKERS_PATH)
 
@@ -179,6 +195,7 @@ def test_transform_tictactoe_definition(
     assert tictactoe_game.board.rows == 3
     assert tictactoe_game.board.columns == 3
     assert tictactoe_game.board.playable_cells is PlayableCells.ALL
+    assert tictactoe_game.board.gravity is None
 
     assert tuple(
         player.name for player in tictactoe_game.players
@@ -199,6 +216,21 @@ def test_transform_tictactoe_definition(
         for player in tictactoe_game.players
     )
 
+
+def test_transform_board_gravity(
+    gravity_game: GameDefinition,
+) -> None:
+    assert gravity_game.board.gravity is GravityDirection.DOWN
+
+def test_board_gravity_is_immutable(
+    gravity_game: GameDefinition,
+) -> None:
+    with pytest.raises(FrozenInstanceError):
+        setattr(
+            gravity_game.board,
+            "gravity",
+            None,
+        )
 
 def test_transform_win_conditions(
     tictactoe_game: GameDefinition,

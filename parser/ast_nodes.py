@@ -8,6 +8,9 @@ class PlayableCells(str, Enum):
     DARK = "dark"
     LIGHT = "light"
 
+class GravityDirection(str, Enum):
+    DOWN = "down"
+
 
 class PlacementType(str, Enum):
     ANY_EMPTY_CELL = "any_empty_cell"
@@ -50,6 +53,7 @@ class BoardDefinition:
     rows: int
     columns: int
     playable_cells: PlayableCells
+    gravity: GravityDirection | None = None
 
 
 @dataclass(frozen=True, slots=True)

@@ -56,6 +56,44 @@ def test_parse_valid_tictactoe(game_parser: GameParser) -> None:
     assert tree.data == "start"
     assert tree.children
 
+def test_parse_gravity_rule_syntax(
+    game_parser: GameParser,
+) -> None:
+    gravity_game_source = TICTACTOE_PATH.read_text(
+        encoding="utf-8",
+    ).replace(
+        "playable_cells: all",
+        (
+            "playable_cells: all\n"
+            "        gravity: down"
+        ),
+        1,
+    )
+
+    tree = game_parser.parse(gravity_game_source)
+    rendered_tree = tree.pretty()
+
+    assert tree.data == "start"
+    assert "gravity_property" in rendered_tree
+    assert "gravity_down" in rendered_tree
+
+def test_reject_unsupported_gravity_direction(
+    game_parser: GameParser,
+) -> None:
+    invalid_source = TICTACTOE_PATH.read_text(
+        encoding="utf-8",
+    ).replace(
+        "playable_cells: all",
+        (
+            "playable_cells: all\n"
+            "        gravity: up"
+        ),
+        1,
+    )
+
+    with pytest.raises(UnexpectedInput):
+        game_parser.parse(invalid_source)
+
 def test_parse_checkers_end_condition_syntax(
     game_parser: GameParser,
 ) -> None:

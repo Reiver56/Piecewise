@@ -27,6 +27,7 @@ from parser.ast_nodes import (
     NoMovesLeftCondition,
     NoPiecesLeftCondition,
     PlayerTarget,
+    GravityDirection,
 )
 
 
@@ -71,7 +72,19 @@ class GameAstTransformer(Transformer[Any, GameDefinition]):
         children: list[Any],
     ) -> tuple[str, PlayableCells]:
         return "playable_cells", children[0]
+    
+    def gravity_down(
+        self,
+        children: list[Any],
+    ) -> GravityDirection:
+        return GravityDirection.DOWN
 
+    def gravity_property(
+        self,
+        children: list[Any],
+    ) -> tuple[str, GravityDirection]:
+        return "gravity", children[0]
+    
     def board_block(self, children: list[Any]) -> BoardDefinition:
         properties = dict(children)
         rows, columns = properties["size"]
@@ -80,6 +93,7 @@ class GameAstTransformer(Transformer[Any, GameDefinition]):
             rows=rows,
             columns=columns,
             playable_cells=properties["playable_cells"],
+            gravity=properties.get("gravity"),
         )
 
     # Players

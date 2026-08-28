@@ -64,7 +64,10 @@ piece_block: "piece" NAME "{" piece_property+ "}"
 owner_property: "owner" ":" name_list
 
 // place property
-place_property: "place" ":" "any_empty_cell"
+place_property: "place" ":" placement_type
+
+?placement_type: "any_empty_cell"       -> any_empty_cell_placement
+               | "any_non_full_column" -> any_non_full_column_placement
 
 // movement property
 move_property: "move" ":" movement_direction INT "if" destination_condition

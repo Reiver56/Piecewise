@@ -8,6 +8,7 @@ from parser.ast_nodes import (
     MovementDirection,
     PieceDefinition,
     PlayerDefinition,
+    PlacementType,
     PromotionCondition,
     NoMovesLeftCondition,
     NoPiecesLeftCondition,
@@ -169,6 +170,11 @@ class SemanticValidator:
                 piece,
                 issues,
             )
+            self._validate_placement_rule(
+                game,
+                piece,
+                issues,
+            )
             self._validate_movement_rule(
                 piece,
                 players_by_name,
@@ -216,6 +222,47 @@ class SemanticValidator:
                     message=(
                         f"Piece '{piece.name}' cannot declare "
                         "both placement and movement."
+                    ),
+                )
+            )
+
+    def _validate_placement_rule(
+        self,
+        game: GameDefinition,
+        piece: PieceDefinition,
+        issues: list[ValidationIssue],
+    ) -> None:
+        placement = piece.placement
+        gravity = game.board.gravity
+        path = f"pieces.{piece.name}.placement"
+    
+        if placement is PlacementType.ANY_NON_FULL_COLUMN:
+            if gravity is None:
+                issues.append(
+                    ValidationIssue(
+                        code="column_placement_requires_gravity",
+                        path=path,
+                        message=(
+                            f"Piece '{piece.name}' uses column "
+                            "placement but the board does not "
+                            "declare gravity."
+                        ),
+                    )
+                )
+    
+            return
+    
+        if (
+            gravity is not None
+            and placement is PlacementType.ANY_EMPTY_CELL
+        ):
+            issues.append(
+                ValidationIssue(
+                    code="gravity_requires_column_placement",
+                    path=path,
+                    message=(
+                        f"Piece '{piece.name}' uses empty-cell "
+                        "placement on a board with gravity."
                     ),
                 )
             )

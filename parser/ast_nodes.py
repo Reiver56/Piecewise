@@ -14,6 +14,7 @@ class GravityDirection(str, Enum):
 
 class PlacementType(str, Enum):
     ANY_EMPTY_CELL = "any_empty_cell"
+    ANY_NON_FULL_COLUMN = "any_non_full_column"
 
 
 class ForwardDirection(str, Enum):

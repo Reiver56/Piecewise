@@ -5,6 +5,7 @@ from parser.ast_nodes import (
     GameDefinition,
     MovementDirection,
     PieceDefinition,
+    PlacementType,
     PlayableCells,
     PromotionCondition,
 )
@@ -27,7 +28,11 @@ class MoveExecutor:
     def __init__(self, game: GameDefinition) -> None:
         self._game = game
 
-    def apply(self, state: GameState, move: Move) -> GameState:
+    def apply(
+        self,
+        state: GameState,
+        move: Move,
+    ) -> GameState:
         """Apply a valid move and return the resulting state."""
         self._validate_game_is_ongoing(state)
         self._validate_player_turn(state, move)
@@ -43,11 +48,6 @@ class MoveExecutor:
 
         piece_definition = self._validate_piece(move)
 
-        self._validate_cell_is_empty(
-            state,
-            move.destination,
-        )
-
         if move.is_placement:
             updated_pieces = self._apply_placement(
                 state,
@@ -55,12 +55,17 @@ class MoveExecutor:
                 piece_definition,
             )
         else:
+            self._validate_cell_is_empty(
+                state,
+                move.destination,
+            )
+
             updated_pieces = self._apply_relocation(
                 state,
                 move,
                 piece_definition,
             )
-            
+
             updated_pieces = self._apply_promotion(
                 state,
                 updated_pieces,
@@ -90,7 +95,6 @@ class MoveExecutor:
             ):
                 return continuation_state
 
-
         updated_state = GameState(
             rows=state.rows,
             columns=state.columns,
@@ -110,19 +114,58 @@ class MoveExecutor:
         move: Move,
         piece_definition: PieceDefinition,
     ) -> tuple[PlacedPiece, ...]:
-        if piece_definition.placement is None:
+        placement = piece_definition.placement
+
+        if placement is None:
             raise InvalidMoveError(
                 f"Piece '{piece_definition.name}' "
                 "does not support placement."
             )
 
+        destination = move.destination
+
+        if placement is PlacementType.ANY_NON_FULL_COLUMN:
+            destination = self._lowest_empty_coordinate(
+                state,
+                move.destination.column,
+            )
+
+            if destination is None:
+                raise InvalidMoveError(
+                    f"Column {move.destination.column} is full."
+                )
+        else:
+            self._validate_cell_is_empty(
+                state,
+                destination,
+            )
+
         placed_piece = PlacedPiece(
             piece_name=move.piece_name,
             owner=move.player,
-            coordinate=move.destination,
+            coordinate=destination,
         )
 
         return (*state.pieces, placed_piece)
+
+    @staticmethod
+    def _lowest_empty_coordinate(
+        state: GameState,
+        column: int,
+    ) -> Coordinate | None:
+        for row in range(state.rows - 1, -1, -1):
+            coordinate = Coordinate(
+                row=row,
+                column=column,
+            )
+    
+            if all(
+                piece.coordinate != coordinate
+                for piece in state.pieces
+            ):
+                return coordinate
+    
+        return None
 
     def _apply_relocation(
         self,

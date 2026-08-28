@@ -5,7 +5,12 @@ import pytest
 
 from engine.errors import InvalidMoveError
 from engine.game_initializer import GameInitializer
-from engine.game_state import Coordinate, GameState, GameStatus, PlacedPiece
+from engine.game_state import (
+    Coordinate, 
+    GameState, 
+    GameStatus, 
+    PlacedPiece,
+)
 from engine.move import Move
 from engine.move_executor import MoveExecutor
 from parser.ast_nodes import (
@@ -35,6 +40,11 @@ def load_tictactoe():
 def load_checkers():
     return GameParser().parse_game_file(
         GAMES_DIRECTORY / "checkers.game"
+    )
+
+def load_connectfour():
+    return GameParser().parse_game_file(
+        GAMES_DIRECTORY / "connectfour.game"
     )
 
 def create_movement_game(
@@ -1802,3 +1812,133 @@ def test_relocation_allows_mandatory_capture() -> None:
     )
     assert result.current_player == "Black"
     assert result.turn_number == 2
+
+def test_column_placement_falls_to_bottom_row() -> None:
+    game = load_connectfour()
+    initial_state = GameInitializer().initialize(game)
+    executor = MoveExecutor(game)
+
+    result = executor.apply(
+        initial_state,
+        Move(
+            player="Red",
+            piece_name="Disc",
+            coordinate=Coordinate(
+                row=0,
+                column=3,
+            ),
+        ),
+    )
+
+    assert initial_state.pieces == ()
+    assert result.pieces == (
+        PlacedPiece(
+            piece_name="Disc",
+            owner="Red",
+            coordinate=Coordinate(
+                row=5,
+                column=3,
+            ),
+        ),
+    )
+    assert result.current_player == "Yellow"
+    assert result.turn_number == 2
+    assert result.status is GameStatus.ONGOING
+
+def test_column_placement_stacks_pieces_upward() -> None:
+    game = load_connectfour()
+    executor = MoveExecutor(game)
+    state = GameInitializer().initialize(game)
+
+    state = executor.apply(
+        state,
+        Move(
+            player="Red",
+            piece_name="Disc",
+            coordinate=Coordinate(
+                row=0,
+                column=3,
+            ),
+        ),
+    )
+
+    result = executor.apply(
+        state,
+        Move(
+            player="Yellow",
+            piece_name="Disc",
+            coordinate=Coordinate(
+                row=0,
+                column=3,
+            ),
+        ),
+    )
+
+    assert result.pieces[-2] == PlacedPiece(
+        piece_name="Disc",
+        owner="Red",
+        coordinate=Coordinate(
+            row=5,
+            column=3,
+        ),
+    )
+    assert result.pieces[-1] == PlacedPiece(
+        piece_name="Disc",
+        owner="Yellow",
+        coordinate=Coordinate(
+            row=4,
+            column=3,
+        ),
+    )
+    assert result.current_player == "Red"
+    assert result.turn_number == 3
+    assert result.status is GameStatus.ONGOING
+
+def test_column_placement_rejects_full_column() -> None:
+    game = load_connectfour()
+    executor = MoveExecutor(game)
+
+    pieces = tuple(
+        PlacedPiece(
+            piece_name="Disc",
+            owner=(
+                "Red"
+                if row % 2 == 0
+                else "Yellow"
+            ),
+            coordinate=Coordinate(
+                row=row,
+                column=3,
+            ),
+        )
+        for row in range(6)
+    )
+
+    state = GameState(
+        rows=6,
+        columns=7,
+        pieces=pieces,
+        current_player="Red",
+        turn_number=7,
+    )
+
+    with pytest.raises(
+        InvalidMoveError,
+        match=r"Column 3 is full\.",
+    ):
+        executor.apply(
+            state,
+            Move(
+                player="Red",
+                piece_name="Disc",
+                coordinate=Coordinate(
+                    row=0,
+                    column=3,
+                ),
+            ),
+        )
+
+    assert state.pieces is pieces
+    assert state.current_player == "Red"
+    assert state.turn_number == 7
+    assert state.status is GameStatus.ONGOING

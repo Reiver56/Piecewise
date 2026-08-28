@@ -13,6 +13,8 @@ tests/
 ├── test_board_renderer.py
 ├── test_checkers_scenarios.py
 ├── test_game_cli.py
+├── test_game_controller.py
+├── test_game_view.py
 ├── test_semantic_validator.py
 ├── test_condition_evaluator.py
 ├── test_game_initializer.py
@@ -54,7 +56,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 230 tests.
+The suite currently contains 246 tests.
 
 ### Parser tests
 
@@ -445,6 +447,35 @@ The 19 cases in `test_game_cli.py` verify:
 - recovery from out-of-bounds and completely full Connect Four columns without
   changing the current session state.
 
+### Graphical-controller tests
+
+The 12 cases in `test_game_controller.py` verify:
+
+- initialization through a real `GameSession`;
+- restart with a fresh immutable state and cleared source selection;
+- one-click Tic-Tac-Toe placement;
+- Connect Four column selection, gravity placement, and vertical victory;
+- preservation of the current state after a rejected click;
+- selection of a current-player Checkers piece;
+- source-and-destination Checkers relocation;
+- preservation of the forced source during a chained capture;
+- exposure of legal destinations for the selected piece;
+- cancellation by clicking the selected source again;
+- rejection of opponent-owned source selection.
+
+These tests exercise the controller without creating a Tk window, keeping the
+interaction layer deterministic and suitable for headless CI environments.
+
+### Graphical-view tests
+
+The four parameterized cases in `test_game_view.py` verify the compact symbols
+used by the graphical Checkers board:
+
+- `W` for a White `Man`;
+- `B` for a Black `Man`;
+- `WK` for a promoted White `King`;
+- `BK` for a promoted Black `King`.
+
 ### Checkers scenario tests
 
 The six cases in `test_checkers_scenarios.py` exercise the complete integration
@@ -483,8 +514,8 @@ Integration tests verify collaboration across boundaries:
     -> ConditionEvaluator
     -> Ongoing or terminal GameState
     -> GameSession current state
-    -> BoardRenderer output
-    -> GameCLI interaction
+        -> BoardRenderer output -> GameCLI interaction
+        -> GameController -> GameView interaction
 ```
 
 ### Negative tests
@@ -501,7 +532,10 @@ sequential moves to a terminal result. The CLI suite covers the full path from
 simulated user input to moves, state transitions, final board rendering, and
 the result message. The Checkers scenario suite crosses parsing, semantic
 validation, initialization, session orchestration, move execution, promotion,
-and terminal evaluation in complete runtime flows.
+and terminal evaluation in complete runtime flows. The graphical-controller
+suite crosses parsing, initialization, legal-move generation, session
+orchestration, placement, gravity, relocation, capture-chain selection, and
+terminal evaluation without depending on a display server.
 
 ## Fixtures
 
@@ -558,10 +592,14 @@ rotation and terminal evaluation, rendering, placement input for Tic-Tac-Toe,
 interactive relocation and chained-capture input for Checkers, complete
 Checkers runtime scenarios from setup through terminal victory, and Connect
 Four grammar, AST, semantic validation, gravity execution, legal-column
-generation, and interactive vertical victory.
+generation, and interactive vertical victory. It also includes graphical
+controller coverage for all three bundled games and graphical Checkers symbol
+coverage for men and promoted kings.
 
 Future coverage can add complete scenario modules for further supported games
-and additional Connect Four horizontal, diagonal, and full-board CLI sessions.
+and additional Connect Four horizontal, diagonal, and full-board CLI sessions,
+plus display-backed Tkinter widget tests where a graphical CI environment is
+available.
 
 Every new DSL construct should include:
 

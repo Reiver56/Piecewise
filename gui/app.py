@@ -14,7 +14,6 @@ from gui.theme import (
     PRIMARY_HOVER,
     SUBTITLE_FONT,
     SURFACE,
-    SURFACE_HOVER,
     TEXT,
     TITLE_FONT,
 )
@@ -99,9 +98,20 @@ class PiecewiseApp(tk.Tk):
             expand=True,
         )
 
-        for title, description, filename in GAME_OPTIONS:
+        cards.grid_columnconfigure(0, weight=1)
+
+        for row, (title, description, filename) in enumerate(
+            GAME_OPTIONS
+        ):
+            cards.grid_rowconfigure(
+                row,
+                weight=1,
+                uniform="game_cards",
+            )
+
             self._create_game_card(
                 cards,
+                row,
                 title,
                 description,
                 filename,
@@ -110,6 +120,7 @@ class PiecewiseApp(tk.Tk):
     def _create_game_card(
         self,
         parent: tk.Widget,
+        row: int,
         title: str,
         description: str,
         filename: str,
@@ -120,12 +131,18 @@ class PiecewiseApp(tk.Tk):
             highlightbackground=BORDER,
             highlightthickness=1,
             padx=24,
-            pady=20,
+            pady=12,
         )
-        card.pack(
-            fill=tk.X,
+        card.grid(
+            row=row,
+            column=0,
+            sticky=tk.NSEW,
             pady=8,
         )
+        card.grid_columnconfigure(0, weight=4)
+        card.grid_columnconfigure(1, weight=1)
+        card.grid_rowconfigure(0, weight=1)
+        card.grid_rowconfigure(1, weight=1)
 
         tk.Label(
             card,
@@ -134,7 +151,11 @@ class PiecewiseApp(tk.Tk):
             foreground=TEXT,
             font=CARD_TITLE_FONT,
             anchor=tk.W,
-        ).pack(fill=tk.X)
+        ).grid(
+            row=0,
+            column=0,
+            sticky=tk.SW,
+        )
 
         tk.Label(
             card,
@@ -143,9 +164,11 @@ class PiecewiseApp(tk.Tk):
             foreground=MUTED_TEXT,
             font=BODY_FONT,
             anchor=tk.W,
-        ).pack(
-            fill=tk.X,
-            pady=(6, 16),
+        ).grid(
+            row=1,
+            column=0,
+            sticky=tk.NW,
+            pady=(4, 0),
         )
 
         button = tk.Button(
@@ -163,7 +186,13 @@ class PiecewiseApp(tk.Tk):
             padx=22,
             pady=10,
         )
-        button.pack(anchor=tk.E)
+        button.grid(
+            row=0,
+            column=1,
+            rowspan=2,
+            sticky=tk.NSEW,
+            padx=(20, 0),
+        )
 
         button.bind(
             "<Enter>",
@@ -199,7 +228,7 @@ class PiecewiseApp(tk.Tk):
         controller: GameController,
     ) -> None:
         self._clear_content()
-    
+
         game_view = GameView(
             self._content,
             controller,

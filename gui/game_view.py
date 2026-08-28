@@ -141,10 +141,47 @@ class GameView(tk.Frame):
             expand=True,
         )
 
-        for row in range(self._controller.state.rows):
-            board_container.grid_rowconfigure(
-                row,
+        tk.Label(
+            board_container,
+            text="",
+            background=SURFACE,
+        ).grid(row=0, column=0)
+
+        for column in range(self._controller.state.columns):
+            board_container.grid_columnconfigure(
+                column + 1,
                 weight=1,
+            )
+
+            tk.Label(
+                board_container,
+                text=str(column),
+                background=SURFACE,
+                foreground=MUTED_TEXT,
+                font=BUTTON_FONT,
+            ).grid(
+                row=0,
+                column=column + 1,
+                pady=(0, 6),
+            )
+
+        for row in range(self._controller.state.rows):
+
+            board_container.grid_rowconfigure(
+                row + 1, 
+                weight=1
+            )
+
+            tk.Label(
+                board_container,
+                text=str(row),
+                background=SURFACE,
+                foreground=MUTED_TEXT,
+                font=BUTTON_FONT,
+            ).grid(
+                row=row + 1,
+                column=0,
+                padx=(0, 8),
             )
 
             for column in range(
@@ -174,8 +211,8 @@ class GameView(tk.Frame):
                     height=2,
                 )
                 button.grid(
-                    row=row,
-                    column=column,
+                    row=row + 1,
+                    column=column + 1,
                     padx=2,
                     pady=2,
                     sticky=tk.NSEW,
@@ -307,7 +344,7 @@ class GameView(tk.Frame):
 
     def _refresh_status(self) -> None:
         state = self._controller.state
-    
+
         if state.status is GameStatus.WON:
             self._status_label.configure(
                 text=f"Player {state.winner} wins!",
@@ -320,7 +357,7 @@ class GameView(tk.Frame):
                 text="Restart or choose another game."
             )
             return
-    
+
         if state.status is GameStatus.DRAWN:
             self._status_label.configure(
                 text="The game ended in a draw.",
@@ -330,7 +367,7 @@ class GameView(tk.Frame):
                 text="Restart or choose another game."
             )
             return
-    
+
         self._status_label.configure(
             text=(
                 "Current player: "
@@ -344,7 +381,7 @@ class GameView(tk.Frame):
         self._help_label.configure(
             text=self._ongoing_help_text()
         )
-    
+
     def _ongoing_help_text(self) -> str:
         selected_source = (
             self._controller.selected_source
@@ -413,4 +450,9 @@ class GameView(tk.Frame):
         if piece is None:
             return ""
 
-        return piece.owner[0].upper()
+        owner_symbol = piece.owner[0].upper()
+
+        if piece.piece_name == "King":
+            return f"{owner_symbol}K"
+
+        return owner_symbol

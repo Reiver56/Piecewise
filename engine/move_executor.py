@@ -95,6 +95,14 @@ class MoveExecutor:
             ):
                 return continuation_state
 
+        evaluated_move = move
+
+        if move.is_placement:
+            evaluated_move = replace(
+                move,
+                coordinate=updated_pieces[-1].coordinate,
+            )
+
         updated_state = GameState(
             rows=state.rows,
             columns=state.columns,
@@ -105,7 +113,7 @@ class MoveExecutor:
 
         return ConditionEvaluator(self._game).evaluate(
             updated_state,
-            move,
+            evaluated_move,
         )
 
     def _apply_placement(
@@ -158,13 +166,13 @@ class MoveExecutor:
                 row=row,
                 column=column,
             )
-    
+
             if all(
                 piece.coordinate != coordinate
                 for piece in state.pieces
             ):
                 return coordinate
-    
+
         return None
 
     def _apply_relocation(
@@ -242,7 +250,7 @@ class MoveExecutor:
             state,
             move,
         )
-        
+
         return tuple(
             replace(
                 piece,
@@ -302,10 +310,10 @@ class MoveExecutor:
         legal_moves = LegalMoveGenerator(
             self._game
         ).generate(state)
-    
+
         if move in legal_moves:
             return
-    
+
         raise InvalidMoveError(
             "A capture is mandatory when available."
         )
@@ -316,13 +324,13 @@ class MoveExecutor:
         move: Move,
     ) -> None:
         forced_source = state.forced_capture_source
-    
+
         if forced_source is None:
             return
-    
+
         if move.source == forced_source:
             return
-    
+
         raise InvalidMoveError(
             "A capture chain must continue with the same piece "
             f"at coordinate {forced_source}."
@@ -405,7 +413,7 @@ class MoveExecutor:
                 f"Player '{move.player}' must capture piece "
                 f"'{piece_definition.name}' forward."
             )
-    
+
     def _apply_capture(
         self,
         state: GameState,
@@ -413,12 +421,12 @@ class MoveExecutor:
         source_piece: PlacedPiece,
     ) -> tuple[PlacedPiece, ...]:
         source = move.source
-    
+
         if source is None:
             raise InvalidMoveError(
                 "A capture move requires a source coordinate."
             )
-    
+
         captured_coordinate = Coordinate(
             row=(
                 source.row + move.destination.row
@@ -427,7 +435,7 @@ class MoveExecutor:
                 source.column + move.destination.column
             ) // 2,
         )
-    
+
         captured_piece = next(
             (
                 piece
@@ -436,19 +444,19 @@ class MoveExecutor:
             ),
             None,
         )
-    
+
         if captured_piece is None:
             raise InvalidMoveError(
                 f"Capture coordinate {captured_coordinate} "
                 "does not contain a piece."
             )
-    
+
         if captured_piece.owner == move.player:
             raise InvalidMoveError(
                 f"Player '{move.player}' cannot capture "
                 "their own piece."
             )
-    
+
         return tuple(
             replace(
                 piece,

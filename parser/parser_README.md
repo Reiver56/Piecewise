@@ -94,6 +94,7 @@ supported domain:
 - `PlayerTarget`;
 - `PlayableCells`;
 - `PlacementType`;
+- `GravityDirection`;
 - `ForwardDirection`;
 - `MovementDirection`;
 - `DestinationCondition`;
@@ -118,9 +119,11 @@ independent from the parsing technology.
 
 ```text
 size_property          -> BoardDefinition data
+gravity_property       -> GravityDirection data
 player_declaration     -> PlayerDefinition
 forward_property       -> ForwardDirection data
 piece_block            -> PieceDefinition
+any_non_full_column_placement -> PlacementType.ANY_NON_FULL_COLUMN
 move_property          -> MovementRule
 capture_property       -> CaptureRule
 promote_property       -> PromotionRule
@@ -273,6 +276,8 @@ The current suite verifies:
 - typed, optional, immutable capture rules;
 - typed, optional, immutable promotion rules;
 - ordered, immutable setup rules and optional-setup compatibility;
+- typed optional downward gravity and immutable board definitions;
+- typed non-full-column placement and complete Connect Four transformation;
 - backward compatibility with the Tic-Tac-Toe AST.
 
 Semantic-validation behaviour is covered independently in
@@ -280,18 +285,17 @@ Semantic-validation behaviour is covered independently in
 
 ## Current limitations
 
-Tic-Tac-Toe and the current Checkers example are fully transformed. The
+Tic-Tac-Toe, Connect Four, and the current Checkers example are fully
+transformed. The
 Checkers AST includes directional players, diagonal movement and capture,
 promotion, initial setup, and the typed `opponent` end conditions. Capture,
 promotion, and setup rules are already validated and supported by their current
-engine subsets. Semantic validation and runtime evaluation of
-`NoPiecesLeftCondition` and `NoMovesLeftCondition`, plus Connect Four gravity,
-remain future increments.
+engine subsets. Connect Four includes `GravityDirection.DOWN` on its board and
+`PlacementType.ANY_NON_FULL_COLUMN` on `Disc`.
 
 ## Next steps
 
 1. improve user-facing diagnostics;
-2. add promotion semantic validation and runtime execution;
-3. extend the language for Connect Four;
-4. add the remaining Checkers constructs.
+2. add further gravity directions or placement strategies when required;
+3. add the remaining Checkers constructs.
 

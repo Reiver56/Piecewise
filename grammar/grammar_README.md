@@ -52,7 +52,8 @@ board_block: "board" "{" board_property+ "}"
 Supported properties:
 
 - `size: ROWSxCOLUMNS`;
-- `playable_cells: all|dark|light`.
+- `playable_cells: all|dark|light`;
+- optional `gravity: down`.
 
 ### Players
 
@@ -83,6 +84,7 @@ The current piece properties are:
 
 - `owner`;
 - `place: any_empty_cell`;
+- `place: any_non_full_column`;
 - `move: diagonal forward DISTANCE if empty`;
 - `move: diagonal any DISTANCE if empty`;
 - `capture: diagonal forward DISTANCE if enemy`;
@@ -181,6 +183,11 @@ destination_condition: "empty" -> empty_destination
 capture_condition: "enemy" -> enemy_capture
 
 promotion_condition: "back_rank" -> back_rank_promotion
+
+gravity_direction: "down" -> gravity_down
+
+placement_type: "any_empty_cell"       -> any_empty_cell_placement
+              | "any_non_full_column" -> any_non_full_column_placement
 ```
 
 ## Lark notation
@@ -236,13 +243,13 @@ whether that player was declared belongs to semantic validation.
 
 ## Current limitations
 
-The grammar supports complete parsing of the current Tic-Tac-Toe and Checkers
-example files. It does not yet support:
+The grammar supports complete parsing of the Tic-Tac-Toe, Checkers, and Connect
+Four example files, including downward gravity and non-full-column placement.
+It does not yet support:
 
 - explicit multiple- or mandatory-capture declarations;
-- gravity;
-- placement by column;
-- complete Connect Four definitions.
+- gravity directions other than `down`;
+- additional column-placement strategies.
 
 ## Extension workflow
 

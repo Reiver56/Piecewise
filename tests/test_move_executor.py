@@ -6,9 +6,9 @@ import pytest
 from engine.errors import InvalidMoveError
 from engine.game_initializer import GameInitializer
 from engine.game_state import (
-    Coordinate, 
-    GameState, 
-    GameStatus, 
+    Coordinate,
+    GameState,
+    GameStatus,
     PlacedPiece,
 )
 from engine.move import Move
@@ -355,7 +355,7 @@ def test_apply_captures_enemy_piece_forward() -> None:
     )
     assert result.current_player == "Black"
     assert result.turn_number == 2
-    assert result.status is GameStatus.ONGOING 
+    assert result.status is GameStatus.ONGOING
 
 def test_capture_keeps_turn_when_same_piece_can_capture_again() -> None:
     game = load_checkers()
@@ -1942,3 +1942,61 @@ def test_column_placement_rejects_full_column() -> None:
     assert state.current_player == "Red"
     assert state.turn_number == 7
     assert state.status is GameStatus.ONGOING
+
+
+def test_column_placement_evaluates_effective_destination() -> None:
+    game = load_connectfour()
+    state = GameState(
+        rows=6,
+        columns=7,
+        pieces=(
+            PlacedPiece(
+                piece_name="Disc",
+                owner="Red",
+                coordinate=Coordinate(row=5, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Disc",
+                owner="Yellow",
+                coordinate=Coordinate(row=5, column=1),
+            ),
+            PlacedPiece(
+                piece_name="Disc",
+                owner="Red",
+                coordinate=Coordinate(row=4, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Disc",
+                owner="Yellow",
+                coordinate=Coordinate(row=4, column=1),
+            ),
+            PlacedPiece(
+                piece_name="Disc",
+                owner="Red",
+                coordinate=Coordinate(row=3, column=0),
+            ),
+            PlacedPiece(
+                piece_name="Disc",
+                owner="Yellow",
+                coordinate=Coordinate(row=3, column=1),
+            ),
+        ),
+        current_player="Red",
+        turn_number=7,
+    )
+
+    result = MoveExecutor(game).apply(
+        state,
+        Move(
+            player="Red",
+            piece_name="Disc",
+            coordinate=Coordinate(row=0, column=0),
+        ),
+    )
+
+    assert result.pieces[-1].coordinate == Coordinate(
+        row=2,
+        column=0,
+    )
+    assert result.status is GameStatus.WON
+    assert result.winner == "Red"

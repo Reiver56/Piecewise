@@ -23,6 +23,10 @@ def load_checkers():
         GAMES_DIRECTORY / "checkers.game"
     )
 
+def load_connectfour():
+    return GameParser().parse_game_file(
+        GAMES_DIRECTORY / "connectfour.game"
+    )
 
 def create_cli(
     inputs: list[str],
@@ -46,6 +50,20 @@ def create_checkers_cli(
 
     cli = GameCLI(
         load_checkers(),
+        input_function=lambda _: next(input_iterator),
+        output_function=outputs.append,
+    )
+
+    return cli, outputs
+
+def create_connectfour_cli(
+    inputs: list[str],
+) -> tuple[GameCLI, list[str]]:
+    input_iterator: Iterator[str] = iter(inputs)
+    outputs: list[str] = []
+
+    cli = GameCLI(
+        load_connectfour(),
         input_function=lambda _: next(input_iterator),
         output_function=outputs.append,
     )
@@ -357,4 +375,141 @@ def test_run_completes_chained_capture_for_checkers() -> None:
     assert result.current_player == "Black"
     assert result.turn_number == 2
     assert result.forced_capture_source is None
+    assert outputs[-1] == "Game abandoned."
+
+def test_run_accepts_column_input_for_connect_four() -> None:
+    cli, outputs = create_connectfour_cli(
+        [
+            "3",
+            "quit",
+        ]
+    )
+
+    result = cli.run()
+
+    assert len(result.pieces) == 1
+
+    assert result.pieces[0].piece_name == "Disc"
+    assert result.pieces[0].owner == "Red"
+    assert result.pieces[0].coordinate == Coordinate(
+        row=5,
+        column=3,
+    )
+
+    assert result.current_player == "Yellow"
+    assert result.turn_number == 2
+    assert result.status is GameStatus.ONGOING
+    assert outputs[-1] == "Game abandoned."
+
+def test_run_completes_connect_four_with_vertical_win() -> None:
+    cli, outputs = create_connectfour_cli(
+        [
+            "0",  # Red
+            "1",  # Yellow
+            "0",  # Red
+            "1",  # Yellow
+            "0",  # Red
+            "1",  # Yellow
+            "0",  # Red wins
+        ]
+    )
+
+    result = cli.run()
+
+    assert result.status is GameStatus.WON
+    assert result.winner == "Red"
+    assert result.turn_number == 8
+    assert len(result.pieces) == 7
+
+    red_coordinates = {
+        piece.coordinate
+        for piece in result.pieces
+        if piece.owner == "Red"
+    }
+
+    assert red_coordinates == {
+        Coordinate(row=5, column=0),
+        Coordinate(row=4, column=0),
+        Coordinate(row=3, column=0),
+        Coordinate(row=2, column=0),
+    }
+
+    assert outputs[-1] == "Player Red wins!"
+
+
+def test_run_recovers_from_invalid_connect_four_format() -> None:
+    cli, outputs = create_connectfour_cli(
+        [
+            "0 1",
+            "quit",
+        ]
+    )
+
+    result = cli.run()
+
+    assert result.pieces == ()
+    assert (
+        "Invalid move: Enter a placement using the format: "
+        "column."
+    ) in outputs
+    assert outputs[-1] == "Game abandoned."
+
+
+def test_run_recovers_from_non_integer_connect_four_column() -> None:
+    cli, outputs = create_connectfour_cli(
+        [
+            "left",
+            "quit",
+        ]
+    )
+
+    result = cli.run()
+
+    assert result.pieces == ()
+    assert "Invalid move: Column must be an integer." in outputs
+    assert outputs[-1] == "Game abandoned."
+
+
+def test_run_recovers_from_out_of_bounds_connect_four_column() -> None:
+    cli, outputs = create_connectfour_cli(
+        [
+            "7",
+            "quit",
+        ]
+    )
+
+    result = cli.run()
+
+    assert result.pieces == ()
+    assert result.current_player == "Red"
+    assert result.turn_number == 1
+    assert any(
+        output.startswith("Invalid move:")
+        and "outside the 6x7 board" in output
+        for output in outputs
+    )
+    assert outputs[-1] == "Game abandoned."
+
+
+def test_run_recovers_from_full_connect_four_column() -> None:
+    cli, outputs = create_connectfour_cli(
+        [
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "0",
+            "quit",
+        ]
+    )
+
+    result = cli.run()
+
+    assert len(result.pieces) == 6
+    assert result.current_player == "Red"
+    assert result.turn_number == 7
+    assert result.status is GameStatus.ONGOING
+    assert "Invalid move: Column 0 is full." in outputs
     assert outputs[-1] == "Game abandoned."

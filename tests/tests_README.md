@@ -54,7 +54,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 205 tests.
+The suite currently contains 230 tests.
 
 ### Parser tests
 
@@ -63,6 +63,10 @@ The suite currently contains 205 tests.
 - parses `games/tictactoe.game`;
 - verifies that the root node is `start`;
 - verifies that the parse tree is not empty.
+
+The Connect Four parser cases verify `gravity: down`,
+`any_non_full_column`, the complete bundled definition, and rejection of an
+unsupported gravity direction.
 
 `test_parse_checkers_end_condition_syntax`
 
@@ -119,6 +123,10 @@ unsupported player-forward and movement directions raise `UnexpectedInput`.
 - verifies the three alignment conditions;
 - verifies the full-board draw condition;
 - checks the complete immutable tuple of typed conditions.
+
+The Connect Four AST cases verify typed `GravityDirection.DOWN`, typed
+`PlacementType.ANY_NON_FULL_COLUMN`, optional-gravity compatibility, and
+immutability of the gravity-bearing board definition.
 
 `test_transform_checkers_end_conditions`
 
@@ -196,7 +204,7 @@ forward direction and its placement piece has no movement rule.
 
 ### Semantic-validation tests
 
-The 30 cases in `test_semantic_validator.py` verify:
+The 34 cases in `test_semantic_validator.py` verify:
 
 - valid Tic-Tac-Toe and movement-rule definitions;
 - acceptance of valid definitions through `validate_or_raise()`;
@@ -316,7 +324,7 @@ The seven cases in `test_move.py` verify:
 
 ### Move-executor tests
 
-The 48 cases in `test_move_executor.py` verify:
+The 54 cases in `test_move_executor.py` verify:
 
 - piece placement, turn-number advancement, and player rotation;
 - creation of a new state without modifying the previous snapshot;
@@ -362,10 +370,14 @@ The 48 cases in `test_move_executor.py` verify:
   capture;
 - terminal evaluation after a chain removes the opponent's final piece;
 - immediate promotion and continued capture using the new `King` rules.
+- Connect Four placement at the lowest empty row;
+- upward stacking in a partially occupied column;
+- rejection of full columns without state mutation;
+- terminal evaluation from the effective gravity landing coordinate.
 
 ### Legal-move-generator tests
 
-The eleven cases in `test_legal_move_generator.py` verify:
+The 15 cases in `test_legal_move_generator.py` verify:
 
 - one or both forward diagonal moves for a `Man`;
 - deterministic left-before-right destination ordering;
@@ -382,6 +394,9 @@ The eleven cases in `test_legal_move_generator.py` verify:
 - restriction of a capture chain to `forced_capture_source` even when another
   owned piece could capture;
 - an empty immutable tuple when the current player has no legal moves.
+- one Connect Four placement per non-full column in deterministic order;
+- exclusion of full columns and preservation of partially filled columns;
+- use of the current player and an empty result for a full board.
 
 ### Condition-evaluator tests
 
@@ -413,7 +428,7 @@ The nine cases in `test_board_renderer.py` verify:
 
 ### Interactive-CLI tests
 
-The 13 cases in `test_game_cli.py` verify:
+The 19 cases in `test_game_cli.py` verify:
 
 - normal and case-insensitive `quit` handling;
 - recovery from malformed and non-integer coordinates;
@@ -424,6 +439,11 @@ The 13 cases in `test_game_cli.py` verify:
 - relocation-specific format and integer diagnostics;
 - recovery from empty and opponent-owned source coordinates;
 - completion of a mandatory chained capture through consecutive CLI inputs.
+- one-column Connect Four input and gravity-based placement;
+- a complete vertical Connect Four victory;
+- recovery from malformed and non-integer column input.
+- recovery from out-of-bounds and completely full Connect Four columns without
+  changing the current session state.
 
 ### Checkers scenario tests
 
@@ -535,13 +555,13 @@ nodes, semantic target validation, runtime `no_pieces_left` and `no_moves_left`
 evaluation, deterministic legal movement and capture generation, global
 mandatory-capture enforcement, forced same-piece capture chains, delayed turn
 rotation and terminal evaluation, rendering, placement input for Tic-Tac-Toe,
-interactive relocation and chained-capture input for Checkers, and complete
-Checkers runtime scenarios from setup through terminal victory.
+interactive relocation and chained-capture input for Checkers, complete
+Checkers runtime scenarios from setup through terminal victory, and Connect
+Four grammar, AST, semantic validation, gravity execution, legal-column
+generation, and interactive vertical victory.
 
-Future coverage will add:
-
-1. parser, AST, and semantic-validation tests for Connect Four;
-2. complete game-scenario tests for additional supported games.
+Future coverage can add complete scenario modules for further supported games
+and additional Connect Four horizontal, diagonal, and full-board CLI sessions.
 
 Every new DSL construct should include:
 

@@ -2,14 +2,10 @@
 
 Piecewise games are described using declarative `.game` files.
 
-> Piecewise is under development. Tic-Tac-Toe is fully supported. The parser
-> and AST also support the directional movement, capture, promotion, and
-> initial-setup subset used by Checkers. Single captures and back-rank
-> promotion already execute at runtime; Checkers end-condition targets are
-> validated semantically, `no_pieces_left` is evaluated at runtime, and legal
-> ordinary and single-capture moves can be generated. Runtime evaluation of
-> `no_moves_left` is also supported; multiple captures, mandatory capture, and
-> the Connect Four extensions remain future increments.
+> Piecewise is under development. Tic-Tac-Toe, the current Checkers subset, and
+> Connect Four are playable from the CLI. Connect Four includes typed downward
+> gravity, placement in non-full columns, semantic validation, legal-column
+> generation, runtime stacking, and alignment evaluation.
 
 ## Processing pipeline
 
@@ -86,7 +82,14 @@ board {
 - `dark`;
 - `light`.
 
-Only `all` is currently exercised by the implemented Tic-Tac-Toe example.
+The board may also declare optional downward gravity:
+
+```text
+gravity: down
+```
+
+Connect Four uses `all` with downward gravity; Checkers uses `dark` without
+gravity.
 
 ### Players
 
@@ -115,6 +118,7 @@ The current grammar supports:
 
 - a list of owners;
 - placement on any empty cell;
+- placement in any non-full column;
 - non-capturing `diagonal forward` and `diagonal any` movement rules;
 - `diagonal forward` and `diagonal any` capture rules using `if enemy`;
 - back-rank promotion to a named piece type.
@@ -132,7 +136,7 @@ piece Man {
 
 Capture declarations are parsed, validated, and supported for single runtime
 jumps. Promotion declarations are parsed into immutable `PromotionRule`
-objects; target validation and runtime replacement are not implemented yet.
+objects with target validation and runtime replacement.
 
 ### Initial setup
 
@@ -227,7 +231,7 @@ from parser.game_parser import GameParser
 game = GameParser().parse_game_file("games/tictactoe.game")
 ```
 
-## Partially supported and future syntax
+## Additional supported games
 
 ### Checkers
 
@@ -242,18 +246,29 @@ game = GameParser().parse_game_file("games/tictactoe.game")
 - supported deterministic generation of ordinary diagonal moves and
   single-capture moves for the current player;
 - supported runtime victory when the opponent has no generated legal moves;
-- planned multiple- and mandatory-capture behaviour.
+- supported mandatory captures and forced same-piece capture chains.
 
 ### Connect Four
 
-`connectfour.game` explores syntax for:
+`connectfour.game` is supported end to end and declares:
 
-- downward gravity;
-- placement in non-full columns;
-- alignments of four pieces.
+```text
+board {
+    size: 6x7
+    playable_cells: all
+    gravity: down
+}
 
-The remaining constructs must be introduced together with AST changes and
-automated tests.
+piece Disc {
+    owner: Red, Yellow
+    place: any_non_full_column
+}
+```
+
+The engine generates one move per non-full column, resolves the selected column
+to its lowest empty row, rejects full columns, alternates Red and Yellow, and
+evaluates horizontal, vertical, and diagonal alignments of four discs. From the
+CLI, players enter only the zero-based column number.
 
 ## Semantic rules
 
@@ -264,6 +279,8 @@ The current semantic validator rejects definitions when:
 - `turn_order` references undeclared players;
 - a piece references an undeclared owner;
 - a piece declares neither placement nor movement, or declares both;
+- column placement is declared without downward gravity;
+- downward gravity is combined with ordinary `any_empty_cell` placement;
 - a movement distance is not positive;
 - a forward-moving owner has no declared forward direction;
 - a capture lacks movement, has a non-positive distance, or needs an undeclared
@@ -274,7 +291,8 @@ The current semantic validator rejects definitions when:
 - an alignment length cannot fit on the board;
 - declared players are missing from the turn order.
 
-Promotion references are not yet checked semantically.
+Promotion references and ownership compatibility are also checked
+semantically.
 
 ## Extension checklist
 

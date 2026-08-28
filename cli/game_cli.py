@@ -5,7 +5,10 @@ from engine.errors import InvalidMoveError
 from engine.game_session import GameSession
 from engine.game_state import Coordinate, GameState, GameStatus
 from engine.move import Move
-from parser.ast_nodes import GameDefinition
+from parser.ast_nodes import (
+    GameDefinition,
+    PlacementType,
+)
 
 
 InputFunction = Callable[[str], str]
@@ -63,12 +66,20 @@ class GameCLI:
 
     def _parse_move(self, raw_input: str) -> Move:
         parts = raw_input.split()
-        uses_relocation_format = self._uses_relocation_format()
-        expected_values = (
-            4
-            if uses_relocation_format
-            else 2
+
+        uses_relocation_format = (
+            self._uses_relocation_format()
         )
+        uses_column_format = (
+            self._uses_column_placement_format()
+        )
+
+        if uses_relocation_format:
+            expected_values = 4
+        elif uses_column_format:
+            expected_values = 1
+        else:
+            expected_values = 2
 
         if len(parts) != expected_values:
             if uses_relocation_format:
@@ -78,10 +89,15 @@ class GameCLI:
                     "destination_row destination_column."
                 )
 
+            if uses_column_format:
+                raise ValueError(
+                    "Enter a placement using the format: column."
+                )
+
             raise ValueError(
                 "Enter a move using the format: row column."
             )
-    
+
         try:
             coordinates = tuple(
                 int(value)
@@ -93,14 +109,23 @@ class GameCLI:
                     "Source and destination coordinates "
                     "must be integers."
                 ) from error
-        
+
+            if uses_column_format:
+                raise ValueError(
+                    "Column must be an integer."
+                ) from error
+
             raise ValueError(
                 "Row and column must be integers."
             ) from error
-    
+
         if not uses_relocation_format:
-            row, column = coordinates
-    
+            if uses_column_format:
+                column, = coordinates
+                row = 0
+            else:
+                row, column = coordinates
+
             return Move(
                 player=self.state.current_player,
                 piece_name=self._piece_name_for_current_player(),
@@ -109,19 +134,19 @@ class GameCLI:
                     column=column,
                 ),
             )
-    
+
         (
             source_row,
             source_column,
             destination_row,
             destination_column,
         ) = coordinates
-    
+
         source = Coordinate(
             row=source_row,
             column=source_column,
         )
-    
+
         source_piece = next(
             (
                 piece
@@ -130,13 +155,13 @@ class GameCLI:
             ),
             None,
         )
-    
+
         if source_piece is None:
             raise ValueError(
                 f"Source coordinate {source} "
                 "does not contain a piece."
             )
-    
+
         return Move(
             player=self.state.current_player,
             piece_name=source_piece.piece_name,
@@ -150,6 +175,14 @@ class GameCLI:
     def _uses_relocation_format(self) -> bool:
         return any(
             piece.movement is not None
+            and self.state.current_player in piece.owners
+            for piece in self._game.pieces
+        )
+
+    def _uses_column_placement_format(self) -> bool:
+        return any(
+            piece.placement
+            is PlacementType.ANY_NON_FULL_COLUMN
             and self.state.current_player in piece.owners
             for piece in self._game.pieces
         )

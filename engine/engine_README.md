@@ -3,8 +3,8 @@
 The `engine` package turns a validated `GameDefinition` into immutable runtime
 snapshots, represents placement and relocation requests, executes supported
 placement, ordinary relocation, capture, and back-rank promotion moves,
-evaluates terminal conditions, manages a complete session, and renders the
-board as plain text.
+applies downward gravity to column placements, evaluates terminal conditions,
+manages a complete session, and renders the board as plain text.
 
 ## Files
 
@@ -50,6 +50,10 @@ placement = Move(
 )
 ```
 
+For `ANY_NON_FULL_COLUMN`, the row is a selector placeholder and the column
+identifies the requested Connect Four column. `MoveExecutor` replaces that
+placeholder with the lowest empty coordinate before terminal evaluation.
+
 A relocation also specifies the source coordinate:
 
 ```python
@@ -91,6 +95,10 @@ contains only captures and suppresses ordinary moves from every owned piece.
 When `state.forced_capture_source` is set, only moves originating from that
 piece are generated. Returning an empty tuple is the engine primitive used by
 `ConditionEvaluator` for `no_moves_left`.
+
+For `ANY_NON_FULL_COLUMN`, the generator returns one placement move per
+non-full column in ascending order. Full columns are excluded, and a completely
+full board produces an empty tuple.
 
 ## Initialize setup pieces
 
@@ -139,7 +147,10 @@ Previous `GameState` instances remain unchanged. If a move raises
 acting, when a coordinate is outside or unavailable, when a piece is unknown
 or unowned, or when a destination is occupied. It dispatches placement and
 relocation requests according to the action supported by the piece definition.
-A successful move advances the turn and invokes `ConditionEvaluator`.
+A successful move advances the turn and invokes `ConditionEvaluator`. For a
+gravity placement, the executor searches upward from the bottom row, rejects a
+full column, and evaluates terminal conditions from the effective landing
+coordinate rather than the selector coordinate supplied by the caller.
 
 ## Execute a relocation
 
@@ -247,15 +258,16 @@ the column alignment even when player names contain multiple characters.
 
 The engine consumes the typed AST and has no dependency on Lark or concrete
 DSL syntax. Terminal input and output belong to the separate `cli` package.
-The executor supports `ANY_EMPTY_CELL` placement plus validated ordinary and
-capturing `DIAGONAL_FORWARD` and `DIAGONAL_ANY` relocation, followed by
-validated `BACK_RANK` promotion. `LegalMoveGenerator` discovers the supported
-ordinary and capture moves without applying them and gives captures
-global precedence over ordinary moves. `GameState` and `MoveExecutor` coordinate
-forced chained captures without making the executor stateful. The separate CLI
-now converts four-coordinate user input into relocation requests without adding
-terminal concerns to the engine. Gravity remains a future increment. Movement,
-capture, promotion, setup-rule consistency, and Checkers
+The executor supports `ANY_EMPTY_CELL` and `ANY_NON_FULL_COLUMN` placement plus
+validated ordinary and capturing `DIAGONAL_FORWARD` and `DIAGONAL_ANY`
+relocation, followed by validated `BACK_RANK` promotion.
+`LegalMoveGenerator` discovers legal column placements, ordinary moves, and
+captures without applying them and gives captures global precedence over
+ordinary moves. `GameState` and `MoveExecutor` coordinate forced chained
+captures without making the executor stateful. The separate CLI converts
+one-column, two-coordinate, or four-coordinate input into engine requests
+without adding terminal concerns to the engine. Movement, capture, promotion,
+gravity-placement dependencies, setup-rule consistency, and Checkers
 player-state targets are validated before the engine boundary by
 `SemanticValidator`.
 
@@ -276,5 +288,5 @@ python -m pytest \
   tests/test_board_renderer.py -v
 ```
 
-These modules contain 134 engine-focused and end-to-end scenario tests. The
-complete project suite contains 205 tests.
+These modules contain 143 engine-focused and end-to-end scenario tests. The
+complete project suite contains 230 tests.

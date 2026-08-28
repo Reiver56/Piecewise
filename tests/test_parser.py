@@ -9,6 +9,7 @@ from parser.game_parser import GameParser
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TICTACTOE_PATH = PROJECT_ROOT / "games" / "tictactoe.game"
 CHECKERS_PATH = PROJECT_ROOT / "games" / "checkers.game"
+CONNECTFOUR_PATH = PROJECT_ROOT / "games" / "connectfour.game"
 
 MOVEMENT_GAME_SOURCE = """
 game MovementGame {
@@ -55,6 +56,55 @@ def test_parse_valid_tictactoe(game_parser: GameParser) -> None:
 
     assert tree.data == "start"
     assert tree.children
+
+def test_parse_connect_four_syntax(
+    game_parser: GameParser,
+) -> None:
+    tree = game_parser.parse_file(CONNECTFOUR_PATH)
+    rendered_tree = tree.pretty()
+
+    assert tree.data == "start"
+    assert "gravity_property" in rendered_tree
+    assert "gravity_down" in rendered_tree
+    assert "any_non_full_column_placement" in rendered_tree
+
+def test_parse_gravity_rule_syntax(
+    game_parser: GameParser,
+) -> None:
+    gravity_game_source = TICTACTOE_PATH.read_text(
+        encoding="utf-8",
+    ).replace(
+        "playable_cells: all",
+        (
+            "playable_cells: all\n"
+            "        gravity: down"
+        ),
+        1,
+    )
+
+    tree = game_parser.parse(gravity_game_source)
+    rendered_tree = tree.pretty()
+
+    assert tree.data == "start"
+    assert "gravity_property" in rendered_tree
+    assert "gravity_down" in rendered_tree
+
+def test_reject_unsupported_gravity_direction(
+    game_parser: GameParser,
+) -> None:
+    invalid_source = TICTACTOE_PATH.read_text(
+        encoding="utf-8",
+    ).replace(
+        "playable_cells: all",
+        (
+            "playable_cells: all\n"
+            "        gravity: up"
+        ),
+        1,
+    )
+
+    with pytest.raises(UnexpectedInput):
+        game_parser.parse(invalid_source)
 
 def test_parse_checkers_end_condition_syntax(
     game_parser: GameParser,

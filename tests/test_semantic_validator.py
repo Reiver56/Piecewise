@@ -32,6 +32,7 @@ from validation import (
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 TICTACTOE_PATH = PROJECT_ROOT / "games" / "tictactoe.game"
 CHECKERS_PATH = PROJECT_ROOT / "games" / "checkers.game"
+CONNECTFOUR_PATH = PROJECT_ROOT / "games" / "connectfour.game"
 
 
 @pytest.fixture(scope="module")
@@ -41,6 +42,10 @@ def valid_game():
 @pytest.fixture(scope="module")
 def valid_checkers_game():
     return GameParser().parse_game_file(CHECKERS_PATH)
+
+@pytest.fixture(scope="module")
+def valid_connect_four_game():
+    return GameParser().parse_game_file(CONNECTFOUR_PATH)
 
 @pytest.fixture(scope="module")
 def valid_movement_game(valid_game):
@@ -867,3 +872,52 @@ def test_rejects_unsupported_player_target(
         for issue in issues
     )
 
+def test_rejects_column_placement_without_gravity(
+    valid_connect_four_game,
+    validator: SemanticValidator,
+) -> None:
+    invalid_game = replace(
+        valid_connect_four_game,
+        board=replace(
+            valid_connect_four_game.board,
+            gravity=None,
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "column_placement_requires_gravity"
+        and issue.path == "pieces.Disc.placement"
+        for issue in issues
+    )
+
+def test_valid_connect_four_has_no_semantic_issues(
+    valid_connect_four_game,
+    validator: SemanticValidator,
+) -> None:
+    assert validator.validate(valid_connect_four_game) == ()
+
+def test_rejects_empty_cell_placement_with_gravity(
+    valid_connect_four_game,
+    validator: SemanticValidator,
+) -> None:
+    disc = valid_connect_four_game.pieces[0]
+
+    invalid_game = replace(
+        valid_connect_four_game,
+        pieces=(
+            replace(
+                disc,
+                placement=PlacementType.ANY_EMPTY_CELL,
+            ),
+        ),
+    )
+
+    issues = validator.validate(invalid_game)
+
+    assert any(
+        issue.code == "gravity_requires_column_placement"
+        and issue.path == "pieces.Disc.placement"
+        for issue in issues
+    )

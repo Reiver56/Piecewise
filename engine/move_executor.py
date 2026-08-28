@@ -5,6 +5,7 @@ from parser.ast_nodes import (
     GameDefinition,
     MovementDirection,
     PieceDefinition,
+    PlacementType,
     PlayableCells,
     PromotionCondition,
 )
@@ -27,7 +28,11 @@ class MoveExecutor:
     def __init__(self, game: GameDefinition) -> None:
         self._game = game
 
-    def apply(self, state: GameState, move: Move) -> GameState:
+    def apply(
+        self,
+        state: GameState,
+        move: Move,
+    ) -> GameState:
         """Apply a valid move and return the resulting state."""
         self._validate_game_is_ongoing(state)
         self._validate_player_turn(state, move)
@@ -43,11 +48,6 @@ class MoveExecutor:
 
         piece_definition = self._validate_piece(move)
 
-        self._validate_cell_is_empty(
-            state,
-            move.destination,
-        )
-
         if move.is_placement:
             updated_pieces = self._apply_placement(
                 state,
@@ -55,12 +55,17 @@ class MoveExecutor:
                 piece_definition,
             )
         else:
+            self._validate_cell_is_empty(
+                state,
+                move.destination,
+            )
+
             updated_pieces = self._apply_relocation(
                 state,
                 move,
                 piece_definition,
             )
-            
+
             updated_pieces = self._apply_promotion(
                 state,
                 updated_pieces,
@@ -90,6 +95,13 @@ class MoveExecutor:
             ):
                 return continuation_state
 
+        evaluated_move = move
+
+        if move.is_placement:
+            evaluated_move = replace(
+                move,
+                coordinate=updated_pieces[-1].coordinate,
+            )
 
         updated_state = GameState(
             rows=state.rows,
@@ -101,7 +113,7 @@ class MoveExecutor:
 
         return ConditionEvaluator(self._game).evaluate(
             updated_state,
-            move,
+            evaluated_move,
         )
 
     def _apply_placement(
@@ -110,19 +122,58 @@ class MoveExecutor:
         move: Move,
         piece_definition: PieceDefinition,
     ) -> tuple[PlacedPiece, ...]:
-        if piece_definition.placement is None:
+        placement = piece_definition.placement
+
+        if placement is None:
             raise InvalidMoveError(
                 f"Piece '{piece_definition.name}' "
                 "does not support placement."
             )
 
+        destination = move.destination
+
+        if placement is PlacementType.ANY_NON_FULL_COLUMN:
+            destination = self._lowest_empty_coordinate(
+                state,
+                move.destination.column,
+            )
+
+            if destination is None:
+                raise InvalidMoveError(
+                    f"Column {move.destination.column} is full."
+                )
+        else:
+            self._validate_cell_is_empty(
+                state,
+                destination,
+            )
+
         placed_piece = PlacedPiece(
             piece_name=move.piece_name,
             owner=move.player,
-            coordinate=move.destination,
+            coordinate=destination,
         )
 
         return (*state.pieces, placed_piece)
+
+    @staticmethod
+    def _lowest_empty_coordinate(
+        state: GameState,
+        column: int,
+    ) -> Coordinate | None:
+        for row in range(state.rows - 1, -1, -1):
+            coordinate = Coordinate(
+                row=row,
+                column=column,
+            )
+
+            if all(
+                piece.coordinate != coordinate
+                for piece in state.pieces
+            ):
+                return coordinate
+
+        return None
 
     def _apply_relocation(
         self,
@@ -199,7 +250,7 @@ class MoveExecutor:
             state,
             move,
         )
-        
+
         return tuple(
             replace(
                 piece,
@@ -259,10 +310,10 @@ class MoveExecutor:
         legal_moves = LegalMoveGenerator(
             self._game
         ).generate(state)
-    
+
         if move in legal_moves:
             return
-    
+
         raise InvalidMoveError(
             "A capture is mandatory when available."
         )
@@ -273,13 +324,13 @@ class MoveExecutor:
         move: Move,
     ) -> None:
         forced_source = state.forced_capture_source
-    
+
         if forced_source is None:
             return
-    
+
         if move.source == forced_source:
             return
-    
+
         raise InvalidMoveError(
             "A capture chain must continue with the same piece "
             f"at coordinate {forced_source}."
@@ -362,7 +413,7 @@ class MoveExecutor:
                 f"Player '{move.player}' must capture piece "
                 f"'{piece_definition.name}' forward."
             )
-    
+
     def _apply_capture(
         self,
         state: GameState,
@@ -370,12 +421,12 @@ class MoveExecutor:
         source_piece: PlacedPiece,
     ) -> tuple[PlacedPiece, ...]:
         source = move.source
-    
+
         if source is None:
             raise InvalidMoveError(
                 "A capture move requires a source coordinate."
             )
-    
+
         captured_coordinate = Coordinate(
             row=(
                 source.row + move.destination.row
@@ -384,7 +435,7 @@ class MoveExecutor:
                 source.column + move.destination.column
             ) // 2,
         )
-    
+
         captured_piece = next(
             (
                 piece
@@ -393,19 +444,19 @@ class MoveExecutor:
             ),
             None,
         )
-    
+
         if captured_piece is None:
             raise InvalidMoveError(
                 f"Capture coordinate {captured_coordinate} "
                 "does not contain a piece."
             )
-    
+
         if captured_piece.owner == move.player:
             raise InvalidMoveError(
                 f"Player '{move.player}' cannot capture "
                 "their own piece."
             )
-    
+
         return tuple(
             replace(
                 piece,

@@ -65,13 +65,15 @@ The current increment supports:
   uppercase owner symbols;
 - an interactive CLI for placement and relocation games, including Tic-Tac-Toe
   and Checkers, with recoverable input errors;
+- complete Connect Four support with downward gravity, placement in non-full
+  columns, legal-column generation, alignment evaluation, and one-column CLI
+  input;
 - parser, AST, semantic-validation, engine, renderer, and CLI tests with pytest;
 - automatic test execution on pull requests through GitHub Actions.
 
 The following features are designed but not implemented yet:
 
 - piece-specific Checkers rendering;
-- Connect Four gravity and column placement;
 - graphical interaction.
 
 The Checkers definition is playable from the CLI with its currently supported
@@ -79,7 +81,9 @@ movement, capture, mandatory-chain, promotion, setup, and player-state
 end-condition rules. The grammar and AST model these declarations, semantic
 validation checks their references and dependencies, and the engine evaluates
 both `no_pieces_left` and `no_moves_left` against the next player. Connect Four
-remains a design example for the future gravity increment.
+is also playable end to end: the DSL declares downward gravity and column
+placement, and the engine resolves each selected column to its lowest empty
+cell.
 
 ## Architecture
 
@@ -132,7 +136,7 @@ Piecewise/
 │   ├── README.md                # Guide to Piecewise game definitions
 │   ├── tictactoe.game           # Placement-game example
 │   ├── checkers.game            # Relocation-game example
-│   └── connectfour.game         # Planned DSL extension
+│   └── connectfour.game         # Gravity-placement game example
 ├── grammar/
 │   ├── README.md                # Lark grammar documentation
 │   └── piecewise.lark           # Current formal grammar
@@ -604,13 +608,23 @@ Relocation games accept four zero-based coordinates in the order
 movement, mandatory-capture, chained-capture, promotion, and turn validation to
 the engine.
 
+Connect Four can be started with:
+
+```bash
+python -m cli games/connectfour.game
+```
+
+Enter one zero-based column number, such as `3`. The engine rejects full or
+out-of-bounds columns and applies downward gravity to place the disc in the
+lowest available row.
+
 ## Run the tests
 
 ```bash
 python -m pytest -v
 ```
 
-The current suite contains 205 parser, AST-transformation, semantic-validation,
+The current suite contains 230 parser, AST-transformation, semantic-validation,
 engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
 automatically.
 
@@ -639,4 +653,3 @@ increment should:
 The initial scope covers deterministic, turn-based games on rectangular grids.
 Card games, hidden information, random events, and real-time mechanics are
 outside the current project scope.
-

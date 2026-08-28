@@ -63,6 +63,8 @@ The validator detects:
 - undeclared piece owners;
 - pieces declaring neither placement nor movement;
 - pieces declaring both placement and movement;
+- `any_non_full_column` placement declared without board gravity;
+- ordinary `any_empty_cell` placement declared on a board with gravity;
 - non-positive movement distances;
 - owners missing a forward direction required by `diagonal forward`;
 - capture rules declared without a movement rule;
@@ -84,6 +86,11 @@ The validator detects:
 
 Row alignments are limited by the number of columns, column alignments by the
 number of rows, and diagonal alignments by the smaller board dimension.
+
+Gravity and placement are validated as a dependency: column placement requires
+a gravity declaration, while a gravity board requires column-based placement
+for its placement pieces. This keeps landing-row resolution in the engine and
+prevents definitions whose placement semantics contradict the board.
 
 Piece actions are exclusive: each piece must declare exactly one of `place` or
 `move`. A `diagonal any` rule does not depend on player orientation, while every
@@ -185,22 +192,22 @@ Run the focused tests from the project root:
 python -m pytest tests/test_semantic_validator.py -v
 ```
 
-The 30 focused tests cover valid Tic-Tac-Toe and Checkers definitions, movement,
-capture, promotion, setup, and player-state end-condition rules, cumulative
+The 34 focused tests cover valid Tic-Tac-Toe, Checkers, and Connect Four
+definitions, gravity-placement dependencies, movement, capture, promotion,
+setup, and player-state end-condition rules, cumulative
 diagnostics, stable codes and paths, piece-action exclusivity, movement and
 capture distances, required player orientation, capture-to-movement and
 promotion-to-movement dependencies, promotion targets and ownership
 compatibility, setup references, ownership, row ranges and overlaps, supported
 player targets, unambiguous `opponent` resolution, and
-`SemanticValidationError` behaviour. The complete project suite contains 179
+`SemanticValidationError` behaviour. The complete project suite contains 230
 tests.
 
 ## Current limitations
 
-The rules cover Tic-Tac-Toe and the current directional movement, capture,
-promotion, initial-setup, and Checkers player-state end-condition subsets.
+The rules cover Tic-Tac-Toe, Connect Four gravity and column placement, and the
+current directional movement, capture, promotion, initial-setup, and Checkers
+player-state end-condition subsets.
 Supported single-jump captures and back-rank promotion are executed by
 `MoveExecutor`, and both Checkers player-state end conditions are evaluated at
-runtime. Multiple captures, mandatory capture, and Connect Four gravity still
-require future increments. Valid setup rules are applied to runtime state by
-`GameInitializer`.
+runtime. Valid setup rules are applied to runtime state by `GameInitializer`.

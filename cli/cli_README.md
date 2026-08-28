@@ -33,6 +33,12 @@ The supported Checkers definition can be started with:
 python -m cli games/checkers.game
 ```
 
+Connect Four can be started with:
+
+```bash
+python -m cli games/connectfour.game
+```
+
 Use `--help` to display the launcher options:
 
 ```bash
@@ -49,6 +55,15 @@ Player X > 1 2
 
 The first value is the destination row and the second is the destination
 column.
+
+Gravity-based column placement accepts one zero-based column:
+
+```text
+Player Red > 3
+```
+
+The engine places the disc in the lowest empty row of that column. Full and
+out-of-bounds columns are reported as invalid moves without ending the session.
 
 Relocation games accept source and destination coordinates:
 
@@ -96,19 +111,21 @@ state = cli.run()
 ## Current scope
 
 The CLI selects the input format from the actions available to the current
-player. Placement games use `row column`; relocation games use source and
-destination coordinates. Invalid formats, non-integer coordinates, empty
-sources, opponent-owned sources, and moves rejected by the engine are reported
-without terminating the session.
+player. Ordinary placement uses `row column`, gravity placement uses `column`,
+and relocation uses source and destination coordinates. Invalid formats,
+non-integer coordinates, empty sources, opponent-owned sources, full columns,
+and other moves rejected by the engine are reported without terminating the
+session.
 
 For Checkers, consecutive CLI inputs can complete a mandatory capture chain.
 The engine keeps the same player active while another capture is required and
-the CLI naturally requests the next relocation. Gravity and piece-specific
-rendering remain future increments.
+the CLI naturally requests the next relocation. Connect Four uses the same
+loop with alternating one-column inputs and automatic gravity. Piece-specific
+rendering remains a future increment.
 
 ## Testing
 
-Run the 13 CLI tests from the project root:
+Run the 19 CLI tests from the project root:
 
 ```bash
 python -m pytest tests/test_game_cli.py -v
@@ -116,5 +133,6 @@ python -m pytest tests/test_game_cli.py -v
 
 They cover case-insensitive `quit`, placement and relocation formats, malformed
 and non-integer input, empty and opponent-owned sources, invalid game moves,
-complete victories and draws, chained Checkers captures, final rendering, and
-result messages.
+complete victories and draws, chained Checkers captures, Connect Four column
+placement and vertical victory, format-specific diagnostics, recovery from
+out-of-bounds and full columns, final rendering, and result messages.

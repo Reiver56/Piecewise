@@ -12,18 +12,27 @@ start: game_definition
 
 // game definition
 game_definition: "game" NAME "{" board_block players_block piece_block+ setup_block? win_condition_block "}" // setup_block is optional (for example, in tic-tac-toe, there is no setup block)
+
 // board block
 board_block: "board" "{" board_property+ "}"
+
 // board properties
 ?board_property: size_property
                | playable_cells_property
+               | gravity_property
 // size property
 size_property: "size" ":" INT "x" INT
+
 // playable cells property
 playable_cells_property: "playable_cells" ":" playable_cells
 playable_cells: "all" -> all_cells
               | "dark" -> dark_cells
               | "light" -> light_cells
+
+// gravity property
+gravity_property: "gravity" ":" gravity_direction
+
+gravity_direction: "down" -> gravity_down
 
 // players block
 players_block: "players" "{" player_declaration+ turn_order "}"
@@ -55,7 +64,10 @@ piece_block: "piece" NAME "{" piece_property+ "}"
 owner_property: "owner" ":" name_list
 
 // place property
-place_property: "place" ":" "any_empty_cell"
+place_property: "place" ":" placement_type
+
+?placement_type: "any_empty_cell"       -> any_empty_cell_placement
+               | "any_non_full_column" -> any_non_full_column_placement
 
 // movement property
 move_property: "move" ":" movement_direction INT "if" destination_condition

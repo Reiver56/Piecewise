@@ -8,8 +8,13 @@ from parser.ast_nodes import (
     PlayableCells,
     CaptureCondition,
     CaptureRule,
+    PlacementType,
 )
-from engine.game_state import Coordinate, GameState, PlacedPiece
+from engine.game_state import (
+    Coordinate, 
+    GameState, 
+    PlacedPiece,
+)
 
 from engine.move import Move
 
@@ -20,8 +25,18 @@ class LegalMoveGenerator:
     def __init__(self, game: GameDefinition) -> None:
         self._game = game
 
-    def generate(self, state: GameState) -> tuple[Move, ...]:
+    def generate(
+            self, 
+            state: GameState
+    ) -> tuple[Move, ...]:
         """Return legal movement and capture moves for the current player."""
+
+        column_placement_moves = (
+            self._column_placement_moves(state)
+        )
+
+        if column_placement_moves is not None:
+            return column_placement_moves
         occupied_coordinates = {
             piece.coordinate
             for piece in state.pieces
@@ -200,6 +215,51 @@ class LegalMoveGenerator:
                 )
 
         return tuple(moves)
+
+    def _column_placement_moves(
+        self,
+        state: GameState,
+    ) -> tuple[Move, ...] | None:
+        piece_definition = next(
+            (
+                piece
+                for piece in self._game.pieces
+                if (
+                    state.current_player in piece.owners
+                    and piece.placement
+                    is PlacementType.ANY_NON_FULL_COLUMN
+                )
+            ),
+            None,
+        )
+    
+        if piece_definition is None:
+            return None
+    
+        occupied_coordinates = {
+            piece.coordinate
+            for piece in state.pieces
+        }
+    
+        return tuple(
+            Move(
+                player=state.current_player,
+                piece_name=piece_definition.name,
+                coordinate=Coordinate(
+                    row=0,
+                    column=column,
+                ),
+            )
+            for column in range(state.columns)
+            if any(
+                Coordinate(
+                    row=row,
+                    column=column,
+                )
+                not in occupied_coordinates
+                for row in range(state.rows)
+            )
+        )
 
     def _piece_definition(
         self,

@@ -68,22 +68,23 @@ The current increment supports:
 - complete Connect Four support with downward gravity, placement in non-full
   columns, legal-column generation, alignment evaluation, and one-column CLI
   input;
-- parser, AST, semantic-validation, engine, renderer, and CLI tests with pytest;
+- a responsive Tkinter graphical interface for choosing and playing all three
+  bundled games;
+- graphical placement and relocation controls, selected-piece and legal-move
+  highlighting, board coordinates, restart navigation, and terminal feedback;
+- compact graphical Checkers symbols that distinguish men (`W`/`B`) from
+  kings (`WK`/`BK`);
+- parser, AST, semantic-validation, engine, renderer, CLI, controller, and GUI
+  tests with pytest;
 - automatic test execution on pull requests through GitHub Actions.
 
-The following features are designed but not implemented yet:
-
-- piece-specific Checkers rendering;
-- graphical interaction.
-
-The Checkers definition is playable from the CLI with its currently supported
+The Checkers definition is playable from both the CLI and GUI with its supported
 movement, capture, mandatory-chain, promotion, setup, and player-state
 end-condition rules. The grammar and AST model these declarations, semantic
 validation checks their references and dependencies, and the engine evaluates
 both `no_pieces_left` and `no_moves_left` against the next player. Connect Four
 is also playable end to end: the DSL declares downward gravity and column
-placement, and the engine resolves each selected column to its lowest empty
-cell.
+placement, and the engine resolves each selected column to its lowest empty cell.
 
 ## Architecture
 
@@ -101,8 +102,8 @@ cell.
     -> Win/draw evaluation
     -> Ongoing or terminal GameState
     -> GameSession current state
-    -> BoardRenderer
-    -> Interactive GameCLI
+        -> BoardRenderer -> Interactive GameCLI
+        -> GameController -> GameView -> Tkinter GUI
 ```
 
 Parsing, transformation, validation, and execution are intentionally separated.
@@ -132,6 +133,14 @@ Piecewise/
 │   ├── __init__.py              # Public CLI API
 │   ├── __main__.py              # `python -m cli` entry point
 │   └── game_cli.py              # Testable interactive game loop
+├── gui/
+│   ├── README.md                # Graphical-interface guide
+│   ├── __init__.py              # Public GUI API
+│   ├── __main__.py              # `python -m gui` entry point
+│   ├── app.py                   # Application shell and game selector
+│   ├── game_controller.py       # Click-to-move session adapter
+│   ├── game_view.py             # Interactive board and status view
+│   └── theme.py                 # Shared colours and typography
 ├── games/
 │   ├── README.md                # Guide to Piecewise game definitions
 │   ├── tictactoe.game           # Placement-game example
@@ -152,6 +161,8 @@ Piecewise/
 │   ├── test_board_renderer.py
 │   ├── test_checkers_scenarios.py
 │   ├── test_game_cli.py
+│   ├── test_game_controller.py
+│   ├── test_game_view.py
 │   ├── test_semantic_validator.py
 │   ├── test_condition_evaluator.py
 │   ├── test_game_initializer.py
@@ -172,7 +183,9 @@ Piecewise/
 
 - Python 3.10 or newer;
 - Lark;
-- pytest.
+- pytest;
+- Tkinter for the optional graphical interface (included with standard Windows
+  Python installations).
 
 ## Setup
 
@@ -578,6 +591,34 @@ and the uppercase initial of the piece owner as its compact symbol. This keeps
 boards aligned for owners such as `White` (`W`) and `Black` (`B`) while
 preserving existing symbols such as `X` and `O`.
 
+## Play from the graphical interface
+
+Start the Tkinter application from the project root:
+
+```bash
+python -m gui
+```
+
+The game selector loads the bundled Tic-Tac-Toe, Connect Four, and Checkers
+definitions through the same parser used by the CLI. Its responsive cards and
+`Play` controls share the available window space as the application is
+resized.
+
+The graphical board displays zero-based row and column coordinates. Placement
+games are played with one click: Tic-Tac-Toe uses the selected empty cell,
+while Connect Four treats the clicked cell as a column selection and lets the
+engine apply gravity. Checkers uses a source-and-destination interaction:
+
+1. click a current-player piece;
+2. inspect the highlighted legal destinations;
+3. click a highlighted destination to move or capture.
+
+During a mandatory capture chain, the required source remains selected until
+the sequence finishes. The status and help text report the current player,
+invalid moves, wins, draws, restart options, and game-specific instructions.
+Checkers pieces use `W` and `B` for men and `WK` and `BK` for promoted
+kings.
+
 ## Play from the terminal
 
 Start the bundled Tic-Tac-Toe definition from the project root:
@@ -624,9 +665,9 @@ lowest available row.
 python -m pytest -v
 ```
 
-The current suite contains 230 parser, AST-transformation, semantic-validation,
-engine, renderer, and CLI tests. Pull requests targeting `main` run the same command
-automatically.
+The current suite contains 246 parser, AST-transformation, semantic-validation,
+engine, renderer, CLI, controller, and GUI tests. Pull requests targeting
+`main` run the same command automatically.
 
 ## Documentation
 
@@ -635,6 +676,7 @@ automatically.
 - [`parser/README.md`](parser/parser_README.md): parsing API, AST, and transformation;
 - [`engine/README.md`](engine/engine_README.md): runtime model, initialization, and move execution;
 - [`cli/README.md`](cli/cli_README.md): interactive play and command-line entry point;
+- [`gui/README.md`](gui/README.md): graphical application, controller, view, and theme;
 - [`tests/README.md`](tests/tests_README.md): test strategy and conventions;
 - [`validation/README.md`](validation/validation_README.md): semantic rules and diagnostics.
 

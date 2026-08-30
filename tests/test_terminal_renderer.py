@@ -103,3 +103,41 @@ def test_render_colors_kings_without_changing_layout() -> None:
 
     assert plain_result == BoardRenderer(game).render(state)
     assert result.count("\x1b[0m") == 2
+
+def test_render_title_supports_optional_color() -> None:
+    game = load_tictactoe()
+    plain = TerminalRenderer(game, use_color=False)
+    colored = TerminalRenderer(game, use_color=True)
+
+    assert plain.render_title("TicTacToe") == (
+        "Piecewise — TicTacToe"
+    )
+    assert colored.render_title("TicTacToe") == (
+        "\x1b[1;95mPiecewise — TicTacToe\x1b[0m"
+    )
+
+
+def test_render_error_supports_optional_color() -> None:
+    game = load_tictactoe()
+    plain = TerminalRenderer(game, use_color=False)
+    colored = TerminalRenderer(game, use_color=True)
+
+    assert plain.render_error("Cell is occupied.") == (
+        "Invalid move: Cell is occupied."
+    )
+    assert colored.render_error("Cell is occupied.") == (
+        "\x1b[1;91mInvalid move: Cell is occupied.\x1b[0m"
+    )
+
+
+def test_render_result_supports_optional_color() -> None:
+    game = load_tictactoe()
+    plain = TerminalRenderer(game, use_color=False)
+    colored = TerminalRenderer(game, use_color=True)
+
+    assert plain.render_result("Player X wins!") == (
+        "Player X wins!"
+    )
+    assert colored.render_result("Player X wins!") == (
+        "\x1b[1;92mPlayer X wins!\x1b[0m"
+    )

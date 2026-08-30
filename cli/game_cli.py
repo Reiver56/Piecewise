@@ -42,7 +42,9 @@ class GameCLI:
 
     def run(self) -> GameState:
         """Run the interactive game loop and return its final state."""
-        self._output(f"Piecewise — {self._game.name}")
+        self._output(
+            self._renderer.render_title(self._game.name)
+        )
 
         while self.state.status is GameStatus.ONGOING:
             self._output("")
@@ -65,7 +67,9 @@ class GameCLI:
                 move = self._parse_move(raw_input)
                 self._session.play(move)
             except (ValueError, InvalidMoveError) as error:
-                self._output(f"Invalid move: {error}")
+                self._output(
+                    self._renderer.render_error(str(error))
+                )
 
         self._output("")
         self._output(self._renderer.render(self.state))
@@ -229,7 +233,10 @@ class GameCLI:
 
     def _output_result(self) -> None:
         if self.state.status is GameStatus.WON:
-            self._output(f"Player {self.state.winner} wins!")
-            return
+            message = f"Player {self.state.winner} wins!"
+        else:
+            message = "The game ended in a draw."
 
-        self._output("The game ended in a draw.")
+        self._output(
+            self._renderer.render_result(message)
+        )

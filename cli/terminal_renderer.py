@@ -66,6 +66,37 @@ class TerminalRenderer:
 
         return "\n".join(rendered_lines)
 
+    def render_title(self, game_name: str) -> str:
+        """Return the game title with optional emphasis."""
+        return self._style_message(
+            f"Piecewise — {game_name}",
+            "1;95",
+        )
+
+    def render_error(self, message: str) -> str:
+        """Return an optionally colored invalid-move message."""
+        return self._style_message(
+            f"Invalid move: {message}",
+            "1;91",
+        )
+
+    def render_result(self, message: str) -> str:
+        """Return an optionally highlighted game result."""
+        return self._style_message(
+            message,
+            "1;92",
+        )
+
+    def _style_message(
+        self,
+        message: str,
+        ansi_code: str,
+    ) -> str:
+        if not self._use_color:
+            return message
+
+        return f"\x1b[{ansi_code}m{message}{RESET}"
+    
     @staticmethod
     def _color_cell(
         cell: str,

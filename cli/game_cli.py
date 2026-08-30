@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from engine.board_renderer import BoardRenderer
+from cli.terminal_renderer import TerminalRenderer
 from engine.errors import InvalidMoveError
 from engine.game_session import GameSession
 from engine.game_state import Coordinate, GameState, GameStatus
@@ -24,10 +24,14 @@ class GameCLI:
         *,
         input_function: InputFunction = input,
         output_function: OutputFunction = print,
+        use_color: bool = False,
     ) -> None:
         self._game = game
         self._session = GameSession(game)
-        self._renderer = BoardRenderer(game)
+        self._renderer = TerminalRenderer(
+            game,
+            use_color=use_color,
+        )
         self._input = input_function
         self._output = output_function
 

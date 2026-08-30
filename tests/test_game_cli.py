@@ -537,3 +537,47 @@ def test_run_can_render_colored_pieces() -> None:
         for output in outputs
     )
     assert outputs[-1] == "Game abandoned."
+
+def test_run_displays_current_turn_and_player() -> None:
+    cli, outputs = create_cli(["0 0", "quit"])
+
+    cli.run()
+
+    assert "Turn 1 | Player X" in outputs
+    assert "Turn 2 | Player O" in outputs
+
+    assert outputs.index(
+        "Turn 1 | Player X"
+    ) < outputs.index(
+        "Turn 2 | Player O"
+    )
+
+
+def test_run_displays_tictactoe_input_help() -> None:
+    cli, outputs = create_cli(["quit"])
+
+    cli.run()
+
+    assert (
+        "Move: row column | quit: exit"
+    ) in outputs
+
+
+def test_run_displays_connectfour_input_help() -> None:
+    cli, outputs = create_connectfour_cli(["quit"])
+
+    cli.run()
+
+    assert (
+        "Move: column | quit: exit"
+    ) in outputs
+
+
+def test_run_displays_checkers_input_help() -> None:
+    cli, outputs = create_checkers_cli(["quit"])
+
+    cli.run()
+
+    assert (
+        "Move: from_row from_col to_row to_col | quit: exit"
+    ) in outputs

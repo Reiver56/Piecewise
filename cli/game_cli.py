@@ -46,7 +46,12 @@ class GameCLI:
 
         while self.state.status is GameStatus.ONGOING:
             self._output("")
+            self._output(
+                f"Turn {self.state.turn_number} | "
+                f"Player {self.state.current_player}"
+            )
             self._output(self._renderer.render(self.state))
+            self._output(self._input_help_text())
 
             raw_input = self._input(
                 f"Player {self.state.current_player} > "
@@ -68,6 +73,19 @@ class GameCLI:
 
         return self.state
 
+    def _input_help_text(self) -> str:
+        """Return input instructions for the current player's actions."""
+        if self._uses_relocation_format():
+            return (
+                "Move: from_row from_col to_row to_col "
+                "| quit: exit"
+            )
+
+        if self._uses_column_placement_format():
+            return "Move: column | quit: exit"
+
+        return "Move: row column | quit: exit"
+    
     def _parse_move(self, raw_input: str) -> Move:
         parts = raw_input.split()
 

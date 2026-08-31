@@ -76,7 +76,7 @@ variant.
 ### Command-line gameplay
 
 <p align="center">
-  <img src="docs/images/cli_tictactoe_win.png" alt="Coloured Tic-Tac-Toe victory in the Piecewise CLI" width="720"/>
+  <img src="docs/images/cli_tictactoe_win.png?v=2" alt="Coloured Tic-Tac-Toe victory in the Piecewise CLI" width="720"/>
 </p>
 
 ## Main features

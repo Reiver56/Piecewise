@@ -247,12 +247,16 @@ The renderer uses:
 
 - `.` for an empty playable cell;
 - `#` for a non-playable cell;
-- the uppercase initial of the owner for a placed piece, such as `W`, `B`, `X`,
-  or `O`.
+- the uppercase initial of the owner for a regular piece, such as `W`, `B`,
+  `X`, or `O`;
+- the owner initial followed by `K` for a piece named `King`, producing `WK`
+  or `BK`.
 
 Placed pieces take visual precedence over cell markers. Rendering is read-only
-and does not modify the supplied state. Compact one-character symbols preserve
-the column alignment even when player names contain multiple characters.
+and does not modify the supplied state. The renderer computes a shared cell
+width from the largest symbol and right-aligns every cell, so one-character men
+remain aligned with two-character kings. ANSI colours belong to the separate
+`cli.terminal_renderer` presentation layer.
 
 ## Architectural boundary
 

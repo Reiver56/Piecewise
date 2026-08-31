@@ -9,11 +9,17 @@ from parser.game_parser import GameParser
 
 GAMES_DIRECTORY = Path(__file__).parent.parent / "games"
 
-
 def load_tictactoe():
     return GameParser().parse_game_file(
         GAMES_DIRECTORY / "tictactoe.game"
     )
+
+def load_checkers():
+    return GameParser().parse_game_file(
+        GAMES_DIRECTORY / "checkers.game"
+    )
+
+
 
 
 def create_state(
@@ -218,3 +224,121 @@ def test_render_uses_compact_owner_symbols() -> None:
         "1   . | . | .\n"
         "2   . | . | ."
     )
+
+def test_render_distinguishes_kings_from_men() -> None:
+    renderer = BoardRenderer(load_tictactoe())
+
+    state = create_state(
+        placed_piece("White", 0, 0),
+        replace(
+            placed_piece("White", 0, 1),
+            piece_name="King",
+        ),
+        placed_piece("Black", 1, 0),
+        replace(
+            placed_piece("Black", 1, 1),
+            piece_name="King",
+        ),
+    )
+
+    result = renderer.render(state)
+
+    symbols = result.replace("|", " ").split()
+
+    assert symbols.count("W") == 1
+    assert symbols.count("WK") == 1
+    assert symbols.count("B") == 1
+    assert symbols.count("BK") == 1
+
+def test_render_aligns_columns_with_king_symbols() -> None:
+    renderer = BoardRenderer(load_tictactoe())
+    state = create_state(
+        replace(
+            placed_piece("White", 0, 0),
+            piece_name="King",
+        ),
+        replace(
+            placed_piece("White", 0, 0),
+            piece_name="King",
+        )
+    )
+    rows = renderer.render(state).splitlines()[1:]
+
+    separator_positions = [
+        tuple(
+            index
+            for index, character in enumerate(row)
+            if character == "|"
+        )
+        for row in rows
+    ]
+
+    assert all(len(positions) == 2 for positions in separator_positions)
+    assert len(set(separator_positions)) == 1
+
+def test_render_distinguishes_kings_from_men() -> None:
+    renderer = BoardRenderer(load_checkers())
+
+    state = create_state(
+        replace(
+            placed_piece("White", 5, 0),
+            piece_name="Man",
+        ),
+        replace(
+            placed_piece("White", 5, 2),
+            piece_name="King",
+        ),
+        replace(
+            placed_piece("Black", 2, 1),
+            piece_name="Man",
+        ),
+        replace(
+            placed_piece("Black", 2, 3),
+            piece_name="King",
+        ),
+        rows=8,
+        columns=8,
+    )
+
+    result = renderer.render(state)
+    symbols = result.replace("|", " ").split()
+
+    assert symbols.count("W") == 1
+    assert symbols.count("WK") == 1
+    assert symbols.count("B") == 1
+    assert symbols.count("BK") == 1
+
+
+def test_render_aligns_columns_with_king_symbols() -> None:
+    renderer = BoardRenderer(load_checkers())
+
+    state = create_state(
+        replace(
+            placed_piece("White", 5, 2),
+            piece_name="King",
+        ),
+        replace(
+            placed_piece("Black", 2, 1),
+            piece_name="Man",
+        ),
+        rows=8,
+        columns=8,
+    )
+
+    rows = renderer.render(state).splitlines()[1:]
+
+    separator_positions = [
+        tuple(
+            index
+            for index, character in enumerate(row)
+            if character == "|"
+        )
+        for row in rows
+    ]
+
+    assert len(rows) == 8
+    assert all(
+        len(positions) == 7
+        for positions in separator_positions
+    )
+    assert len(set(separator_positions)) == 1    

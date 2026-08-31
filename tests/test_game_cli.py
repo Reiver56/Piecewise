@@ -513,3 +513,71 @@ def test_run_recovers_from_full_connect_four_column() -> None:
     assert result.status is GameStatus.ONGOING
     assert "Invalid move: Column 0 is full." in outputs
     assert outputs[-1] == "Game abandoned."
+
+def test_run_can_render_colored_pieces() -> None:
+    inputs = iter(["0 0", "1 1", "quit"])
+    outputs: list[str] = []
+
+    cli = GameCLI(
+        load_tictactoe(),
+        input_function=lambda _: next(inputs),
+        output_function=outputs.append,
+        use_color=True,
+    )
+
+    result = cli.run()
+
+    assert result.status is GameStatus.ONGOING
+    assert result.turn_number == 3
+    assert len(result.pieces) == 2
+
+    assert any(
+        "\x1b[95mX\x1b[0m" in output
+        and "\x1b[96mO\x1b[0m" in output
+        for output in outputs
+    )
+    assert outputs[-1] == "Game abandoned."
+
+def test_run_displays_current_turn_and_player() -> None:
+    cli, outputs = create_cli(["0 0", "quit"])
+
+    cli.run()
+
+    assert "Turn 1 | Player X" in outputs
+    assert "Turn 2 | Player O" in outputs
+
+    assert outputs.index(
+        "Turn 1 | Player X"
+    ) < outputs.index(
+        "Turn 2 | Player O"
+    )
+
+
+def test_run_displays_tictactoe_input_help() -> None:
+    cli, outputs = create_cli(["quit"])
+
+    cli.run()
+
+    assert (
+        "Move: row column | quit: exit"
+    ) in outputs
+
+
+def test_run_displays_connectfour_input_help() -> None:
+    cli, outputs = create_connectfour_cli(["quit"])
+
+    cli.run()
+
+    assert (
+        "Move: column | quit: exit"
+    ) in outputs
+
+
+def test_run_displays_checkers_input_help() -> None:
+    cli, outputs = create_checkers_cli(["quit"])
+
+    cli.run()
+
+    assert (
+        "Move: from_row from_col to_row to_col | quit: exit"
+    ) in outputs

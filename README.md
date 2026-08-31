@@ -6,85 +6,94 @@
   <a href="https://github.com/lark-parser/lark">
     <img src="https://img.shields.io/badge/Parser-Lark-orange" alt="Lark parser"/>
   </a>
-  <img src="https://img.shields.io/badge/Status-In%20Development-yellow" alt="Development status"/>
+  <img src="https://img.shields.io/badge/Interface-CLI%20%7C%20Tkinter-8B5CF6" alt="CLI and Tkinter interfaces"/>
   <a href="https://github.com/Reiver56/Piecewise/actions/workflows/tests.yml">
     <img src="https://github.com/Reiver56/Piecewise/actions/workflows/tests.yml/badge.svg" alt="Tests"/>
   </a>
 </p>
 
 <p align="center">
-  <img src="giphy.gif" alt="Piecewise demonstration" width="600"/>
+  <img src="docs/images/giphy.gif" alt="jumanji" width="600"/>
 </p>
 
-Piecewise is a Domain-Specific Language (DSL) for defining deterministic,
-turn-based board games on rectangular grids.
+## What is Piecewise?
 
-The project is being developed for the Advanced Software Engineering course
-(2025/2026). Its main goal is to explore language design, parsing, domain
-modelling, semantic validation, modular architecture, and automated testing.
+Piecewise is a Domain-Specific Language (DSL) for defining and playing
+deterministic, turn-based board games on rectangular grids.
 
-## Project status
+A game author describes the board, players, pieces, actions, initial setup, and
+end conditions in a readable `.game` file. Piecewise parses and validates that
+definition, creates an immutable game state, and runs it through a shared
+engine. The same definition can then be played from the command line or through
+the Tkinter graphical interface.
 
-Piecewise is under active development.
+In its simplest form:
 
-The current increment supports:
+> Write the rules of a supported board game in a `.game` file and Piecewise
+> turns them into a playable application.
 
-- a declarative Tic-Tac-Toe definition;
-- syntax parsing with Lark;
-- generation of a Lark parse tree;
-- transformation into an immutable, typed AST;
-- directional-player and diagonal-movement syntax in the grammar and AST;
-- diagonal-capture syntax and immutable capture rules in the AST;
-- back-rank promotion syntax and immutable promotion rules in the AST;
-- Checkers player-state end-condition syntax and immutable condition nodes in
-  the AST;
-- optional initial-setup syntax and immutable setup rules in the AST;
-- semantic validation with cumulative, structured diagnostics;
-- semantic validation of piece actions and movement rules;
-- semantic validation of capture dependencies, distances, and orientation;
-- semantic validation of promotion targets, movement dependency, ownership,
-  and back-rank orientation;
-- semantic validation of setup references, ownership, row ranges, and overlaps;
-- semantic validation of Checkers player-state end-condition targets, including
-  the requirement that `opponent` refers to exactly one of two players;
-- an immutable runtime game-state model with enforced invariants;
-- initialization of runtime state and setup pieces from a valid definition;
-- immutable placement and relocation requests;
-- validated placement, ordinary relocation, capture, chained capture, and
-  back-rank promotion execution with controlled turn rotation;
-- deterministic generation of legal ordinary and capture moves for the current
-  player, with mandatory captures and forced chain sources taking precedence;
-- automatic evaluation of row, column, and diagonal win conditions;
-- automatic Checkers victory when the opponent has no pieces or no legal moves
-  left;
-- complete Checkers scenarios covering real setup, sequential turns, chained
-  captures, promotion, immutable snapshots, and both victory conditions;
-- full-board draw detection with victory taking precedence;
-- complete game-session management with sequential state updates;
-- text rendering for rectangular boards, non-playable cells, and compact
-  uppercase owner symbols;
-- an interactive CLI for placement and relocation games, including Tic-Tac-Toe
-  and Checkers, with recoverable input errors;
-- complete Connect Four support with downward gravity, placement in non-full
-  columns, legal-column generation, alignment evaluation, and one-column CLI
-  input;
-- a responsive Tkinter graphical interface for choosing and playing all three
-  bundled games;
-- graphical placement and relocation controls, selected-piece and legal-move
-  highlighting, board coordinates, restart navigation, and terminal feedback;
-- compact graphical Checkers symbols that distinguish men (`W`/`B`) from
-  kings (`WK`/`BK`);
-- parser, AST, semantic-validation, engine, renderer, CLI, controller, and GUI
-  tests with pytest;
-- automatic test execution on pull requests through GitHub Actions.
+The project was developed for the Advanced Software Engineering course
+(2025/2026) and focuses on language design, parsing, semantic validation,
+immutable state, modular architecture, and automated testing.
 
-The Checkers definition is playable from both the CLI and GUI with its supported
-movement, capture, mandatory-chain, promotion, setup, and player-state
-end-condition rules. The grammar and AST model these declarations, semantic
-validation checks their references and dependencies, and the engine evaluates
-both `no_pieces_left` and `no_moves_left` against the next player. Connect Four
-is also playable end to end: the DSL declares downward gravity and column
-placement, and the engine resolves each selected column to its lowest empty cell.
+## Included games
+
+| Game | Main mechanics | CLI | GUI |
+| --- | --- | :---: | :---: |
+| Tic-Tac-Toe | Empty-cell placement, alignment, full-board draw | Yes | Yes |
+| Connect Four | Column input, downward gravity, four-piece alignment | Yes | Yes |
+| Checkers | Setup, movement, mandatory captures, capture chains, promotion | Yes | Yes |
+
+The bundled Checkers definition implements the simplified rule set supported by
+the current DSL. It is not intended to reproduce every official regional
+variant.
+
+## Screenshots
+
+### Game selector
+
+<p align="center">
+  <img src="docs/images/gui_menu.png" alt="Piecewise graphical game selector" width="800"/>
+</p>
+
+### Graphical gameplay
+
+<table>
+  <tr>
+    <td align="center"><strong>Checkers move selection</strong></td>
+    <td align="center"><strong>Connect Four victory</strong></td>
+  </tr>
+  <tr>
+    <td>
+      <img src="docs/images/gui_checkers_selection.png" alt="Checkers source selection and legal destinations"/>
+    </td>
+    <td>
+      <img src="docs/images/gui_connectfour_win.png" alt="Connect Four vertical victory"/>
+    </td>
+  </tr>
+</table>
+
+### Command-line gameplay
+
+<p align="center">
+  <img src="docs/images/cli_tictactoe_win.png" alt="Coloured Tic-Tac-Toe victory in the Piecewise CLI" width="720"/>
+</p>
+
+## Main features
+
+- external DSL parsed with Lark;
+- immutable, typed AST and runtime snapshots;
+- cumulative semantic diagnostics with stable codes and model paths;
+- direct placement, gravity placement, relocation, capture, chained capture,
+  and promotion;
+- legal-move generation and mandatory-capture enforcement;
+- alignment, board-full, no-pieces-left, and no-moves-left conditions;
+- interactive CLI with aligned boards, compact symbols, contextual help, and
+  optional ANSI colours;
+- responsive Tkinter interface with game selection, move highlighting,
+  restart, and Checkers source selection;
+- one shared engine used by both interfaces;
+- 261 collected pytest cases covering the complete processing pipeline.
 
 ## Architecture
 
@@ -94,106 +103,47 @@ placement, and the engine resolves each selected column to its lowest empty cell
     -> Parse tree
     -> AST transformer
     -> GameDefinition
-    -> Semantic validator
-    -> Initial GameState
-    -> Legal move generation
-    -> Move validation
-    -> Next GameState
-    -> Win/draw evaluation
-    -> Ongoing or terminal GameState
-    -> GameSession current state
-        -> BoardRenderer -> Interactive GameCLI
-        -> GameController -> GameView -> Tkinter GUI
+    -> SemanticValidator
+    -> GameInitializer
+    -> GameSession
+        -> LegalMoveGenerator
+        -> MoveExecutor
+        -> ConditionEvaluator
+    -> CLI or Tkinter GUI
 ```
 
-Parsing, transformation, validation, and execution are intentionally separated.
-This keeps the domain model independent from Lark and prevents the game engine
-from depending on concrete syntax details.
+Parsing, transformation, validation, execution, and presentation have separate
+responsibilities. The engine consumes the typed model and does not need to know
+how the original DSL text was written.
 
-## Project structure
+## Tech stack
 
-```text
-Piecewise/
-├── .github/
-│   └── workflows/
-│       └── tests.yml            # Pull-request test workflow
-├── engine/
-│   ├── README.md                # Runtime-model and initialization guide
-│   ├── board_renderer.py        # Plain-text board rendering
-│   ├── condition_evaluator.py   # Win and draw condition evaluation
-│   ├── errors.py                # Engine-specific exceptions
-│   ├── game_initializer.py      # Validated AST to initial runtime state
-│   ├── game_session.py          # Complete game-session orchestration
-│   ├── game_state.py            # Immutable runtime domain model
-│   ├── legal_move_generator.py  # Current-player legal move discovery
-│   ├── move.py                  # Immutable placement or relocation request
-│   └── move_executor.py         # Placement validation and execution
-├── cli/
-│   ├── README.md                # Interactive CLI guide
-│   ├── __init__.py              # Public CLI API
-│   ├── __main__.py              # `python -m cli` entry point
-│   └── game_cli.py              # Testable interactive game loop
-├── gui/
-│   ├── README.md                # Graphical-interface guide
-│   ├── __init__.py              # Public GUI API
-│   ├── __main__.py              # `python -m gui` entry point
-│   ├── app.py                   # Application shell and game selector
-│   ├── game_controller.py       # Click-to-move session adapter
-│   ├── game_view.py             # Interactive board and status view
-│   └── theme.py                 # Shared colours and typography
-├── games/
-│   ├── README.md                # Guide to Piecewise game definitions
-│   ├── tictactoe.game           # Placement-game example
-│   ├── checkers.game            # Relocation-game example
-│   └── connectfour.game         # Gravity-placement game example
-├── grammar/
-│   ├── README.md                # Lark grammar documentation
-│   └── piecewise.lark           # Current formal grammar
-├── parser/
-│   ├── README.md                # Parser and AST documentation
-│   ├── ast_nodes.py             # Immutable AST domain objects
-│   ├── ast_transformer.py       # Parse-tree to AST transformation
-│   └── game_parser.py           # Public parsing API
-├── tests/
-│   ├── tests_README.md          # Testing strategy
-│   ├── test_parser.py
-│   ├── test_ast_transformer.py
-│   ├── test_board_renderer.py
-│   ├── test_checkers_scenarios.py
-│   ├── test_game_cli.py
-│   ├── test_game_controller.py
-│   ├── test_game_view.py
-│   ├── test_semantic_validator.py
-│   ├── test_condition_evaluator.py
-│   ├── test_game_initializer.py
-│   ├── test_game_session.py
-│   ├── test_game_state.py
-│   ├── test_legal_move_generator.py
-│   ├── test_move.py
-│   └── test_move_executor.py
-├── validation/
-│   ├── README.md                # Semantic-validation guide
-│   ├── errors.py                # Structured validation diagnostics
-│   └── semantic_validator.py    # Domain-consistency checks
-├── requirements.txt
-└── README.md
-```
+| Technology | Purpose |
+| --- | --- |
+| Python 3.10+ | Application and domain model |
+| Lark | LALR grammar parsing and tree transformation |
+| dataclasses and enums | Typed, immutable AST and runtime state |
+| Tkinter | Desktop graphical interface |
+| ANSI terminal sequences | Optional CLI colours |
+| pytest | Unit, integration, negative, and end-to-end tests |
 
-## Requirements
+## Quickstart
+
+### Prerequisites
 
 - Python 3.10 or newer;
-- Lark;
-- pytest;
-- Tkinter for the optional graphical interface (included with standard Windows
-  Python installations).
+- Git, when cloning the repository;
+- Tkinter, normally included with standard Python installations.
 
-## Setup
-
-Create and activate a virtual environment:
+### Local setup
 
 ```bash
+git clone https://github.com/Reiver56/Piecewise.git
+cd Piecewise
 python -m venv .venv
 ```
+
+Activate the virtual environment.
 
 Windows PowerShell:
 
@@ -213,485 +163,131 @@ Install the dependencies:
 python -m pip install -r requirements.txt
 ```
 
-## Parse a game
-
-`GameParser` offers a high-level API that returns a typed `GameDefinition`:
-
-```python
-from parser.game_parser import GameParser
-
-parser = GameParser()
-game = parser.parse_game_file("games/tictactoe.game")
-
-print(game.name)
-print(game.board)
-print(game.players)
-```
-
-Low-level methods are also available when the Lark parse tree is needed:
-
-```python
-tree = parser.parse_file("games/tictactoe.game")
-print(tree.pretty())
-```
-
-## Validate a game
-
-Semantic validation is an explicit stage after AST construction:
-
-```python
-from parser.game_parser import GameParser
-from validation import SemanticValidator
-
-game = GameParser().parse_game_file("games/tictactoe.game")
-SemanticValidator().validate_or_raise(game)
-```
-
-Use `validate()` instead to receive every issue as an immutable tuple without
-raising an exception.
-
-## Define movement rules
-
-Players may declare the direction considered forward:
-
-```text
-player White {
-    forward: up
-}
-```
-
-Pieces may declare a non-capturing diagonal movement rule:
-
-```text
-piece Man {
-    owner: White, Black
-    move: diagonal forward 1 if empty
-}
-```
-
-The grammar also supports `diagonal any`, which is represented by a typed,
-immutable `MovementRule`. These declarations are parsed, transformed, and
-validated semantically. `MoveExecutor` executes the supported non-capturing
-movement rules.
-
-Each piece must declare exactly one action: `place` or `move`. Movement
-distances must be positive, and every owner of a `diagonal forward` piece must
-declare a forward direction. Violations are returned as cumulative,
-machine-readable diagnostics.
-
-## Generate legal moves
-
-`LegalMoveGenerator` derives the current player's available movement and
-capture requests from an immutable `GameState`:
-
-```python
-from engine import LegalMoveGenerator
-
-moves = LegalMoveGenerator(game).generate(state)
-```
-
-It supports `diagonal forward` and `diagonal any`, respects player orientation,
-board limits, playable cells, occupied destinations, and enemy-only capture
-targets. Results are returned as an immutable tuple in deterministic piece,
-direction, and destination order. When at least one current-player piece can
-capture, the generator returns only captures and suppresses every ordinary
-move, including moves belonging to other pieces. During a chained capture,
-`GameState.forced_capture_source` further restricts generation to the piece
-that started the sequence. An empty tuple means the current player has no
-generated move and is used directly by `ConditionEvaluator` for
-`no_moves_left`.
-
-## Define capture rules
-
-Movement pieces may optionally declare a capture rule:
-
-```text
-piece Man {
-    owner: White, Black
-    move: diagonal forward 1 if empty
-    capture: diagonal forward 2 if enemy
-}
-```
-
-The grammar supports both `diagonal forward` and `diagonal any` capture
-directions. Each declaration becomes an immutable `CaptureRule` containing its
-typed direction, distance, and `CaptureCondition.ENEMY`. Pieces without a
-capture declaration keep `PieceDefinition.capture` set to `None`.
-
-Capture rules are also validated semantically. A capture requires a normal
-movement rule, its distance must be positive, and every owner of a `diagonal
-forward` capture must declare `forward: up` or `forward: down`.
-
-At runtime, `MoveExecutor` distinguishes ordinary relocation distance from
-capture distance. It validates `diagonal forward` or `diagonal any`, identifies
-the intermediate coordinate, requires an enemy piece there, and returns a new
-snapshot with the moving piece at its destination and the enemy removed. The
-previous `GameState` remains unchanged. Capturing the opponent's last remaining
-piece now produces a won state. When any capture is available, `MoveExecutor`
-rejects otherwise valid ordinary relocations and accepts the required capture.
-If the moved piece can capture again, the immutable continuation state keeps
-the same player and turn number and records the piece's destination as the
-forced source. Turn rotation and terminal evaluation occur only when the chain
-ends.
-
-## Define promotion rules
-
-A movement piece may declare a target type for promotion on the back rank:
-
-```text
-piece Man {
-    owner: White, Black
-    move: diagonal forward 1 if empty
-    promote: back_rank -> King
-}
-```
-
-The grammar maps `back_rank` to `PromotionCondition.BACK_RANK` and stores the
-target identifier in an immutable `PromotionRule`. The optional
-`PieceDefinition.promotion` field remains `None` for pieces such as `King` that
-do not promote.
-
-Promotion rules are validated before reaching the engine. The source must be a
-movement piece, the target must be declared and different from the source, and
-every source owner must also be supported by the target piece. A `back_rank`
-promotion additionally requires every owner to declare `forward: up` or
-`forward: down`.
-
-After an ordinary relocation or capture, `MoveExecutor` compares the
-destination row with the active owner's back rank: row `0` for `up` and
-`rows - 1` for `down`. On a match, it immutably replaces the moved
-`PlacedPiece` name with the declared target type. Moves ending before the back
-rank preserve the source type, and the previous `GameState` remains unchanged.
-
-## Define an initial setup
-
-Games may optionally declare one or more initial-placement rules after their
-piece blocks and before `win_condition`:
-
-```text
-setup {
-    place: Man owned_by White on rows 6..8 playable_cells
-    place: Man owned_by Black on rows 1..3 playable_cells
-}
-```
-
-Each declaration becomes an immutable `SetupRule` containing the piece name,
-owner, inclusive row range, and the requirement to use playable cells only.
-The row numbers remain one-based in the AST so it faithfully represents the
-DSL source. Games without a setup block receive an empty setup tuple.
-
-Setup rules are validated semantically before reaching the engine. The
-validator checks that referenced pieces and players exist, that ownership is
-allowed, that one-based row ranges are ordered and fit the board, and that two
-rules do not overlap. `GameInitializer` converts valid ranges to zero-based
-coordinates and creates a `PlacedPiece` on each selected playable cell.
-
-## Define Checkers end conditions
-
-Checkers may declare victory when the opponent has no pieces or no legal
-moves:
-
-```text
-win_condition {
-    no_pieces_left: opponent -> win
-    no_moves_left: opponent -> win
-}
-```
-
-The grammar accepts only the typed target `opponent`. The transformer maps it
-to `PlayerTarget.OPPONENT` and creates immutable `NoPiecesLeftCondition` and
-`NoMovesLeftCondition` objects with `Outcome.WIN`. The semantic validator
-requires exactly two declared players so `opponent` identifies one unambiguous
-player. It also rejects unsupported targets in AST objects constructed directly
-in Python. At runtime, `ConditionEvaluator` awards the active player a victory
-when a move leaves the declared opponent without pieces or without any legal
-ordinary or capture move.
-
-## Initialize a game
-
-`GameInitializer` validates the definition at the engine boundary and creates
-the initial immutable `GameState`:
-
-```python
-from engine import GameInitializer
-from parser.game_parser import GameParser
-
-game = GameParser().parse_game_file("games/tictactoe.game")
-state = GameInitializer().initialize(game)
-
-print(state.current_player)
-print(state.turn_number)
-```
-
-The initial state starts at turn one and uses the first player declared in
-`turn_order`. Games without setup rules begin with no pieces. For configured
-setups, `GameInitializer` preserves rule order, expands each inclusive row
-range, and filters cells according to `ALL`, `DARK`, or `LIGHT` board
-playability.
-
-## Represent a move
-
-`Move` represents both placement and relocation requests. A placement specifies
-only its destination:
-
-```python
-placement = Move(
-    player="X",
-    piece_name="Mark",
-    coordinate=Coordinate(row=1, column=1),
-)
-```
-
-A relocation also specifies the source coordinate:
-
-```python
-relocation = Move(
-    player="White",
-    piece_name="Man",
-    source=Coordinate(row=5, column=0),
-    coordinate=Coordinate(row=4, column=1),
-)
-```
-
-`coordinate` remains the destination field for backward compatibility and is
-also available through `destination`. The `is_placement` and `is_relocation`
-properties identify the request type. Source and destination must differ.
-
-The runtime model can express relocation requests, while the DSL, AST, and
-semantic validator describe and validate basic movement rules. `MoveExecutor`
-applies validated `diagonal forward` and `diagonal any` relocations to immutable
-runtime snapshots.
-
-## Execute a placement move
-
-`MoveExecutor` validates a placement request and returns a new immutable
-`GameState` without modifying the previous snapshot:
-
-```python
-from engine import Coordinate, GameInitializer, Move, MoveExecutor
-from parser.game_parser import GameParser
-
-game = GameParser().parse_game_file("games/tictactoe.game")
-state = GameInitializer().initialize(game)
-
-move = Move(
-    player="X",
-    piece_name="Mark",
-    coordinate=Coordinate(row=1, column=1),
-)
-next_state = MoveExecutor(game).apply(state, move)
-
-print(next_state.current_player)  # O
-print(next_state.turn_number)     # 2
-print(next_state.status)          # GameStatus.ONGOING
-```
-
-The executor rejects moves after the game has ended, moves by the wrong player,
-coordinates outside the board, non-playable or occupied cells, unknown piece
-types, and pieces not owned by the requesting player. Invalid requests raise
-`InvalidMoveError`.
-
-After placing a piece, the executor evaluates the declared end conditions. It
-detects consecutive same-owner alignments across rows, columns, and both
-diagonals, and detects a draw when every playable cell is occupied. A winning
-alignment takes precedence when the final move also fills the board. The
-returned state is marked `GameStatus.WON` with its winner or
-`GameStatus.DRAWN`; further moves are then rejected.
-
-## Execute a relocation move
-
-A relocation identifies both its source and destination. `MoveExecutor`
-verifies the source piece, its owner and type, the destination, the declared
-distance, and the allowed diagonal direction:
-
-```python
-move = Move(
-    player="White",
-    piece_name="Man",
-    source=Coordinate(row=5, column=0),
-    coordinate=Coordinate(row=4, column=1),
-)
-
-next_state = MoveExecutor(game).apply(state, move)
-```
-
-`diagonal forward` uses the owner's `forward: up|down` declaration, while
-`diagonal any` accepts either vertical direction. Successful relocation
-replaces the source piece with an equivalent piece at the destination, advances
-the turn, and leaves the previous `GameState` unchanged.
-
-For a capture relocation, the executor matches `capture.distance`, validates
-the declared direction, and inspects the intermediate diagonal cell. An empty
-cell or a piece owned by the active player makes the move invalid. A successful
-capture removes exactly one enemy, advances the turn, and preserves the
-previous snapshot. When the destination is the active player's back rank, the
-surviving piece is promoted after the enemy is removed. Capturing the final
-opponent piece immediately produces a won state. If the next player still owns
-pieces but has no generated legal move, `no_moves_left` also produces a victory.
-Mandatory capture is enforced across all pieces owned by the active player. A
-chained capture must continue from `forced_capture_source`; completing the
-sequence clears that field, advances the turn once, and then evaluates terminal
-conditions. Promotion remains immediate, so a newly promoted `King` may continue
-the same chain using `diagonal any`.
-
-## Manage a complete game session
-
-`GameSession` is the high-level engine API for running a game from its initial
-state through a sequence of moves:
-
-```python
-from engine import Coordinate, GameSession, Move
-from parser.game_parser import GameParser
-
-game = GameParser().parse_game_file("games/tictactoe.game")
-session = GameSession(game)
-
-session.play(
-    Move(
-        player="X",
-        piece_name="Mark",
-        coordinate=Coordinate(row=0, column=0),
-    )
-)
-
-print(session.state.current_player)  # O
-print(session.state.turn_number)     # 2
-```
-
-The session initializes the game automatically, exposes its current immutable
-state through `state`, and replaces that snapshot after every successful
-`play()` call. If a move is invalid, the exception is propagated and the
-session keeps its previous state. Terminal-state protection remains delegated
-to `MoveExecutor`, so moves after a win or draw are rejected consistently.
-
-## Render a board
-
-`BoardRenderer` converts a runtime snapshot into plain text without modifying
-the state:
-
-```python
-from engine import BoardRenderer, GameSession
-from parser.game_parser import GameParser
-
-game = GameParser().parse_game_file("games/tictactoe.game")
-session = GameSession(game)
-
-print(BoardRenderer(game).render(session.state))
-```
-
-```text
-    0   1   2
-0   . | . | .
-1   . | . | .
-2   . | . | .
-```
-
-The renderer uses `.` for an empty playable cell, `#` for a non-playable cell,
-and the uppercase initial of the piece owner as its compact symbol. This keeps
-boards aligned for owners such as `White` (`W`) and `Black` (`B`) while
-preserving existing symbols such as `X` and `O`.
-
 ## Play from the graphical interface
 
-Start the Tkinter application from the project root:
+Start the game selector:
 
 ```bash
 python -m gui
 ```
 
-The game selector loads the bundled Tic-Tac-Toe, Connect Four, and Checkers
-definitions through the same parser used by the CLI. Its responsive cards and
-`Play` controls share the available window space as the application is
-resized.
+Choose Tic-Tac-Toe, Connect Four, or Checkers. The interface displays the
+current player, legal destinations, selected Checkers pieces, final results,
+and restart controls.
 
-The graphical board displays zero-based row and column coordinates. Placement
-games are played with one click: Tic-Tac-Toe uses the selected empty cell,
-while Connect Four treats the clicked cell as a column selection and lets the
-engine apply gravity. Checkers uses a source-and-destination interaction:
-
-1. click a current-player piece;
-2. inspect the highlighted legal destinations;
-3. click a highlighted destination to move or capture.
-
-During a mandatory capture chain, the required source remains selected until
-the sequence finishes. The status and help text report the current player,
-invalid moves, wins, draws, restart options, and game-specific instructions.
-Checkers pieces use `W` and `B` for men and `WK` and `BK` for promoted
-kings.
+Read the [graphical-interface guide](gui/gui_README.md) for controller
+behaviour, symbols, theme, and tests.
 
 ## Play from the terminal
 
-Start the bundled Tic-Tac-Toe definition from the project root:
+Tic-Tac-Toe is the default:
 
 ```bash
 python -m cli
 ```
 
-An explicit `.game` path can also be supplied:
+Select a definition explicitly:
 
 ```bash
 python -m cli games/tictactoe.game
-```
-
-Enter moves as zero-based `row column` coordinates, such as `1 2`. Invalid
-input is reported without ending the session. Enter `quit` to abandon the
-current game.
-
-Checkers can be started explicitly:
-
-```bash
+python -m cli games/connectfour.game
 python -m cli games/checkers.game
 ```
 
-Relocation games accept four zero-based coordinates in the order
-`source_row source_column destination_row destination_column`, for example
-`5 0 4 1`. The CLI identifies the piece at the source coordinate and delegates
-movement, mandatory-capture, chained-capture, promotion, and turn validation to
-the engine.
-
-Connect Four can be started with:
+The CLI enables colours automatically when output is connected to a compatible
+terminal. Disable them when necessary:
 
 ```bash
-python -m cli games/connectfour.game
+python -m cli games/checkers.game --no-color
 ```
 
-Enter one zero-based column number, such as `3`. The engine rejects full or
-out-of-bounds columns and applies downward gravity to place the disc in the
-lowest available row.
+| Action type | Input |
+| --- | --- |
+| Direct placement | `row column` |
+| Gravity placement | `column` |
+| Relocation or capture | `source_row source_column destination_row destination_column` |
+| Exit | `quit` |
+
+Read the [CLI guide](cli/cli_README.md) for input rules, colour behaviour, and
+programmatic use.
+
+## Define a game
+
+Definitions use domain concepts rather than Python code:
+
+```text
+game TicTacToe {
+    board {
+        size: 3x3
+        playable_cells: all
+    }
+
+    players {
+        player X
+        player O
+        turn_order: X, O
+    }
+
+    piece Mark {
+        owner: X, O
+        place: any_empty_cell
+    }
+
+    win_conditions {
+        align: 3 same_row -> win
+        align: 3 same_col -> win
+        align: 3 diagonal -> win
+        board_full: no_winner -> draw
+    }
+}
+```
+
+The language deliberately exposes a bounded set of reusable mechanics. Adding a
+new game that combines existing mechanics is mainly a modelling task; adding a
+new kind of mechanic requires coordinated grammar, AST, validation, and engine
+changes.
+
+Read [Defining a Game in Piecewise](games/games_README.md) for the complete
+syntax, semantic rules, examples, and extension checklist.
+
+## Documentation
+
+The root README is a project overview. Detailed documentation lives beside the
+code it describes:
+
+| Area | Documentation |
+| --- | --- |
+| Game definitions | [games/games_README.md](games/games_README.md) |
+| Formal grammar | [grammar/grammar_README.md](grammar/grammar_README.md) |
+| Parser, transformer, and AST | [parser/parser_README.md](parser/parser_README.md) |
+| Semantic validation | [validation/validation_README.md](validation/validation_README.md) |
+| Runtime engine | [engine/engine_README.md](engine/engine_README.md) |
+| Command-line interface | [cli/cli_README.md](cli/cli_README.md) |
+| Graphical interface | [gui/gui_README.md](gui/gui_README.md) |
+| Test strategy and coverage | [tests/tests_README.md](tests/tests_README.md) |
 
 ## Run the tests
+
+Run the complete suite from the repository root:
 
 ```bash
 python -m pytest -v
 ```
 
-The current suite contains 246 parser, AST-transformation, semantic-validation,
-engine, renderer, CLI, controller, and GUI tests. Pull requests targeting
-`main` run the same command automatically.
+The documented final run collected and passed 261 cases. They cover syntax,
+AST transformation, semantic validation, initialization, immutable state,
+execution, move generation, game conditions, rendering, CLI interaction, GUI
+controller behaviour, and complete Checkers scenarios.
 
-## Documentation
+See the [testing guide](tests/tests_README.md) for the test groups, fixtures,
+levels, and focused commands.
 
-- [`games/README.md`](games/games_README.md): user-facing DSL guide and examples;
-- [`grammar/README.md`](grammar/grammar_README.md): grammar structure and Lark notation;
-- [`parser/README.md`](parser/parser_README.md): parsing API, AST, and transformation;
-- [`engine/README.md`](engine/engine_README.md): runtime model, initialization, and move execution;
-- [`cli/README.md`](cli/cli_README.md): interactive play and command-line entry point;
-- [`gui/README.md`](gui/README.md): graphical application, controller, view, and theme;
-- [`tests/README.md`](tests/tests_README.md): test strategy and conventions;
-- [`validation/README.md`](validation/validation_README.md): semantic rules and diagnostics.
+## Project boundaries
 
-## Development workflow
+Piecewise currently targets local, deterministic, turn-based games on
+rectangular boards. It does not yet provide arbitrary movement scripts, cards,
+dice, hidden information, saved matches, AI opponents, online multiplayer, or
+complete official rule sets for every Checkers variant.
 
-Development is organised into small feature branches and pull requests. Each
-increment should:
-
-1. define a focused change;
-2. include positive and negative tests where applicable;
-3. update the relevant documentation;
-4. pass the required `pytest` status check before merge.
-
-## Scope
-
-The initial scope covers deterministic, turn-based games on rectangular grids.
-Card games, hidden information, random events, and real-time mechanics are
-outside the current project scope.
+These are deliberate boundaries of the current language rather than claims
+that every board game can be represented without extending the implementation.

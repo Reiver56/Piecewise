@@ -1,6 +1,6 @@
 from collections.abc import Callable
 
-from engine.board_renderer import BoardRenderer
+from cli.terminal_renderer import TerminalRenderer
 from engine.errors import InvalidMoveError
 from engine.game_session import GameSession
 from engine.game_state import Coordinate, GameState, GameStatus
@@ -24,10 +24,14 @@ class GameCLI:
         *,
         input_function: InputFunction = input,
         output_function: OutputFunction = print,
+        use_color: bool = False,
     ) -> None:
         self._game = game
         self._session = GameSession(game)
-        self._renderer = BoardRenderer(game)
+        self._renderer = TerminalRenderer(
+            game,
+            use_color=use_color,
+        )
         self._input = input_function
         self._output = output_function
 
@@ -38,11 +42,18 @@ class GameCLI:
 
     def run(self) -> GameState:
         """Run the interactive game loop and return its final state."""
-        self._output(f"Piecewise — {self._game.name}")
+        self._output(
+            self._renderer.render_title(self._game.name)
+        )
 
         while self.state.status is GameStatus.ONGOING:
             self._output("")
+            self._output(
+                f"Turn {self.state.turn_number} | "
+                f"Player {self.state.current_player}"
+            )
             self._output(self._renderer.render(self.state))
+            self._output(self._input_help_text())
 
             raw_input = self._input(
                 f"Player {self.state.current_player} > "
@@ -56,7 +67,9 @@ class GameCLI:
                 move = self._parse_move(raw_input)
                 self._session.play(move)
             except (ValueError, InvalidMoveError) as error:
-                self._output(f"Invalid move: {error}")
+                self._output(
+                    self._renderer.render_error(str(error))
+                )
 
         self._output("")
         self._output(self._renderer.render(self.state))
@@ -64,6 +77,19 @@ class GameCLI:
 
         return self.state
 
+    def _input_help_text(self) -> str:
+        """Return input instructions for the current player's actions."""
+        if self._uses_relocation_format():
+            return (
+                "Move: from_row from_col to_row to_col "
+                "| quit: exit"
+            )
+
+        if self._uses_column_placement_format():
+            return "Move: column | quit: exit"
+
+        return "Move: row column | quit: exit"
+    
     def _parse_move(self, raw_input: str) -> Move:
         parts = raw_input.split()
 
@@ -207,7 +233,10 @@ class GameCLI:
 
     def _output_result(self) -> None:
         if self.state.status is GameStatus.WON:
-            self._output(f"Player {self.state.winner} wins!")
-            return
+            message = f"Player {self.state.winner} wins!"
+        else:
+            message = "The game ended in a draw."
 
-        self._output("The game ended in a draw.")
+        self._output(
+            self._renderer.render_result(message)
+        )

@@ -1,88 +1,111 @@
 # Piecewise Interactive CLI
 
-The `cli` package connects `GameParser`, `GameSession`, and `BoardRenderer` so a
-supported Piecewise game can be played from a terminal.
+The `cli` package turns terminal input into engine `Move` objects and presents
+the resulting immutable game states. It contains no game-rule implementation:
+all validation, capture, promotion, gravity, and end-condition behaviour remains
+inside the shared engine.
 
 ## Files
 
 ```text
 cli/
-├── __init__.py   # Public `GameCLI` import
-├── __main__.py   # `python -m cli` entry point
-├── game_cli.py   # Testable interactive loop
-└── README.md
+├── __init__.py           # Public GameCLI import
+├── __main__.py           # python -m cli launcher
+├── game_cli.py           # Testable interactive game loop
+└── terminal_renderer.py  # Optional ANSI presentation layer
 ```
 
 ## Start a game
 
-From the project root, start the default Tic-Tac-Toe game:
+From the project root, launch the default Tic-Tac-Toe definition:
 
 ```bash
 python -m cli
 ```
 
-Or select a `.game` definition explicitly:
+Or select one of the bundled games:
 
 ```bash
 python -m cli games/tictactoe.game
-```
-
-The supported Checkers definition can be started with:
-
-```bash
+python -m cli games/connectfour.game
 python -m cli games/checkers.game
 ```
 
-Connect Four can be started with:
-
-```bash
-python -m cli games/connectfour.game
-```
-
-Use `--help` to display the launcher options:
+Display launcher options:
 
 ```bash
 python -m cli --help
 ```
 
-## Controls
+## Input formats
 
-Placement games accept two zero-based integers:
+The CLI derives the expected format from the current player's declared piece
+actions and prints the relevant help text before each prompt.
 
-```text
-Player X > 1 2
+| Action | Input example | Meaning |
+| --- | --- | --- |
+| Direct placement | `1 2` | destination row and column |
+| Gravity placement | `3` | destination column |
+| Relocation or capture | `5 0 4 1` | source row/column, then destination row/column |
+| Abandon game | `quit` | return the current ongoing state |
+
+All coordinates are zero-based. A gravity placement chooses a column; the
+engine resolves the lowest empty row. A relocation finds the runtime piece at
+the source and uses its actual piece type, which is important after a Checkers
+`Man` becomes a `King`.
+
+Malformed input and moves rejected by the engine are reported without ending or
+mutating the session. During a mandatory Checkers capture chain, the engine
+keeps the same player and forced source active, and the CLI requests the next
+relocation normally.
+
+## Terminal presentation
+
+`TerminalRenderer` wraps the engine's plain `BoardRenderer`. This preserves a
+colour-independent board representation while allowing the terminal layer to
+add presentation details.
+
+The CLI displays:
+
+- game title;
+- turn number and current player;
+- aligned row and column coordinates;
+- contextual input help;
+- compact owner symbols;
+- `WK` and `BK` for promoted Checkers kings;
+- highlighted errors and final results when colours are enabled.
+
+Owner colours are:
+
+| Owner | Colour |
+| --- | --- |
+| X | bright magenta |
+| O | bright cyan |
+| Red | bright red |
+| Yellow | bright yellow |
+| White | bright white |
+| Black | bright black/grey |
+
+Colours are enabled only when standard output is an interactive, compatible
+terminal. They are disabled when:
+
+- `--no-color` is supplied;
+- output is redirected;
+- the `NO_COLOR` environment variable is set;
+- `TERM=dumb`.
+
+Explicitly disable colours:
+
+```bash
+python -m cli games/checkers.game --no-color
 ```
 
-The first value is the destination row and the second is the destination
-column.
-
-Gravity-based column placement accepts one zero-based column:
-
-```text
-Player Red > 3
-```
-
-The engine places the disc in the lowest empty row of that column. Full and
-out-of-bounds columns are reported as invalid moves without ending the session.
-
-Relocation games accept source and destination coordinates:
-
-```text
-Player White > 5 0 4 1
-```
-
-The four values follow the order
-`source_row source_column destination_row destination_column`. The CLI locates
-the runtime piece at the source coordinate and uses its declared piece name in
-the generated `Move`. Enter `quit` in any letter case to abandon the game.
-
-The CLI redraws the board before every turn and after the terminal move. It
-reports malformed coordinates and invalid game moves without terminating the
-session. A completed game prints either the winning player or a draw message.
+Removing ANSI sequences from a coloured board produces exactly the same text as
+`BoardRenderer`; colours do not change cell widths or game data.
 
 ## Programmatic use
 
-`GameCLI` can also be imported directly:
+`GameCLI` can be imported directly:
 
 ```python
 from cli import GameCLI
@@ -92,9 +115,8 @@ game = GameParser().parse_game_file("games/tictactoe.game")
 final_state = GameCLI(game).run()
 ```
 
-The constructor accepts injected input and output callables. This keeps the
-game loop independent from a real terminal and makes complete sessions
-deterministic in tests:
+Input and output callables can be injected, making a complete interaction
+deterministic without a real terminal:
 
 ```python
 outputs: list[str] = []
@@ -104,35 +126,49 @@ cli = GameCLI(
     game,
     input_function=lambda _: next(inputs),
     output_function=outputs.append,
+    use_color=False,
 )
+
 state = cli.run()
 ```
 
-## Current scope
+The launcher decides whether colours are appropriate and passes `use_color` to
+`GameCLI`. Tests and embedding code can select the behaviour explicitly.
 
-The CLI selects the input format from the actions available to the current
-player. Ordinary placement uses `row column`, gravity placement uses `column`,
-and relocation uses source and destination coordinates. Invalid formats,
-non-integer coordinates, empty sources, opponent-owned sources, full columns,
-and other moves rejected by the engine are reported without terminating the
-session.
+## Architecture
 
-For Checkers, consecutive CLI inputs can complete a mandatory capture chain.
-The engine keeps the same player active while another capture is required and
-the CLI naturally requests the next relocation. Connect Four uses the same
-loop with alternating one-column inputs and automatic gravity. Piece-specific
-rendering remains a future increment.
+```text
+raw terminal input
+    -> GameCLI format selection
+    -> Move
+    -> GameSession
+    -> MoveExecutor
+    -> immutable GameState
+    -> BoardRenderer
+    -> TerminalRenderer
+    -> terminal output
+```
+
+`GameCLI` coordinates input and output. `TerminalRenderer` styles text.
+`GameSession` owns the current snapshot, and the engine remains the authority
+for legal moves and results.
 
 ## Testing
 
-Run the 19 CLI tests from the project root:
+Run the CLI-related tests:
 
 ```bash
-python -m pytest tests/test_game_cli.py -v
+python -m pytest tests/test_game_cli.py tests/test_cli_main.py tests/test_terminal_renderer.py -v
 ```
 
-They cover case-insensitive `quit`, placement and relocation formats, malformed
-and non-integer input, empty and opponent-owned sources, invalid game moves,
-complete victories and draws, chained Checkers captures, Connect Four column
-placement and vertical victory, format-specific diagnostics, recovery from
-out-of-bounds and full columns, final rendering, and result messages.
+The final suite contains:
+
+- 24 `GameCLI` cases covering placement, gravity, relocation, errors, turn
+  information, contextual help, victories, draws, and capture chains;
+- 6 launcher cases collected from the parameterized colour-detection test and
+  the `--no-color` parser test;
+- 6 terminal-renderer cases covering plain output, coloured pieces, kings,
+  alignment, titles, errors, and results.
+
+Together these contribute 36 collected CLI-related cases to the complete
+261-case project suite.

@@ -12,9 +12,9 @@ tests/
 ├── test_ast_transformer.py
 ├── test_board_renderer.py
 ├── test_checkers_scenarios.py
+├── test_cli_main.py
 ├── test_game_cli.py
 ├── test_game_controller.py
-├── test_game_view.py
 ├── test_semantic_validator.py
 ├── test_condition_evaluator.py
 ├── test_game_initializer.py
@@ -23,6 +23,7 @@ tests/
 ├── test_legal_move_generator.py
 ├── test_move.py
 ├── test_move_executor.py
+├── test_terminal_renderer.py
 └── tests_README.md
 ```
 
@@ -56,7 +57,7 @@ Commands should be executed from the project root.
 
 ## Current coverage
 
-The suite currently contains 246 tests.
+The documented final run collected and passed 261 tests.
 
 ### Parser tests
 
@@ -418,7 +419,7 @@ The 15 cases in `test_condition_evaluator.py` verify:
 
 ### Board-renderer tests
 
-The nine cases in `test_board_renderer.py` verify:
+The 11 collected cases in `test_board_renderer.py` verify:
 
 - rendering of an empty board and placed pieces;
 - support for different dimensions and a single-cell board;
@@ -426,11 +427,13 @@ The nine cases in `test_board_renderer.py` verify:
 - piece precedence over a non-playable-cell marker;
 - preservation of the immutable state during rendering;
 - compact uppercase symbols for multi-character owner names, including
-  `White` (`W`) and `Black` (`B`).
+  `White` (`W`) and `Black` (`B`);
+- distinct `WK` and `BK` symbols for kings;
+- aligned columns when one- and two-character symbols share a board.
 
 ### Interactive-CLI tests
 
-The 19 cases in `test_game_cli.py` verify:
+The 24 cases in `test_game_cli.py` verify:
 
 - normal and case-insensitive `quit` handling;
 - recovery from malformed and non-integer coordinates;
@@ -440,12 +443,33 @@ The 19 cases in `test_game_cli.py` verify:
 - four-coordinate relocation input for Checkers;
 - relocation-specific format and integer diagnostics;
 - recovery from empty and opponent-owned source coordinates;
-- completion of a mandatory chained capture through consecutive CLI inputs.
+- completion of a mandatory chained capture through consecutive CLI inputs;
 - one-column Connect Four input and gravity-based placement;
 - a complete vertical Connect Four victory;
-- recovery from malformed and non-integer column input.
+- recovery from malformed and non-integer column input;
 - recovery from out-of-bounds and completely full Connect Four columns without
-  changing the current session state.
+  changing the current session state;
+- optional coloured piece output;
+- current turn and player information;
+- game-specific help for direct placement, column placement, and relocation.
+
+### CLI-launcher tests
+
+The six collected cases in `test_cli_main.py` verify:
+
+- automatic colour use for a compatible interactive terminal;
+- disabled colours for redirected output, `--no-color`, `NO_COLOR`, and
+  `TERM=dumb`;
+- parsing of the `--no-color` option with an explicit game path.
+
+### Terminal-renderer tests
+
+The six cases in `test_terminal_renderer.py` verify:
+
+- byte-for-byte equality with `BoardRenderer` when colours are disabled;
+- owner-specific colours without changes to plain-board alignment;
+- coloured `WK` and `BK` symbols;
+- optional styling of the title, invalid-move messages, and game results.
 
 ### Graphical-controller tests
 
